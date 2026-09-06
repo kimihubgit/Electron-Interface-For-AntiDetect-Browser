@@ -1,0 +1,124 @@
+/* ═══════════════════════════════
+   Buttons
+   ═══════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.btn-primary {
+  background-color: var(--apidog-purple);
+  color: #FFFFFF;
+}
+.btn-primary:hover {
+  background-color: var(--apidog-purple-hover);
+}
+
+.btn-secondary {
+  background-color: #FFFFFF;
+  color: var(--apidog-text-main);
+  border: 1px solid var(--apidog-border);
+}
+.btn-secondary:hover {
+  background-color: #F9FAFB;
+  border-color: #D1D5DB;
+}
+
+.btn-icon-subtle {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--apidog-text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-icon-subtle:hover {
+  background: #E5E7EB;
+  color: var(--apidog-text-main);
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--apidog-text-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-icon:hover {
+  background: #F3F4F6;
+  color: var(--apidog-text-main);
+}
+
+/* ═══════════════════════════════
+   Badges
+   ═══════════════════════════════ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-xs);
+}
+
+.badge-green, .badge-active, .badge-ready { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+.badge-purple, .badge-proxy { background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; }
+.badge-blue   { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+.badge-gray   { background: #F3F4F6; color: #4B5563; border: 1px solid #E5E7EB; }
+.badge-rose, .badge-danger { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+
+/* ═══════════════════════════════
+   Animations
+   ═══════════════════════════════ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* ═══════════════════════════════
+   Hover utility
+   ═══════════════════════════════ */
+.hover-item {
+  transition: background-color 0.15s;
+}
+.hover-item:hover {
+  background-color: #F3F4F6;
+}
+
+/* ═══════════════════════════════
+   Hide Scrollbar Utility
+   ═══════════════════════════════ */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}

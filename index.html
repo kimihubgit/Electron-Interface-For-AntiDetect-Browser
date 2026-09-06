@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Antidetect Browser</title>
+    <style>
+      /* Inline splash screen — shown instantly while React loads */
+      body { margin: 0; background: #F8F9FA; }
+      #splash {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        background: #F8F9FA;
+        transition: opacity 0.3s ease;
+      }
+      #splash.hide { opacity: 0; pointer-events: none; }
+      .splash-logo {
+        width: 48px; height: 48px; border-radius: 14px;
+        background: linear-gradient(135deg, #7C3AED, #2563EB);
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 16px;
+        box-shadow: 0 8px 24px rgba(124, 58, 237, 0.3);
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      .splash-logo svg {
+        width: 26px; height: 26px; fill: none;
+        stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+      }
+      .splash-text {
+        font-family: 'Inter', -apple-system, sans-serif;
+        font-size: 13px; font-weight: 600; color: #6B7280;
+        letter-spacing: 0.5px;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Splash screen: visible instantly, hidden after React renders -->
+    <div id="splash">
+      <div class="splash-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <span class="splash-text">Đang khởi tạo...</span>
+    </div>
+
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

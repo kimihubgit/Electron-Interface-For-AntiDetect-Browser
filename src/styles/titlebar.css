@@ -1,0 +1,45 @@
+/* ═══════════════════════════════
+   Titlebar icon buttons
+   ═══════════════════════════════ */
+.btn-icon-titlebar {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-icon-titlebar:hover {
+  background-color: #E5E7EB;
+  color: #111827;
+}
+
+/* ═══════════════════════════════
+   Native window control buttons
+   ═══════════════════════════════ */
+.btn-window-control {
+  width: 44px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #6B7280;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.btn-window-control:hover {
+  background-color: #E5E7EB;
+  color: #111827;
+}
+
+.btn-window-close:hover {
+  background-color: #E81123 !important;
+  color: #FFFFFF !important;
+}
