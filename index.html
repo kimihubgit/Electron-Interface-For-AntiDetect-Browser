@@ -3,11 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <title>Antidetect Browser</title>
     <style>
       /* Inline splash screen — shown instantly while React loads */
-      body { margin: 0; background: #F8F9FA; }
+      body { margin: 0; background: #F8F9FA; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
       #splash {
         position: fixed; inset: 0; z-index: 9999;
         display: flex; flex-direction: column;
@@ -31,7 +33,7 @@
       .splash-text {
         font-family: 'Inter', -apple-system, sans-serif;
         font-size: 13px; font-weight: 600; color: #6B7280;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.2px;
       }
       @keyframes pulse {
         0%, 100% { transform: scale(1); }

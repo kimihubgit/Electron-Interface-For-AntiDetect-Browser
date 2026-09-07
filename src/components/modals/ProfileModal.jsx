@@ -184,7 +184,7 @@ export default function ProfileModal() {
         maxWidth: '860px',
         maxHeight: '88vh',
         backgroundColor: '#FFFFFF',
-        borderRadius: '16px',
+        borderRadius: '8px',
         border: '1px solid #E5E7EB',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)',
         display: 'flex',

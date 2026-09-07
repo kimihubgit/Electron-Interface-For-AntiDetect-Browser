@@ -1,0 +1,57 @@
+{
+  "auth": {
+    "welcome": "환영합니다",
+    "continueWithGoogle": "Google 계정으로 계속",
+    "continueWithGithub": "GitHub 계정으로 계속",
+    "signInWithSso": "SSO로 로그인",
+    "emailPlaceholder": "이메일",
+    "continueWithEmail": "이메일로 계속",
+    "connecting": "연결 중...",
+    "emailRequired": "이메일을 입력해 주세요",
+    "emailInvalid": "유효한 이메일 주소를 입력해 주세요",
+    "noCreditCard": "신용카드 불필요",
+    "noTimeLimit": "무료 플랜 무기한 사용 가능",
+    "agreePrefix": "계속하면 Apidog의 다음에 동의하는 것으로 간주됩니다:",
+    "termsOfService": "서비스 약관",
+    "and": "및",
+    "privacyPolicy": "개인정보 처리방침",
+    "useOfflineSpace": "오프라인 공간 사용",
+    "ssoPrompt": "SSO 도메인을 입력해 주세요:"
+  },
+  "footer": {
+    "languages": "언어",
+    "appearance": "테마",
+    "proxy": "프록시",
+    "offlineSpace": "오프라인 공간",
+    "light": "라이트",
+    "dark": "다크",
+    "system": "시스템 설정"
+  },
+  "titlebar": {
+    "home": "홈",
+    "profiles": "프로필",
+    "backup": "백업 및 동기화",
+    "proxy": "프록시 관리",
+    "settings": "설정"
+  },
+  "profiles": {
+    "title": "프로필 목록",
+    "newProfile": "새 프로필 생성",
+    "all": "전체",
+    "ungrouped": "미분류",
+    "searchPlaceholder": "프로필 검색...",
+    "selected": "선택됨",
+    "quickOpen": "빠른 실행",
+    "openAndArrange": "실행 및 정렬",
+    "moveGroup": "그룹 이동",
+    "delete": "삭제",
+    "running": "실행 중",
+    "stop": "중지"
+  },
+  "common": {
+    "cancel": "취소",
+    "confirm": "확인",
+    "save": "저장",
+    "close": "닫기"
+  }
+}

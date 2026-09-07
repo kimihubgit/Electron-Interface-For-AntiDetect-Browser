@@ -72,7 +72,7 @@ export default function ProxyModal() {
       <div style={{
         width: '100%', maxWidth: '520px',
         backgroundColor: '#FFFFFF',
-        borderRadius: '16px',
+        borderRadius: '8px',
         border: '1px solid #E5E7EB',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         overflow: 'hidden',

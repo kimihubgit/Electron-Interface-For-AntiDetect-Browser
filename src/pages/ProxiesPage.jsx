@@ -3,7 +3,7 @@ import { Shield, Plus, RefreshCw, Trash2, CheckCircle2, AlertCircle, Activity, G
 import { useBrowser } from '../store/BrowserContext';
 
 export default function ProxiesPage() {
-  const { proxies, deleteProxy, setActiveProxyModal } = useBrowser();
+  const { proxies, deleteProxy, setActiveProxyModal, selectedProxyFilter = 'All', setSelectedProxyFilter } = useBrowser();
   const [testingId, setTestingId] = useState(null);
 
   const handleTestPing = (id) => {
@@ -13,13 +13,47 @@ export default function ProxiesPage() {
     }, 800);
   };
 
+  const filteredProxies = proxies.filter(px => {
+    if (!selectedProxyFilter || selectedProxyFilter === 'All') return true;
+    if (selectedProxyFilter === 'SOCKS5') return px.type === 'SOCKS5';
+    if (selectedProxyFilter === 'HTTP') return px.type === 'HTTP' || px.type === 'HTTPS';
+    if (selectedProxyFilter === 'live') return px.status === 'live';
+    if (selectedProxyFilter === 'low_ping') return px.latency && px.latency < 60;
+    if (['US', 'VN', 'SG', 'GB', 'JP', 'DE'].includes(selectedProxyFilter)) return px.country === selectedProxyFilter;
+    return true;
+  });
+
   return (
-    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflowY: 'auto', backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}>
+    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', overflowY: 'auto', backgroundColor: '#FFFFFF', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#111827', margin: 0 }}>Quản Lý Proxy Pool</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#111827', margin: 0 }}>Quản Lý Proxy Pool</h2>
+            {selectedProxyFilter && selectedProxyFilter !== 'All' && (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                backgroundColor: '#EDE9FE',
+                color: '#7C3AED',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: 600
+              }}>
+                Lọc: {selectedProxyFilter}
+                <button
+                  onClick={() => setSelectedProxyFilter?.('All')}
+                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#7C3AED', fontSize: '12px', padding: 0, marginLeft: '2px' }}
+                  title="Bỏ lọc"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+          </div>
           <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px', margin: 0 }}>
-            Kiểm tra trạng thái Live/Die, tốc độ kết nối (Ping) và vị trí địa lý của Proxy
+            Kiểm tra trạng thái Live/Die, tốc độ kết nối (Ping) và vị trí địa lý của Proxy ({filteredProxies.length}/{proxies.length} proxy)
           </p>
         </div>
         <button onClick={() => setActiveProxyModal(true)} className="btn btn-primary" style={{ padding: '8px 16px', fontWeight: 600 }}>
@@ -40,7 +74,7 @@ export default function ProxiesPage() {
             </tr>
           </thead>
           <tbody>
-            {proxies.map(px => (
+            {filteredProxies.map(px => (
               <tr key={px.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                 <td style={{ padding: '14px 16px' }}>
                   <span className="badge badge-purple">{px.type}</span>

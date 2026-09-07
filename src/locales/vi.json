@@ -1,0 +1,57 @@
+{
+  "auth": {
+    "welcome": "Chào mừng",
+    "continueWithGoogle": "Tiếp tục với Google",
+    "continueWithGithub": "Tiếp tục với GitHub",
+    "signInWithSso": "Đăng nhập với SSO",
+    "emailPlaceholder": "Email",
+    "continueWithEmail": "Tiếp tục bằng Email",
+    "connecting": "Đang kết nối...",
+    "emailRequired": "Vui lòng nhập địa chỉ Email",
+    "emailInvalid": "Địa chỉ Email không hợp lệ",
+    "noCreditCard": "Không cần thẻ tín dụng",
+    "noTimeLimit": "Gói miễn phí không giới hạn thời gian",
+    "agreePrefix": "Bằng cách tiếp tục, bạn đồng ý với",
+    "termsOfService": "Điều khoản dịch vụ",
+    "and": "và",
+    "privacyPolicy": "Chính sách quyền riêng tư",
+    "useOfflineSpace": "Dùng không gian ngoại tuyến",
+    "ssoPrompt": "Nhập Enterprise SSO Workspace Domain (ví dụ: mycompany):"
+  },
+  "footer": {
+    "languages": "Ngôn ngữ",
+    "appearance": "Giao diện",
+    "proxy": "Proxy",
+    "offlineSpace": "Không gian ngoại tuyến",
+    "light": "Sáng",
+    "dark": "Tối",
+    "system": "Hệ thống"
+  },
+  "titlebar": {
+    "home": "Trang chủ",
+    "profiles": "Hồ sơ trình duyệt",
+    "backup": "Sao lưu & Đồng bộ",
+    "proxy": "Quản lý Proxy",
+    "settings": "Cài đặt"
+  },
+  "profiles": {
+    "title": "Hồ sơ",
+    "newProfile": "Thêm Hồ sơ",
+    "all": "Tất cả",
+    "ungrouped": "Chưa phân nhóm",
+    "searchPlaceholder": "Tìm kiếm hồ sơ...",
+    "selected": "Đã chọn",
+    "quickOpen": "Mở nhanh",
+    "openAndArrange": "Mở & Sắp xếp",
+    "moveGroup": "Chuyển nhóm",
+    "delete": "Xóa",
+    "running": "Đang chạy",
+    "stop": "Dừng"
+  },
+  "common": {
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "save": "Lưu",
+    "close": "Đóng"
+  }
+}

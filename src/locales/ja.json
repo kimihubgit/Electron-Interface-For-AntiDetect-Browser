@@ -1,0 +1,57 @@
+{
+  "auth": {
+    "welcome": "ようこそ",
+    "continueWithGoogle": "Google で続行",
+    "continueWithGithub": "GitHub で続行",
+    "signInWithSso": "SSO でサインイン",
+    "emailPlaceholder": "メールアドレス",
+    "continueWithEmail": "メールで続行",
+    "connecting": "接続中...",
+    "emailRequired": "メールアドレスを入力してください",
+    "emailInvalid": "有効なメールアドレスを入力してください",
+    "noCreditCard": "クレジットカード不要",
+    "noTimeLimit": "無料プランは無期限で利用可能",
+    "agreePrefix": "続行することで、Apidog の",
+    "termsOfService": "利用規約",
+    "and": "および",
+    "privacyPolicy": "プライバシーポリシー",
+    "useOfflineSpace": "オフラインスペースを使用",
+    "ssoPrompt": "SSO ワークスペースのドメインを入力してください:"
+  },
+  "footer": {
+    "languages": "言語",
+    "appearance": "外観",
+    "proxy": "プロキシ",
+    "offlineSpace": "オフラインスペース",
+    "light": "ライト",
+    "dark": "ダーク",
+    "system": "システム"
+  },
+  "titlebar": {
+    "home": "ホーム",
+    "profiles": "プロファイル",
+    "backup": "バックアップと同期",
+    "proxy": "プロキシ設定",
+    "settings": "設定"
+  },
+  "profiles": {
+    "title": "プロファイル",
+    "newProfile": "新規プロファイル",
+    "all": "すべて",
+    "ungrouped": "グループなし",
+    "searchPlaceholder": "プロファイルを検索...",
+    "selected": "選択中",
+    "quickOpen": "クイック起動",
+    "openAndArrange": "起動して整列",
+    "moveGroup": "グループ移動",
+    "delete": "削除",
+    "running": "実行中",
+    "stop": "停止"
+  },
+  "common": {
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "save": "保存",
+    "close": "閉じる"
+  }
+}

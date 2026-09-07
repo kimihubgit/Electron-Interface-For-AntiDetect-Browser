@@ -1,32 +1,40 @@
 import React from 'react';
-import { 
-  Globe, 
-  Shield, 
-  FolderTree, 
-  History, 
-  Settings, 
-  Users, 
+import {
+  Globe,
+  Shield,
+  FolderTree,
+  History,
+  Settings,
+  Users,
   Rocket,
   Sparkles,
-  Zap
+  Zap,
+  Puzzle
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 
 export default function ActivityBar() {
-  const { activeTab, setActiveTab, setActiveUpgradeModal } = useBrowser();
+  const {
+    activeTab,
+    setActiveTab,
+    setActiveUpgradeModal,
+    setActiveSettingsModal,
+    isSidebarCollapsed,
+    setIsSidebarCollapsed,
+    toggleSidebar
+  } = useBrowser();
 
   const primaryItems = [
     { id: 'profiles', label: 'Hồ sơ', icon: Globe },
     { id: 'proxies', label: 'Proxy', icon: Shield },
     { id: 'groups', label: 'Nhóm', icon: FolderTree },
+    { id: 'extensions', label: 'Tiện ích', icon: Puzzle },
     { id: 'automation', label: 'Kịch bản', icon: Zap },
     { id: 'history', label: 'Lịch sử', icon: History },
   ];
 
   const bottomItems = [
-    { id: 'settings', label: 'Cài đặt', icon: Settings },
     { id: 'invite', label: 'Nhóm', icon: Users },
-    { id: 'upgrade', label: 'Nâng cấp', icon: Rocket, highlight: true },
   ];
 
   return (
@@ -45,9 +53,9 @@ export default function ActivityBar() {
       boxSizing: 'border-box'
     }}>
       {/* Top App Logo (Gradient square like Apidog) */}
-      <div 
-        onClick={() => setActiveTab('profiles')}
-        title="Antidetect Browser Manager"
+      <div
+        onClick={() => setActiveTab('workspace')}
+        title="Trang chủ (Home Workspace)"
         style={{
           width: '36px',
           height: '36px',
@@ -84,7 +92,16 @@ export default function ActivityBar() {
           return (
             <button
               key={item.id}
-              onClick={() => item.id === 'upgrade' ? setActiveUpgradeModal(true) : setActiveTab(item.id)}
+              onClick={() => {
+                if (item.id === 'upgrade') {
+                  setActiveUpgradeModal(true);
+                } else if (activeTab === item.id) {
+                  toggleSidebar();
+                } else {
+                  setActiveTab(item.id);
+                  if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+                }
+              }}
               title={item.label}
               style={{
                 width: '44px',
@@ -130,7 +147,11 @@ export default function ActivityBar() {
           return (
             <button
               key={item.id}
-              onClick={() => item.id === 'upgrade' ? setActiveUpgradeModal(true) : setActiveTab(item.id)}
+              onClick={() => {
+                if (item.id === 'upgrade') setActiveUpgradeModal(true);
+                else if (item.id === 'settings') setActiveSettingsModal(true);
+                else setActiveTab(item.id);
+              }}
               title={item.label}
               style={{
                 width: '44px',

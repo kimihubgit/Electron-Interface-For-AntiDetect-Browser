@@ -1,14 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
   /* ── Colors ── */
   --apidog-bg: #FFFFFF;
-  --apidog-sidebar-bg: #F8F9FA;
-  --apidog-activity-bg: #F0F2F5;
+  --apidog-sidebar-bg: #EBEEF2;
+  --apidog-activity-bg: #EBEEF2;
   --apidog-card-bg: #FFFFFF;
 
-  --apidog-border: #E8EAED;
-  --apidog-border-light: #F1F3F5;
+  --apidog-border: #DCE0E6;
+  --apidog-border-light: #E8EAED;
   --apidog-border-focus: #7C3AED;
 
   --apidog-purple: #7C3AED;
@@ -28,7 +28,8 @@
   --apidog-text-dim: #9CA3AF;
 
   /* ── Typography ── */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ui-font-family: inter, -apple-system, "BlinkMacSystemFont", "Segoe UI", roboto, "Helvetica Neue", arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans: var(--ui-font-family);
   --font-mono: 'JetBrains Mono', monospace;
 
   /* ── Spacing & Radius ── */

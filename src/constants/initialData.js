@@ -79,3 +79,49 @@ export const INITIAL_PROXIES = [
   { id: 'px-4', type: 'HTTP', host: '51.140.22.90', port: 3128, user: '', pass: '', country: 'GB', latency: 120, status: 'live', usedCount: 1 },
   { id: 'px-5', type: 'SOCKS5', host: '103.149.28.11', port: 1080, user: 'proxy_test', pass: 'test1234', country: 'JP', latency: 75, status: 'live', usedCount: 0 },
 ];
+
+/**
+ * Seed data for deleted browser profiles in Trash.
+ */
+export const INITIAL_TRASH_PROFILES = [
+  {
+    id: 'trash-001',
+    name: 'Facebook Ads - Campaign Old #09',
+    group: 'Facebook Ads',
+    category: 'Facebook Ads',
+    os: 'windows',
+    browser: 'Chrome 128',
+    branchVersion: 'Chrome 128 / Windows 11',
+    operator: 'Admin',
+    daysRemaining: 29,
+    deletedAt: '2026-09-05T09:00:00Z',
+    proxy: { type: 'SOCKS5', host: '154.21.32.88', port: 1080 }
+  },
+  {
+    id: 'trash-002',
+    name: 'TikTok US Farm - Beta #02',
+    group: 'TikTok',
+    category: 'TikTok',
+    os: 'windows',
+    browser: 'Chrome 128',
+    branchVersion: 'Chrome 128 / Windows 11',
+    operator: 'Admin',
+    daysRemaining: 27,
+    deletedAt: '2026-09-04T11:20:00Z',
+    proxy: { type: 'HTTP', host: '113.161.44.12', port: 8080 }
+  },
+  {
+    id: 'trash-003',
+    name: 'Crypto Airdrop Bot - Archive',
+    group: 'Crypto',
+    category: 'Crypto',
+    os: 'macos',
+    browser: 'Chrome 128',
+    branchVersion: 'Chrome 128 / macOS',
+    operator: 'KimiDev',
+    daysRemaining: 18,
+    deletedAt: '2026-08-25T14:40:00Z',
+    proxy: { type: 'SOCKS5', host: '198.51.100.45', port: 9050 }
+  }
+];
+

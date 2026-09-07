@@ -1,0 +1,57 @@
+{
+  "auth": {
+    "welcome": "Welcome",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "signInWithSso": "Sign In with SSO",
+    "emailPlaceholder": "Email",
+    "continueWithEmail": "Continue with Email",
+    "connecting": "Connecting...",
+    "emailRequired": "Please enter your email",
+    "emailInvalid": "Invalid email address",
+    "noCreditCard": "No credit card required",
+    "noTimeLimit": "No time limit on Free plan",
+    "agreePrefix": "By continuing, you agree to Apidog's",
+    "termsOfService": "Terms of Service",
+    "and": "and",
+    "privacyPolicy": "Privacy Policy",
+    "useOfflineSpace": "Use Offline Space",
+    "ssoPrompt": "Enter Enterprise SSO Workspace Domain (e.g. mycompany):"
+  },
+  "footer": {
+    "languages": "Languages",
+    "appearance": "Appearance",
+    "proxy": "Proxy",
+    "offlineSpace": "Offline Space",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "titlebar": {
+    "home": "Home",
+    "profiles": "Profiles",
+    "backup": "Backup & Sync",
+    "proxy": "Proxy Manager",
+    "settings": "Settings"
+  },
+  "profiles": {
+    "title": "Profiles",
+    "newProfile": "New Profile",
+    "all": "All",
+    "ungrouped": "Ungrouped",
+    "searchPlaceholder": "Search profiles...",
+    "selected": "Selected",
+    "quickOpen": "Quick Open",
+    "openAndArrange": "Open & Arrange",
+    "moveGroup": "Move Group",
+    "delete": "Delete",
+    "running": "Running",
+    "stop": "Stop"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "close": "Close"
+  }
+}

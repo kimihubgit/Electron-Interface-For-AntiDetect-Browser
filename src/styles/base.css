@@ -4,13 +4,18 @@
   box-sizing: border-box;
 }
 
+input, button, select, textarea {
+  font-family: inherit;
+}
+
 body {
-  font-family: var(--font-sans);
+  font-family: var(--ui-font-family, var(--font-sans));
   background-color: var(--apidog-bg);
   color: var(--apidog-text-main);
   overflow: hidden;
   user-select: none;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-size: 13px;
   line-height: 1.5;
 }

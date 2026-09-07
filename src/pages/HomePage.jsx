@@ -1,213 +1,59 @@
 import React, { useState } from 'react';
 import { 
-  Users, 
-  Plus, 
-  Compass, 
-  Star, 
-  Clock, 
-  Gift, 
-  Building2, 
-  LayoutGrid, 
-  List, 
-  ArrowUpDown, 
-  Download, 
   Globe, 
   Play, 
-  Square, 
-  MoreVertical,
-  X,
-  ExternalLink,
-  ChevronDown,
-  Shield,
-  Layers
+  Monitor, 
+  Shield, 
+  Gift, 
+  X, 
+  ChevronDown, 
+  FolderTree, 
+  Trash2, 
+  Settings 
 } from 'lucide-react';
 import { useBrowser } from '../store/BrowserContext';
 
-export default function HomeWorkspaceView() {
-  const { profiles, setActiveProfileModal, setActiveTab, toggleLaunchProfile, setActiveUpgradeModal } = useBrowser();
-  const [activeSubTab, setActiveSubTab] = useState('projects'); // 'projects', 'resources', 'activities', etc.
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
-  const [showBanner, setShowBanner] = useState(true);
+export default function HomePage() {
+  const { 
+    profiles = [], 
+    setActiveProfileModal, 
+    setActiveProxyModal, 
+    setActiveTab, 
+    setActiveTrashModal,
+    setActiveReferralModal
+  } = useBrowser();
 
-  const subTabs = [
-    { id: 'projects', label: 'Projects' },
-    { id: 'resources', label: 'Resources' },
-    { id: 'activities', label: 'Activities' },
-    { id: 'members', label: 'Members' },
-    { id: 'plans', label: 'Plans' },
-    { id: 'scanner', label: 'Secret Scanner' },
-    { id: 'settings', label: 'Settings' },
-  ];
+  const [showBanner, setShowBanner] = useState(true);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+
+  // Stats calculation
+  const totalCount = profiles.length;
+  const runningCount = profiles.filter(p => p.status === 'running').length;
+  const idleCount = totalCount - runningCount;
+  const proxyCount = profiles.filter(p => p.proxy?.host).length;
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100%', minHeight: 0, overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
-      {/* Left Sidebar (My Teams, API Hub, My Favorites, Recently Visited, Invite) */}
-      <aside style={{
-        width: '220px',
-        borderRight: '1px solid #F0F0F0',
-        backgroundColor: '#FAFBFD',
-        display: 'flex',
+    <div 
+      style={{ 
+        display: 'flex', 
         flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: '16px 12px',
-        flexShrink: 0
-      }}>
-        <div>
-          {/* My Teams Section */}
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: '12px',
-              fontWeight: 600,
-              color: '#6B7280',
-              padding: '0 8px',
-              marginBottom: '8px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Users size={14} />
-                <span>My Teams</span>
-              </div>
-              <ChevronDown size={12} />
-            </div>
-
-            {/* Active team: Nhóm cá nhân */}
-            <div style={{
-              backgroundColor: '#ECEFF4',
-              borderRadius: '6px',
-              padding: '8px 12px',
-              fontSize: '13px',
-              fontWeight: 600,
-              color: '#1F2937',
-              cursor: 'pointer',
-              marginBottom: '6px'
-            }}>
-              Nhóm cá nhân
-            </div>
-
-            {/* + New Team button */}
-            <button
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'none',
-                border: 'none',
-                color: 'var(--apidog-purple)',
-                fontSize: '12px',
-                fontWeight: 600,
-                padding: '6px 12px',
-                cursor: 'pointer'
-              }}
-            >
-              <Plus size={14} />
-              <span>New Team</span>
-            </button>
-          </div>
-
-          {/* Navigation items */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <div 
-              onClick={() => setActiveTab('profiles')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '8px 10px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                color: '#4B5563',
-                cursor: 'pointer'
-              }}
-              className="hover-item"
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Compass size={14} color="#6B7280" />
-                <span>API Hub</span>
-              </div>
-              <span style={{ fontSize: '10px', color: '#9CA3AF' }}>Explore More</span>
-            </div>
-
-            <div 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 10px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                color: '#4B5563',
-                cursor: 'pointer'
-              }}
-              className="hover-item"
-            >
-              <Star size={14} color="#6B7280" />
-              <span>My Favorites</span>
-            </div>
-
-            <div 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 10px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                color: '#4B5563',
-                cursor: 'pointer'
-              }}
-              className="hover-item"
-            >
-              <Clock size={14} color="#6B7280" />
-              <span>Recently Visited</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Sidebar: Invite Friends card & Organizations */}
-        <div>
-          <div style={{
-            backgroundColor: '#F5F3FF',
-            border: '1px solid #EDE9FE',
-            borderRadius: '8px',
-            padding: '10px 12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '10px',
-            cursor: 'pointer'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apidog-purple)', fontSize: '12px', fontWeight: 600 }}>
-              <Gift size={15} />
-              <span>Invite Friends</span>
-            </div>
-            <span style={{ fontSize: '10px', backgroundColor: '#E0E7FF', color: 'var(--apidog-purple)', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
-              Earn $10 Credits
-            </span>
-          </div>
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '6px 10px',
-            fontSize: '12px',
-            color: '#6B7280',
-            cursor: 'pointer'
-          }}>
-            <Building2 size={14} />
-            <span>Organizations</span>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Workspace */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '24px 32px' }}>
-        {/* Header: Nhóm cá nhân [Team Owner] */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+        width: '100%', 
+        height: '100%', 
+        minHeight: 0, 
+        overflowY: 'auto', 
+        backgroundColor: '#FFFFFF',
+        padding: '28px 40px 48px 40px',
+        boxSizing: 'border-box'
+      }}
+      onClick={() => {
+        if (showMoreMenu) setShowMoreMenu(false);
+      }}
+    >
+      {/* ── 1. WORKSPACE HEADER ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#111827', margin: 0 }}>
-            Nhóm cá nhân
+            Không gian làm việc Antidetect
           </h1>
           <span style={{
             backgroundColor: '#FEF3C7',
@@ -221,343 +67,551 @@ export default function HomeWorkspaceView() {
           </span>
         </div>
 
-        {/* Yellow/Orange referral banner */}
-        {showBanner && (
-          <div style={{
-            backgroundColor: '#FFFBEB',
-            border: '1px solid #FEF3C7',
-            borderRadius: '6px',
-            padding: '8px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '12px',
-            color: '#92400E',
-            marginBottom: '20px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Gift size={14} color="#D97706" />
-              <span>Invite friends, earn <strong style={{ color: '#D97706' }}>$10 Credits</strong> per referral ➔</span>
-            </div>
-            <button 
-              onClick={() => setShowBanner(false)}
-              style={{ background: 'none', border: 'none', color: '#92400E', cursor: 'pointer', opacity: 0.7 }}
-            >
-              <X size={13} />
-            </button>
-          </div>
-        )}
-
-        {/* Navigation Tabs (Projects, Resources, Activities, Members, Plans, Secret Scanner, Settings) */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '24px',
-          borderBottom: '1px solid #E5E7EB',
-          marginBottom: '20px'
-        }}>
-          {subTabs.map(tab => {
-            const isActive = activeSubTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => tab.id === 'plans' ? setActiveUpgradeModal(true) : setActiveSubTab(tab.id)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '8px 0',
-                  fontSize: '13px',
-                  fontWeight: isActive ? 600 : 500,
-                  color: isActive ? 'var(--apidog-purple)' : '#6B7280',
-                  borderBottom: isActive ? '2px solid var(--apidog-purple)' : '2px solid transparent',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s'
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '12px', color: '#64748B' }}>
+            Core Chromium: <strong style={{ color: '#10B981' }}>v2.4 Active</strong>
+          </span>
         </div>
+      </div>
 
-        {/* Sub-toolbar: [Grid] [List] [Sort] ... [Import Project] [+ New Project] */}
+      {/* ── 2. REFERRAL BANNER ── */}
+      {showBanner && (
         <div style={{
+          backgroundColor: '#FFFBEB',
+          border: '1px solid #FEF3C7',
+          borderRadius: '8px',
+          padding: '10px 18px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '20px'
+          fontSize: '12.5px',
+          color: '#92400E',
+          marginBottom: '24px'
         }}>
-          {/* Left view controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <button
-              onClick={() => setViewMode('grid')}
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '4px',
-                border: '1px solid #E5E7EB',
-                backgroundColor: viewMode === 'grid' ? '#F3F4F6' : '#FFFFFF',
-                color: viewMode === 'grid' ? '#111827' : '#9CA3AF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
-              title="Dạng lưới"
-            >
-              <LayoutGrid size={14} />
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '4px',
-                border: '1px solid #E5E7EB',
-                backgroundColor: viewMode === 'table' ? '#F3F4F6' : '#FFFFFF',
-                color: viewMode === 'table' ? '#111827' : '#9CA3AF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
-              title="Dạng danh sách"
-            >
-              <List size={14} />
-            </button>
-            <button
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '4px',
-                border: '1px solid #E5E7EB',
-                backgroundColor: '#FFFFFF',
-                color: '#9CA3AF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
-              title="Sắp xếp"
-            >
-              <ArrowUpDown size={13} />
-            </button>
+          <div 
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+            onClick={() => setActiveReferralModal('referrals')}
+          >
+            <Gift size={15} color="#D97706" />
+            <span>Giới thiệu bạn bè để nhận ngay <strong style={{ color: '#D97706' }}>$10 Credits</strong> vào tài khoản ➔</span>
           </div>
+          <button 
+            onClick={() => setShowBanner(false)}
+            style={{ background: 'none', border: 'none', color: '#92400E', cursor: 'pointer', opacity: 0.7, padding: '2px' }}
+            title="Đóng thông báo"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
-          {/* Right action buttons: [Import Project] [+ New Project] */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              onClick={() => setActiveProfileModal('new')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '6px',
-                border: '1px solid #E5E7EB',
-                backgroundColor: '#FFFFFF',
-                color: '#374151',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              <Download size={14} />
-              <span>Import Project</span>
-            </button>
-
-            <button
-              onClick={() => setActiveProfileModal('new')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 16px',
-                borderRadius: '6px',
-                border: 'none',
-                backgroundColor: 'var(--apidog-purple)',
-                color: '#FFFFFF',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)'
-              }}
-            >
-              <Plus size={14} />
-              <span>+ New Project</span>
-            </button>
+      {/* ── 3. PROFILE STATISTICS CARDS ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+        gap: '16px',
+        marginBottom: '36px'
+      }}>
+        {/* Stat 1: Total Profiles */}
+        <div 
+          onClick={() => setActiveTab('profiles')}
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '10px',
+            border: '1px solid #E2E8F0',
+            padding: '14px 18px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--apidog-purple)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#E2E8F0';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '11.5px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              Tổng Profile
+            </div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: '#0F172A', marginTop: '2px' }}>
+              {totalCount}
+            </div>
+          </div>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '8px',
+            backgroundColor: '#F5F3FF',
+            color: 'var(--apidog-purple)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Globe size={19} />
           </div>
         </div>
 
-        {/* Project Cards (Grid Mode - exactly like the card in user screenshot!) */}
-        {viewMode === 'grid' ? (
+        {/* Stat 2: Running Profiles */}
+        <div 
+          onClick={() => setActiveTab('profiles')}
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '10px',
+            border: '1px solid #E2E8F0',
+            padding: '14px 18px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#10B981';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#E2E8F0';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '11.5px', color: '#047857', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
+              Đang hoạt động
+            </div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: '#065F46', marginTop: '2px' }}>
+              {runningCount}
+            </div>
+          </div>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 320px))',
-            gap: '16px'
+            width: '40px',
+            height: '40px',
+            borderRadius: '8px',
+            backgroundColor: '#DCFCE7',
+            color: '#16A34A',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            {profiles.map(p => {
-              const isRunning = p.status === 'running';
-              return (
-                <div
-                  key={p.id}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '10px',
-                    border: '1px solid #E5E7EB',
-                    padding: '16px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: '140px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--apidog-purple)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px -4px rgba(124, 58, 237, 0.15)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <div>
-                    {/* Top card: Gradient app icon like screenshot */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '10px',
-                        background: 'linear-gradient(135deg, #7C3AED, #3B82F6)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#FFFFFF',
-                        boxShadow: '0 4px 8px rgba(124, 58, 237, 0.2)'
-                      }}>
-                        <Globe size={20} />
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleLaunchProfile(p.id);
-                          }}
-                          style={{
-                            padding: '3px 8px',
-                            borderRadius: '4px',
-                            border: 'none',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            backgroundColor: isRunning ? '#FEE2E2' : '#DCFCE7',
-                            color: isRunning ? '#DC2626' : '#15803D'
-                          }}
-                        >
-                          {isRunning ? 'DỪNG' : 'CHẠY'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Card Title */}
-                    <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: '0 0 6px 0' }}>
-                      {p.name}
-                    </h3>
-                  </div>
-
-                  {/* Card Footer: tags */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
-                    <span style={{
-                      fontSize: '11px',
-                      color: '#6B7280',
-                      backgroundColor: '#F3F4F6',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontWeight: 500
-                    }}>
-                      {p.browser || 'Chrome 128'}
-                    </span>
-                    <span style={{
-                      fontSize: '11px',
-                      color: 'var(--apidog-purple)',
-                      backgroundColor: '#F5F3FF',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontWeight: 500
-                    }}>
-                      {p.proxy?.host ? `${p.proxy.type} Proxy` : 'Direct IP'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+            <Play size={18} style={{ fill: '#16A34A' }} />
           </div>
-        ) : (
-          /* Table mode */
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB', color: '#6B7280' }}>
-                  <th style={{ padding: '10px 14px' }}>Tên Project / Profile</th>
-                  <th style={{ padding: '10px 14px' }}>Trạng thái</th>
-                  <th style={{ padding: '10px 14px' }}>Proxy</th>
-                  <th style={{ padding: '10px 14px' }}>Cấu hình Core</th>
-                  <th style={{ padding: '10px 14px', textAlign: 'right' }}>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {profiles.map(p => {
-                  const isRunning = p.status === 'running';
-                  return (
-                    <tr key={p.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                      <td style={{ padding: '12px 14px', fontWeight: 600, color: '#111827' }}>
-                        {p.name}
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span style={{
-                          color: isRunning ? '#16A34A' : '#9CA3AF',
-                          fontWeight: 600,
-                          fontSize: '11px'
-                        }}>
-                          ● {isRunning ? 'Đang chạy' : 'Đã dừng'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 14px', color: '#4B5563' }}>
-                        {p.proxy?.host ? `${p.proxy.host}:${p.proxy.port}` : 'Direct IP'}
-                      </td>
-                      <td style={{ padding: '12px 14px', color: '#6B7280' }}>
-                        {p.browser} • {p.cores} Cores • {p.ram}GB
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        <button
-                          onClick={() => toggleLaunchProfile(p.id)}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: '4px',
-                            border: 'none',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            backgroundColor: isRunning ? '#FEE2E2' : '#DCFCE7',
-                            color: isRunning ? '#DC2626' : '#15803D'
-                          }}
-                        >
-                          {isRunning ? 'Dừng' : 'Chạy'}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        </div>
+
+        {/* Stat 3: Idle Profiles */}
+        <div 
+          onClick={() => setActiveTab('profiles')}
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '10px',
+            border: '1px solid #E2E8F0',
+            padding: '14px 18px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#94A3B8';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#E2E8F0';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '11.5px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              Sẵn sàng (Idle)
+            </div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: '#1E293B', marginTop: '2px' }}>
+              {idleCount}
+            </div>
           </div>
-        )}
-      </main>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '8px',
+            backgroundColor: '#F1F5F9',
+            color: '#475569',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Monitor size={18} />
+          </div>
+        </div>
+
+        {/* Stat 4: Configured Proxies */}
+        <div 
+          onClick={() => setActiveTab('proxies')}
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '10px',
+            border: '1px solid #E2E8F0',
+            padding: '14px 18px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#2563EB';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#E2E8F0';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '11.5px', color: '#1D4ED8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              Proxy Đã gán
+            </div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: '#1E3A8A', marginTop: '2px' }}>
+              {proxyCount} <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748B' }}>/ {totalCount}</span>
+            </div>
+          </div>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '8px',
+            backgroundColor: '#EFF6FF',
+            color: '#2563EB',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Shield size={18} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4. THE 4 BIG PROMINENT ACTION BOXES (EXACT MATCH USER SCREENSHOT) ── */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '20px auto 40px auto',
+        width: '100%',
+        maxWidth: '860px'
+      }}>
+        {/* Grid of 4 Big Cards (Exact Match to Reference Screenshot) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 180px)',
+          gap: '18px',
+          justifyContent: 'center',
+          marginBottom: '22px'
+        }}>
+          {/* Box 1: New HTTP Endpoint / New Profile */}
+          <div
+            onClick={() => setActiveProfileModal('new')}
+            title="New HTTP Endpoint - Tạo profile trình duyệt mới"
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              border: '1px solid #EFF1F5',
+              height: '235px',
+              width: '180px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '52px 14px 26px 14px',
+              textAlign: 'center',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxSizing: 'border-box'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 10px 24px -4px rgba(127, 174, 251, 0.25)';
+              e.currentTarget.style.borderColor = '#7FAEFB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+              e.currentTarget.style.borderColor = '#EFF1F5';
+            }}
+          >
+            {/* Soft Sky Blue HTTP bidirectional arrows icon (#7FAEFB) */}
+            <div style={{ height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="44" height="40" viewBox="0 0 44 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 10h26m0 0l-5-5m5 5l-5 5" stroke="#7FAEFB" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                <text x="22" y="23.5" textAnchor="middle" fill="#7FAEFB" fontSize="10.5" fontWeight="700" fontFamily="system-ui, -apple-system, sans-serif" letterSpacing="0.8">HTTP</text>
+                <path d="M35 30H9m0 0l5-5m-5 5l5 5" stroke="#7FAEFB" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#262626', lineHeight: '1.3' }}>
+              Tạo Profile mới
+            </span>
+          </div>
+
+          {/* Box 2: New Schema / New Proxy */}
+          <div
+            onClick={() => setActiveProxyModal(true)}
+            title="New Schema - Thêm & cấu hình Proxy mới"
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              border: '1px solid #EFF1F5',
+              height: '235px',
+              width: '180px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '52px 14px 26px 14px',
+              textAlign: 'center',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxSizing: 'border-box'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 10px 24px -4px rgba(235, 117, 206, 0.25)';
+              e.currentTarget.style.borderColor = '#EB75CE';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+              e.currentTarget.style.borderColor = '#EFF1F5';
+            }}
+          >
+            {/* Soft Orchid/Pink isometric 3D cube icon (#EB75CE) */}
+            <div style={{ height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="40" height="40" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 6L36 14V30L22 38L8 30V14L22 6Z" stroke="#EB75CE" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M22 22L36 14M22 22L8 14M22 22V38" stroke="#EB75CE" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#262626', lineHeight: '1.3' }}>
+              Thêm Proxy mới
+            </span>
+          </div>
+
+          {/* Box 3: New Markdown / Fingerprint Engine */}
+          <div
+            onClick={() => setActiveTab('settings')}
+            title="New Markdown - Cấu hình hệ thống & vân tay"
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              border: '1px solid #EFF1F5',
+              height: '235px',
+              width: '180px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '52px 14px 26px 14px',
+              textAlign: 'center',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxSizing: 'border-box'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 10px 24px -4px rgba(147, 153, 246, 0.25)';
+              e.currentTarget.style.borderColor = '#9399F6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+              e.currentTarget.style.borderColor = '#EFF1F5';
+            }}
+          >
+            {/* Soft Periwinkle Purple document with dog-ear & letter M (#9399F6) */}
+            <div style={{ height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="40" height="40" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 6H25L33 14V33C33 35 31.4 36.6 29.4 36.6H13C11 36.6 9.4 35 9.4 33V9.6C9.4 7.6 11 6 13 6Z" stroke="#9399F6" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M25 6V14H33" stroke="#9399F6" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M15.5 28.5V20L21.2 24.8L26.9 20V28.5" stroke="#9399F6" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#262626', lineHeight: '1.3' }}>
+              Cấu hình Vân tay
+            </span>
+          </div>
+
+          {/* Box 4: Quick Request / Quick Launch */}
+          <div
+            onClick={() => setActiveTab('profiles')}
+            title="Quick Request - Khởi chạy trình duyệt nhanh"
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              border: '1px solid #EFF1F5',
+              height: '235px',
+              width: '180px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '52px 14px 26px 14px',
+              textAlign: 'center',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxSizing: 'border-box'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 10px 24px -4px rgba(116, 199, 147, 0.25)';
+              e.currentTarget.style.borderColor = '#74C793';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+              e.currentTarget.style.borderColor = '#EFF1F5';
+            }}
+          >
+            {/* Soft Pastel Mint/Green outline lightning bolt (#74C793) */}
+            <div style={{ height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="40" height="40" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24.5 6L13.5 23H22.5L18.5 37L31.5 19H22.5L24.5 6Z" stroke="#74C793" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#262626', lineHeight: '1.3' }}>
+              Khởi chạy nhanh
+            </span>
+          </div>
+        </div>
+
+        {/* More ▾ Button with Dropdown (matching screenshot) */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMoreMenu(prev => !prev);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#64748B',
+              fontSize: '12px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              transition: 'color 0.15s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#0F172A'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#64748B'}
+          >
+            <span>More</span>
+            <ChevronDown size={12} />
+          </button>
+
+          {/* Dropdown Menu */}
+          {showMoreMenu && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12)',
+                minWidth: '180px',
+                zIndex: 200,
+                padding: '4px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
+                animation: 'fadeInModal 0.15s ease'
+              }}
+            >
+              <div
+                onClick={() => {
+                  setActiveTab('groups');
+                  setShowMoreMenu(false);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 10px',
+                  borderRadius: '5px',
+                  fontSize: '12px',
+                  color: '#334155',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <FolderTree size={14} color="#6366F1" />
+                <span>Quản lý Nhóm</span>
+              </div>
+
+              <div
+                onClick={() => {
+                  setActiveTrashModal(true);
+                  setShowMoreMenu(false);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 10px',
+                  borderRadius: '5px',
+                  fontSize: '12px',
+                  color: '#334155',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <Trash2 size={14} color="#DC2626" />
+                <span>Mở Thùng rác (Trash)</span>
+              </div>
+
+              <div
+                onClick={() => {
+                  setActiveTab('settings');
+                  setShowMoreMenu(false);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 10px',
+                  borderRadius: '5px',
+                  fontSize: '12px',
+                  color: '#334155',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <Settings size={14} color="#475569" />
+                <span>Cài đặt hệ thống</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

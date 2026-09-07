@@ -1,0 +1,57 @@
+{
+  "auth": {
+    "welcome": "欢迎使用",
+    "continueWithGoogle": "使用 Google 账号登录",
+    "continueWithGithub": "使用 GitHub 账号登录",
+    "signInWithSso": "使用 SSO 单点登录",
+    "emailPlaceholder": "电子邮箱",
+    "continueWithEmail": "使用邮箱继续",
+    "connecting": "正在连接...",
+    "emailRequired": "请输入电子邮箱地址",
+    "emailInvalid": "电子邮箱格式不正确",
+    "noCreditCard": "无需信用卡",
+    "noTimeLimit": "免费版无时间限制",
+    "agreePrefix": "继续即表示您同意 Apidog 的",
+    "termsOfService": "服务条款",
+    "and": "和",
+    "privacyPolicy": "隐私政策",
+    "useOfflineSpace": "使用离线空间",
+    "ssoPrompt": "输入企业 SSO 域名:"
+  },
+  "footer": {
+    "languages": "语言",
+    "appearance": "外观",
+    "proxy": "代理",
+    "offlineSpace": "离线空间",
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统"
+  },
+  "titlebar": {
+    "home": "首页",
+    "profiles": "环境列表",
+    "backup": "备份与同步",
+    "proxy": "代理管理",
+    "settings": "设置"
+  },
+  "profiles": {
+    "title": "浏览器环境",
+    "newProfile": "新建环境",
+    "all": "全部",
+    "ungrouped": "未分组",
+    "searchPlaceholder": "搜索环境...",
+    "selected": "已选择",
+    "quickOpen": "快速打开",
+    "openAndArrange": "打开并平铺",
+    "moveGroup": "移动分组",
+    "delete": "删除",
+    "running": "运行中",
+    "stop": "停止"
+  },
+  "common": {
+    "cancel": "取消",
+    "confirm": "确定",
+    "save": "保存",
+    "close": "关闭"
+  }
+}
