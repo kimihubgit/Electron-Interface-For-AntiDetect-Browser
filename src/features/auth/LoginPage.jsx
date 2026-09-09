@@ -1,14 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Server, ChevronDown } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 import LoginBackgroundRipples from './components/LoginBackgroundRipples';
 import LoginCard from './components/LoginCard';
 import LoginFooter from './components/LoginFooter';
+import SelectServerModal from '../../components/modals/SelectServerModal';
 
 /**
- * Main Login Page replicating the Apidog Welcome screen
+ * Main Login Page replicating the Apidog Welcome screen with Server selector
  */
 export default function LoginPage() {
-  const { login, useOfflineSpace, setActiveProxyModal, setActiveSettingsModal } = useBrowser();
+  const { login, useOfflineSpace, setActiveProxyModal, setActiveSettingsModal, showToast } = useBrowser();
+
+  const [selectedServer, setSelectedServer] = useState(() => {
+    return localStorage.getItem('login_selected_server') || 'Auto (Default (1))';
+  });
+  const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+
+  const handleSelectServer = (server) => {
+    setSelectedServer(server.name);
+    localStorage.setItem('login_selected_server', server.name);
+    if (showToast) {
+      showToast(`Đã chuyển sang máy chủ: ${server.name}`, 'success');
+    }
+  };
 
   return (
     <div
@@ -58,6 +73,60 @@ export default function LoginPage() {
         </span>
       </div>
 
+      {/* ── TOP-RIGHT SERVER QUICK-SELECTOR BADGE ── */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '28px',
+          zIndex: 20,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}
+      >
+        <button
+          onClick={() => setIsServerModalOpen(true)}
+          title="Chọn máy chủ (Select server)"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '7px',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '20px',
+            padding: '6px 14px',
+            color: '#334155',
+            fontSize: '12.5px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#CBD5E1';
+            e.currentTarget.style.backgroundColor = '#F8FAFC';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#E2E8F0';
+            e.currentTarget.style.backgroundColor = '#FFFFFF';
+          }}
+        >
+          <div
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#10B981',
+              boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.2)'
+            }}
+          />
+          <Server size={14} style={{ color: '#3B82F6' }} />
+          <span>Server: {selectedServer}</span>
+          <ChevronDown size={13} style={{ color: '#94A3B8' }} />
+        </button>
+      </div>
+
       {/* ── CONCENTRIC CIRCLE RIPPLES BACKGROUND ── */}
       <LoginBackgroundRipples />
 
@@ -71,7 +140,17 @@ export default function LoginPage() {
       <LoginFooter
         onOpenProxy={() => setActiveProxyModal(true)}
         onOfflineSpace={useOfflineSpace}
-        onToggleAppearance={() => setActiveSettingsModal(true)}
+        onToggleAppearance={() => setActiveSettingsModal('appearance')}
+        currentServer={selectedServer}
+        onOpenServerModal={() => setIsServerModalOpen(true)}
+      />
+
+      {/* ── SELECT SERVER MODAL ── */}
+      <SelectServerModal
+        isOpen={isServerModalOpen}
+        onClose={() => setIsServerModalOpen(false)}
+        currentServer={selectedServer}
+        onSelectServer={handleSelectServer}
       />
     </div>
   );

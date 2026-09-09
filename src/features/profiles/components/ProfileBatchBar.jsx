@@ -236,7 +236,6 @@ export default function ProfileBatchBar({
           }}
         >
           <Trash2 size={13} />
-          <span>Chuyển vào Thùng rác</span>
         </button>
       </div>
     </div>

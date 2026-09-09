@@ -2,6 +2,7 @@ import React, { createContext, useContext } from 'react';
 import { useAppState } from './useAppState';
 import { useProfiles } from './useProfiles';
 import { useProxies } from './useProxies';
+import { useHistory } from './useHistory';
 
 const BrowserContext = createContext(null);
 
@@ -15,7 +16,8 @@ export const BrowserProvider = ({ children }) => {
   const appState = useAppState();
   const { addLog, setActiveProfileModal, setActiveProxyModal } = appState;
 
-  const profileActions = useProfiles(addLog);
+  const historyActions = useHistory(addLog);
+  const profileActions = useProfiles(addLog, historyActions.addHistoryRecord);
   const proxyActions = useProxies(addLog);
 
   // Wrap saveProfile / addProxy so they auto-close their modals
@@ -27,6 +29,7 @@ export const BrowserProvider = ({ children }) => {
       ...appState,
       ...profileActions,
       ...proxyActions,
+      ...historyActions,
       saveProfile,
       addProxy,
     }}>

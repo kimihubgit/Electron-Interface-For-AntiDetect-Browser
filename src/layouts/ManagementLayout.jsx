@@ -17,7 +17,7 @@ export default function ManagementLayout({ children }) {
       display: 'flex',
       minHeight: 0,
       overflow: 'hidden',
-      backgroundColor: '#EBEEF2',
+      backgroundColor: 'var(--apidog-sidebar-bg)',
       boxSizing: 'border-box'
     }}>
       {/* ActivityBar sits on the gray background frame */}
@@ -38,19 +38,19 @@ export default function ManagementLayout({ children }) {
           flex: 1,
           height: '100%',
           minHeight: 0,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'var(--apidog-card-bg)',
           borderRadius: '8px',
-          border: '1px solid #DCE0E6',
+          border: '1px solid var(--apidog-border)',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
           display: 'flex',
           overflow: 'hidden'
         }}>
-          {/* Collapsible White Explorer Sidebar (Hidden in Extensions tab for full-width layout) */}
-          {!isSidebarCollapsed && activeTab !== 'extensions' && <ExplorerPane />}
+          {/* Collapsible White Explorer Sidebar (Hidden in Extensions, Backup, Team, Groups, Proxies tabs for full-width layout) */}
+          {!isSidebarCollapsed && activeTab !== 'extensions' && activeTab !== 'backup' && activeTab !== 'team' && activeTab !== 'invite' && activeTab !== 'groups' && activeTab !== 'proxies' && <ExplorerPane />}
 
           {/* Main content area */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
-            <main style={{ flex: 1, minHeight: 0, overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+            <main style={{ flex: 1, minHeight: 0, overflow: 'hidden', backgroundColor: 'var(--apidog-bg)' }}>
               {children}
             </main>
             <BottomStatusBar />

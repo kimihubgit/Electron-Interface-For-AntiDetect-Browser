@@ -1,11 +1,13 @@
-import React from 'react';
-import { Play, Square, Edit3, Trash2, MoreVertical } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Play, Square, Edit3, Trash2, MoreVertical, PlusCircle } from 'lucide-react';
 import PinnedRunningBar from './PinnedRunningBar';
 import ProfileActionMenu from './ProfileActionMenu';
+import ColumnVisibilityPopover, { getInitialColumns } from './ColumnVisibilityPopover';
 import { getCountryFlag } from '../utils/profileUtils';
 
 /**
- * Table view displaying profiles in rows with columns, badges, and inline actions
+ * Table view displaying profiles in rows with configurable columns, badges, and inline actions.
+ * Features customizable column visibility via (+) button matching antidetect browser standards.
  */
 export default function ProfileTable({
   filteredProfiles = [],
@@ -24,30 +26,254 @@ export default function ProfileTable({
   saveProfile,
   cloneProfile,
   addLog,
-  batchStopProfiles
+  batchStopProfiles,
+  sortBy = 'latest',
+  setSortBy
 }) {
+  // Column configuration state
+  const [columns, setColumns] = useState(getInitialColumns);
+  const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
+
+  // Visible columns in order
+  const visibleColumns = useMemo(() => columns.filter(c => c.visible), [columns]);
+
+  // CSS Grid template: Checkbox (44px) + Title (minmax(240px, 2fr)) + [dynamic columns] + (+) header (38px) + Launch (60px) + Actions (86px)
+  const gridTemplate = useMemo(() => {
+    const dynamicColsStr = visibleColumns.map(c => c.flex || '1fr').join(' ');
+    return `44px minmax(240px, 2fr) ${dynamicColsStr ? dynamicColsStr + ' ' : ''}38px 60px 86px`;
+  }, [visibleColumns]);
+
+  // Min-width for entire table so that it never gets overly compressed
+  const tableMinWidth = useMemo(() => {
+    const colsTotalMin = visibleColumns.reduce((acc, c) => {
+      const val = parseInt(c.minWidth || '120px', 10);
+      return acc + (isNaN(val) ? 120 : val);
+    }, 0);
+    return Math.max(960, 44 + 240 + colsTotalMin + 38 + 60 + 86 + 48);
+  }, [visibleColumns]);
+
+  // Render individual cell content based on column ID
+  const renderColumnCell = (p, colId, isRunning) => {
+    switch (colId) {
+      case 'description':
+        return (
+          <div
+            title={p.notes || p.description || ''}
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              color: 'var(--apidog-text-muted)',
+              fontSize: '12.5px'
+            }}
+          >
+            {p.notes || p.description || <span style={{ color: '#94A3B8' }}>—</span>}
+          </div>
+        );
+
+      case 'proxy':
+        return (
+          <div>
+            {p.proxy?.host ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>{getCountryFlag(p.proxy.country)}</span>
+                  <span style={{
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                    color: 'var(--apidog-text-main)',
+                    fontWeight: 500
+                  }}>
+                    {p.proxy.host}:{p.proxy.port}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10.5px' }}>
+                  <span style={{
+                    backgroundColor: '#EFF6FF',
+                    color: '#2563EB',
+                    padding: '0 4px',
+                    borderRadius: '3px',
+                    fontWeight: 600
+                  }}>
+                    {p.proxy.type || 'SOCKS5'}
+                  </span>
+                  <span style={{ color: '#16A34A', fontWeight: 500 }}>
+                    ● {p.proxy.latency || 28}ms
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <span style={{ color: 'var(--apidog-text-dim)', fontSize: '11.5px', fontStyle: 'italic' }}>
+                Direct
+              </span>
+            )}
+          </div>
+        );
+
+      case 'folder':
+        return (
+          <div>
+            <span style={{
+              display: 'inline-block',
+              padding: '2px 8px',
+              borderRadius: '12px',
+              backgroundColor: 'var(--apidog-bg)',
+              border: '1px solid var(--apidog-border)',
+              color: 'var(--apidog-text-main)',
+              fontSize: '11.5px',
+              fontWeight: 500
+            }}>
+              {p.group || 'Chung'}
+            </span>
+          </div>
+        );
+
+      case 'tags':
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', overflow: 'hidden' }}>
+            {p.tags && p.tags.length > 0 ? (
+              p.tags.map(tag => (
+                <span
+                  key={tag}
+                  style={{
+                    fontSize: '10.5px',
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    backgroundColor: '#F1F5F9',
+                    color: '#475569',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {tag}
+                </span>
+              ))
+            ) : (
+              <span style={{ color: '#94A3B8' }}>—</span>
+            )}
+          </div>
+        );
+
+      case 'tasks':
+        return (
+          <div style={{ fontSize: '12px', color: 'var(--apidog-text-muted)' }}>
+            {p.tasksCount ? (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '1px 7px',
+                borderRadius: '10px',
+                backgroundColor: '#EFF6FF',
+                color: '#2563EB',
+                fontWeight: 600,
+                fontSize: '11px'
+              }}>
+                {p.tasksCount} kịch bản
+              </span>
+            ) : (
+              <span style={{ color: '#94A3B8' }}>—</span>
+            )}
+          </div>
+        );
+
+      case 'workTime':
+        return (
+          <div style={{
+            fontSize: '12px',
+            color: isRunning ? '#16A34A' : 'var(--apidog-text-muted)',
+            fontWeight: isRunning ? 600 : 400
+          }}>
+            {isRunning ? '● Đang chạy' : (p.workTime || '—')}
+          </div>
+        );
+
+      case 'size':
+        return (
+          <div style={{ fontSize: '12px', color: 'var(--apidog-text-muted)', fontFamily: 'monospace' }}>
+            {p.cacheSize || p.size || '36.8 MB'}
+          </div>
+        );
+
+      case 'launches':
+        return (
+          <div style={{ fontSize: '12px', color: 'var(--apidog-text-main)', fontWeight: 500 }}>
+            {p.launchCount ?? (isRunning ? 1 : 0)}
+          </div>
+        );
+
+      case 'created':
+        return (
+          <div style={{ fontSize: '11.5px', color: 'var(--apidog-text-muted)' }}>
+            {p.createdAt ? new Date(p.createdAt).toLocaleDateString('vi-VN') : '01/09/2026'}
+          </div>
+        );
+
+      case 'cookies':
+        return (
+          <div>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              fontSize: '11px',
+              padding: '2px 8px',
+              borderRadius: '12px',
+              backgroundColor: '#ECFDF5',
+              border: '1px solid #A7F3D0',
+              color: '#059669',
+              fontWeight: 600
+            }}>
+              {p.cookiesCount ? `${p.cookiesCount} cookies` : 'Có sẵn'}
+            </span>
+          </div>
+        );
+
+      case 'id':
+        return (
+          <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#64748B' }} title={p.id}>
+            {p.id}
+          </div>
+        );
+
+      case 'fingerprint':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <div style={{ fontSize: '11.5px', color: 'var(--apidog-text-main)', fontWeight: 500 }}>
+              {p.browser || 'Chrome 128'}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--apidog-text-muted)' }}>
+              {p.cores || 8}C • {p.ram || 16}GB • {p.resolution || '1920x1080'}
+            </div>
+          </div>
+        );
+
+      default:
+        return <div>—</div>;
+    }
+  };
+
   return (
-    <div style={{ minWidth: '950px' }}>
-      {/* Table Header */}
+    <div style={{ minWidth: `${tableMinWidth}px`, position: 'relative' }}>
+      {/* ── TABLE HEADER ── */}
       <div
         data-no-drag="true"
         style={{
           display: 'grid',
-          gridTemplateColumns: '44px minmax(260px, 2.5fr) 1.8fr 1.1fr 1.6fr 70px 100px',
+          gridTemplateColumns: gridTemplate,
           alignItems: 'center',
-          height: '40px',
+          height: '42px',
           padding: '0 24px',
-          backgroundColor: '#F8FAFC',
-          borderBottom: '1px solid #E2E8F0',
+          backgroundColor: 'var(--apidog-bg)',
+          borderBottom: '1px solid var(--apidog-border)',
           fontSize: '12px',
           fontWeight: 600,
-          color: '#475569',
+          color: 'var(--apidog-text-muted)',
           position: 'sticky',
           top: 0,
           zIndex: 25,
           boxSizing: 'border-box'
         }}
       >
+        {/* Col 0: Checkbox */}
         <div>
           <input
             type="checkbox"
@@ -56,17 +282,112 @@ export default function ProfileTable({
             style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: 'var(--apidog-purple)' }}
           />
         </div>
-        <div>Tên Hồ Sơ & Thông Tin</div>
-        <div>Proxy & Địa Chỉ IP</div>
-        <div>Nhóm</div>
-        <div>Fingerprint & Cấu Hình</div>
+
+        {/* Col 1: Title & Sort indicator matching screenshot */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '14px' }}>
+          <span>Title</span>
+          {setSortBy && (
+            <button
+              onClick={() => {
+                setSortBy(prev => prev === 'latest' ? 'oldest' : prev === 'oldest' ? 'name-asc' : 'latest');
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#3B82F6',
+                fontSize: '11px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px',
+                fontWeight: 500,
+                padding: '2px 4px',
+                borderRadius: '4px',
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              title="Nhấn để đổi cách sắp xếp"
+            >
+              <span>Sort by {sortBy === 'oldest' ? 'Oldest ↑' : sortBy === 'name-asc' ? 'Name A-Z' : 'Created ↓'}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Dynamic Column Headers */}
+        {visibleColumns.map((col) => (
+          <div
+            key={col.id}
+            style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              paddingRight: '8px'
+            }}
+          >
+            {col.label}
+          </div>
+        ))}
+
+        {/* (+) Icon Trigger Column Header matching screenshot */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsColumnMenuOpen(prev => !prev);
+            }}
+            title="Thêm hoặc ẩn cột (Columns)"
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              border: isColumnMenuOpen ? '1.5px solid #2563EB' : '1px solid #CBD5E1',
+              backgroundColor: isColumnMenuOpen ? '#EFF6FF' : '#FFFFFF',
+              color: isColumnMenuOpen ? '#2563EB' : '#64748B',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#2563EB';
+              e.currentTarget.style.borderColor = '#93C5FD';
+              e.currentTarget.style.backgroundColor = '#EFF6FF';
+            }}
+            onMouseLeave={(e) => {
+              if (!isColumnMenuOpen) {
+                e.currentTarget.style.color = '#64748B';
+                e.currentTarget.style.borderColor = '#CBD5E1';
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+              }
+            }}
+          >
+            <PlusCircle size={15} />
+          </button>
+
+          {/* Column Visibility Customizer Popover */}
+          <ColumnVisibilityPopover
+            isOpen={isColumnMenuOpen}
+            onClose={() => setIsColumnMenuOpen(false)}
+            columns={columns}
+            onSaveColumns={(updated) => setColumns(updated)}
+          />
+        </div>
+
+        {/* Khởi chạy Header */}
         <div style={{ textAlign: 'center' }}>Khởi Chạy</div>
+
+        {/* Thao tác Header */}
         <div style={{ textAlign: 'right' }}>Thao Tác</div>
       </div>
 
-      {/* Table Body */}
+      {/* ── TABLE BODY ── */}
       <div>
-        {/* ── PINNED RUNNING ROW (INSIDE TABLE - STICKY UNDER HEADER) ── */}
+        {/* Sticky Pinned Running Row */}
         <PinnedRunningBar
           runningProfiles={runningProfiles}
           isPinnedHovered={isPinnedHovered}
@@ -86,23 +407,27 @@ export default function ProfileTable({
               data-profile-id={p.id}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '44px minmax(260px, 2.5fr) 1.8fr 1.1fr 1.6fr 70px 100px',
+                gridTemplateColumns: gridTemplate,
                 alignItems: 'center',
                 padding: '12px 24px',
-                borderBottom: '1px solid #F1F5F9',
+                borderBottom: '1px solid var(--apidog-border-light)',
                 fontSize: '12.5px',
-                backgroundColor: isSelected ? (isRunning ? '#EEF2FF' : '#F5F3FF') : (isRunning ? '#F0FDF4' : (index % 2 === 1 ? '#FAFBFC' : '#FFFFFF')),
-                boxShadow: isSelected ? 'inset 0 0 0 1.5px #A5B4FC' : 'none',
+                backgroundColor: isSelected
+                  ? 'var(--apidog-purple-light)'
+                  : (isRunning
+                    ? 'rgba(16, 185, 129, 0.08)'
+                    : (index % 2 === 1 ? 'var(--apidog-bg)' : 'var(--apidog-card-bg)')),
+                boxShadow: isSelected ? 'inset 0 0 0 1.5px var(--apidog-purple)' : 'none',
                 transition: 'background-color 0.12s ease'
               }}
               onMouseEnter={(e) => {
-                if (!isRunning && !isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
+                if (!isRunning && !isSelected) e.currentTarget.style.backgroundColor = 'var(--apidog-border-light)';
               }}
               onMouseLeave={(e) => {
-                if (!isRunning && !isSelected) e.currentTarget.style.backgroundColor = index % 2 === 1 ? '#FAFBFC' : '#FFFFFF';
+                if (!isRunning && !isSelected) e.currentTarget.style.backgroundColor = index % 2 === 1 ? 'var(--apidog-bg)' : 'var(--apidog-card-bg)';
               }}
             >
-              {/* Checkbox */}
+              {/* Col 0: Checkbox */}
               <div>
                 <input
                   type="checkbox"
@@ -112,8 +437,8 @@ export default function ProfileTable({
                 />
               </div>
 
-              {/* Name & OS info */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+              {/* Col 1: Title & OS & Name */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', paddingRight: '12px' }}>
                 <div style={{
                   width: '32px',
                   height: '32px',
@@ -132,7 +457,7 @@ export default function ProfileTable({
                     onClick={() => setActiveProfileModal(p)}
                     style={{
                       fontWeight: 600,
-                      color: '#0F172A',
+                      color: 'var(--apidog-text-main)',
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
@@ -147,89 +472,21 @@ export default function ProfileTable({
                     <span style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'monospace' }}>
                       {p.id}
                     </span>
-                    {p.tags && p.tags.map(tag => (
-                      <span
-                        key={tag}
-                        style={{
-                          fontSize: '10px',
-                          padding: '1px 5px',
-                          borderRadius: '4px',
-                          backgroundColor: '#F1F5F9',
-                          color: '#475569',
-                          fontWeight: 500
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
                   </div>
                 </div>
               </div>
 
-              {/* Proxy Details */}
-              <div>
-                {p.proxy?.host ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span>{getCountryFlag(p.proxy.country)}</span>
-                      <span style={{
-                        fontFamily: 'monospace',
-                        fontSize: '12px',
-                        color: '#1E293B',
-                        fontWeight: 500
-                      }}>
-                        {p.proxy.host}:{p.proxy.port}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10.5px' }}>
-                      <span style={{
-                        backgroundColor: '#EFF6FF',
-                        color: '#2563EB',
-                        padding: '0 4px',
-                        borderRadius: '3px',
-                        fontWeight: 600
-                      }}>
-                        {p.proxy.type}
-                      </span>
-                      <span style={{ color: '#16A34A', fontWeight: 500 }}>
-                        ● {p.proxy.latency || 28}ms
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <span style={{ color: '#94A3B8', fontSize: '11.5px', fontStyle: 'italic' }}>
-                    Direct (Không Proxy)
-                  </span>
-                )}
-              </div>
-
-              {/* Group */}
-              <div>
-                <span style={{
-                  display: 'inline-block',
-                  padding: '3px 9px',
-                  borderRadius: '12px',
-                  backgroundColor: '#F8FAFC',
-                  border: '1px solid #E2E8F0',
-                  color: '#334155',
-                  fontSize: '11.5px',
-                  fontWeight: 500
-                }}>
-                  {p.group || 'Chung'}
-                </span>
-              </div>
-
-              {/* Specs / Fingerprint */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <div style={{ fontSize: '11.5px', color: '#1E293B', fontWeight: 500 }}>
-                  {p.browser || 'Chrome 128'}
+              {/* Dynamic Column Data Cells */}
+              {visibleColumns.map((col) => (
+                <div key={col.id} style={{ overflow: 'hidden', paddingRight: '8px' }}>
+                  {renderColumnCell(p, col.id, isRunning)}
                 </div>
-                <div style={{ fontSize: '11px', color: '#64748B' }}>
-                  {p.cores || 8} Cores • {p.ram || 16}GB • {p.resolution || '1920x1080'}
-                </div>
-              </div>
+              ))}
 
-              {/* Play/Stop Launch Button (Column Kế Cuối - Icon Only) */}
+              {/* Empty cell matching (+) column space */}
+              <div />
+
+              {/* Play/Stop Launch Button */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <button
                   onClick={() => toggleLaunchProfile(p.id)}

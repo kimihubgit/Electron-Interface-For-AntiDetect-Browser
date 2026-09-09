@@ -6,6 +6,10 @@ import './styles/components.css';
 import './styles/titlebar.css';
 import App from './App.jsx';
 import { I18nProvider } from './i18n/I18nContext.jsx';
+import { initAppearanceSettings } from './utils/themeManager.js';
+
+// Apply saved theme, accent color, and font size before rendering
+initAppearanceSettings();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

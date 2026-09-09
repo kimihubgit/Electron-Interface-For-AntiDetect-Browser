@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Globe,
   Shield,
@@ -6,10 +6,17 @@ import {
   History,
   Settings,
   Users,
-  Rocket,
   Sparkles,
   Zap,
-  Puzzle
+  Puzzle,
+  CloudUpload,
+  Bot,
+  FileCode,
+  ArrowRightLeft,
+  Cpu,
+  Smartphone,
+  Sliders,
+  Activity
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 
@@ -17,6 +24,8 @@ export default function ActivityBar() {
   const {
     activeTab,
     setActiveTab,
+    activeProxySubTab = 'pool',
+    setActiveProxySubTab = () => {},
     setActiveUpgradeModal,
     setActiveSettingsModal,
     isSidebarCollapsed,
@@ -29,12 +38,14 @@ export default function ActivityBar() {
     { id: 'proxies', label: 'Proxy', icon: Shield },
     { id: 'groups', label: 'Nhóm', icon: FolderTree },
     { id: 'extensions', label: 'Tiện ích', icon: Puzzle },
-    { id: 'automation', label: 'Kịch bản', icon: Zap },
+    { id: 'scripts', label: 'Kịch bản', icon: FileCode },
     { id: 'history', label: 'Lịch sử', icon: History },
   ];
 
   const bottomItems = [
-    { id: 'invite', label: 'Nhóm', icon: Users },
+    { id: 'team', label: 'Thành viên', icon: Users },
+    { id: 'backup', label: 'Sao lưu', icon: CloudUpload },
+    { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
 
   return (
@@ -49,10 +60,11 @@ export default function ActivityBar() {
       alignItems: 'center',
       padding: '12px 0 8px 0',
       flexShrink: 0,
-      zIndex: 30,
-      boxSizing: 'border-box'
+      zIndex: 100,
+      boxSizing: 'border-box',
+      position: 'relative'
     }}>
-      {/* Top App Logo (Gradient square like Apidog) */}
+      {/* Top App Logo */}
       <div
         onClick={() => setActiveTab('workspace')}
         title="Trang chủ (Home Workspace)"
@@ -83,49 +95,53 @@ export default function ActivityBar() {
         alignItems: 'center',
         flexGrow: 1,
         minHeight: 0,
-        overflowY: 'auto',
-        overflowX: 'hidden'
+        overflow: 'visible'
       }}>
         {primaryItems.map(item => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
+
           return (
-            <button
+            <div
               key={item.id}
-              onClick={() => {
-                if (item.id === 'upgrade') {
-                  setActiveUpgradeModal(true);
-                } else if (activeTab === item.id) {
-                  toggleSidebar();
-                } else {
-                  setActiveTab(item.id);
-                  if (isSidebarCollapsed) setIsSidebarCollapsed(false);
-                }
-              }}
-              title={item.label}
-              style={{
-                width: '44px',
-                height: '46px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '3px',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: isActive ? '#FFFFFF' : 'transparent',
-                color: isActive ? 'var(--apidog-purple)' : 'var(--apidog-text-muted)',
-                boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                flexShrink: 0
-              }}
+              style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}
             >
-              <Icon size={18} style={{ strokeWidth: isActive ? 2.3 : 1.8 }} />
-              <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500 }}>
-                {item.label}
-              </span>
-            </button>
+              <button
+                onClick={() => {
+                  if (item.id === 'upgrade') {
+                    setActiveUpgradeModal(true);
+                  } else if (activeTab === item.id) {
+                    toggleSidebar();
+                  } else {
+                    setActiveTab(item.id);
+                    if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+                  }
+                }}
+                title={item.label}
+                style={{
+                  width: '44px',
+                  height: '46px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '3px',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: isActive ? '#FFFFFF' : 'transparent',
+                  color: isActive ? 'var(--apidog-purple)' : 'var(--apidog-text-muted)',
+                  boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0
+                }}
+              >
+                <Icon size={18} style={{ strokeWidth: isActive ? 2.3 : 1.8 }} />
+                <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500 }}>
+                  {item.label}
+                </span>
+              </button>
+            </div>
           );
         })}
       </div>
@@ -143,14 +159,17 @@ export default function ActivityBar() {
       }}>
         {bottomItems.map(item => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = activeTab === item.id || (item.id === 'team' && activeTab === 'invite');
           return (
             <button
               key={item.id}
               onClick={() => {
-                if (item.id === 'upgrade') setActiveUpgradeModal(true);
-                else if (item.id === 'settings') setActiveSettingsModal(true);
-                else setActiveTab(item.id);
+                if (item.id === 'upgrade') {
+                  setActiveUpgradeModal(true);
+                } else {
+                  setActiveTab(item.id);
+                  if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+                }
               }}
               title={item.label}
               style={{
@@ -163,14 +182,15 @@ export default function ActivityBar() {
                 gap: '3px',
                 borderRadius: 'var(--radius-md)',
                 backgroundColor: isActive ? '#FFFFFF' : 'transparent',
-                color: item.highlight ? 'var(--apidog-purple)' : 'var(--apidog-text-muted)',
+                color: isActive ? 'var(--apidog-purple)' : 'var(--apidog-text-muted)',
+                boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
                 border: 'none',
                 cursor: 'pointer',
                 flexShrink: 0
               }}
             >
-              <Icon size={17} />
-              <span style={{ fontSize: '10px', fontWeight: 500 }}>
+              <Icon size={17} style={{ strokeWidth: isActive ? 2.3 : 1.8 }} />
+              <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500 }}>
                 {item.label}
               </span>
             </button>

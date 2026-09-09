@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 /**
  * Custom hook for managing search, filter, sort, view mode, and stats calculations
  */
-export function useProfileFilters(profiles = [], selectedGroup = 'All') {
+export function useProfileFilters(profiles = [], selectedGroup = 'All', customGroups = []) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'running' | 'idle'
   const [osFilter, setOsFilter] = useState('all'); // 'all' | 'windows' | 'macos' | 'linux'
@@ -49,10 +49,11 @@ export function useProfileFilters(profiles = [], selectedGroup = 'All') {
 
   // Distinct list of all available groups
   const allGroups = useMemo(() => {
-    const defaults = ['Chung', 'Facebook Ads', 'TikTok', 'E-commerce', 'Crypto'];
+    const fromCustom = customGroups.map(g => g.name).filter(Boolean);
+    const defaults = ['Chung', 'Facebook Ads', 'TikTok', 'Crypto', 'E-Commerce'];
     const fromProfiles = profiles.map(p => p.group).filter(Boolean);
-    return Array.from(new Set([...defaults, ...fromProfiles]));
-  }, [profiles]);
+    return Array.from(new Set(['Chung', ...fromCustom, ...defaults, ...fromProfiles]));
+  }, [profiles, customGroups]);
 
   return {
     searchTerm,

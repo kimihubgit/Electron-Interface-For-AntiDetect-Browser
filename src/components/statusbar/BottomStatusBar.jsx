@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Shield,
   Cookie,
@@ -18,29 +18,40 @@ import {
 import { useBrowser } from '../../store/BrowserContext';
 
 export default function BottomStatusBar() {
-  const { profiles, trashProfiles = [], isSidebarCollapsed, toggleSidebar, setActiveTrashModal } = useBrowser();
+  const {
+    profiles,
+    trashProfiles = [],
+    isSidebarCollapsed,
+    toggleSidebar,
+    setActiveTrashModal,
+    activeTab,
+    setActiveTab
+  } = useBrowser();
   const runningCount = profiles.filter(p => p.status === 'running').length;
 
   const [showHelpMenu, setShowHelpMenu] = useState(false);
-  const helpMenuTimeoutRef = useRef(null);
+  const helpMenuRef = useRef(null);
   const [updateState, setUpdateState] = useState('idle'); // 'idle' | 'checking' | 'open'
+  const updateRef = useRef(null);
 
-  const handleHelpMouseEnter = () => {
-    if (helpMenuTimeoutRef.current) {
-      clearTimeout(helpMenuTimeoutRef.current);
-      helpMenuTimeoutRef.current = null;
-    }
-    setShowHelpMenu(true);
-  };
+  // Close Help Menu and Update popup on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (helpMenuRef.current && !helpMenuRef.current.contains(e.target)) {
+        setShowHelpMenu(false);
+      }
+      if (updateRef.current && !updateRef.current.contains(e.target)) {
+        setUpdateState('idle');
+      }
+    };
 
-  const handleHelpMouseLeave = () => {
-    if (helpMenuTimeoutRef.current) {
-      clearTimeout(helpMenuTimeoutRef.current);
+    if (showHelpMenu || updateState === 'open') {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-    helpMenuTimeoutRef.current = setTimeout(() => {
-      setShowHelpMenu(false);
-    }, 200);
-  };
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showHelpMenu, updateState]);
 
   const handleCheckUpdate = () => {
     if (updateState === 'open') {
@@ -102,12 +113,29 @@ export default function BottomStatusBar() {
       {/* Right items matching Apidog screenshot */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         <span 
-          style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 6px', borderRadius: '4px' }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          onClick={() => alert('Cấu hình Proxy Request')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            cursor: 'pointer',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            backgroundColor: activeTab === 'proxy-requests' ? '#EDE9FE' : 'transparent',
+            color: activeTab === 'proxy-requests' ? '#7C3AED' : 'var(--apidog-text-main)',
+            fontWeight: activeTab === 'proxy-requests' ? 700 : 500,
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            if (activeTab !== 'proxy-requests') e.currentTarget.style.backgroundColor = '#E5E7EB';
+          }}
+          onMouseLeave={(e) => {
+            if (activeTab !== 'proxy-requests') e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+          onClick={() => setActiveTab('proxy-requests')}
+          title="Mở hệ thống bắt gói mạng & phân luồng Proxy (Traffic Router)"
         >
-          <Shield size={12} /> Proxy request ▾
+          <Shield size={12} style={{ color: activeTab === 'proxy-requests' ? '#7C3AED' : 'var(--apidog-purple)' }} />
+          <span>Proxy request ▾</span>
         </span>
 
         <span 
@@ -150,11 +178,10 @@ export default function BottomStatusBar() {
           )}
         </span>
 
-        {/* HELP & SUPPORT WITH HOVER FLOATING MENU */}
+        {/* HELP & SUPPORT WITH CLICK POPUP */}
         <div 
+          ref={helpMenuRef}
           style={{ position: 'relative' }}
-          onMouseEnter={handleHelpMouseEnter}
-          onMouseLeave={handleHelpMouseLeave}
         >
           <button
             onClick={() => setShowHelpMenu(prev => !prev)}
@@ -177,18 +204,15 @@ export default function BottomStatusBar() {
             <span>Help & support</span>
           </button>
 
-          {/* Floating Menu upward with bridge container */}
+          {/* Floating Menu upward */}
           {showHelpMenu && (
             <div 
               style={{
                 position: 'absolute',
-                bottom: '100%',
+                bottom: 'calc(100% + 6px)',
                 right: 0,
-                paddingBottom: '6px', // Invisible bridge to prevent mouse leaving hover area
                 zIndex: 1000
               }}
-              onMouseEnter={handleHelpMouseEnter}
-              onMouseLeave={handleHelpMouseLeave}
             >
               <div
                 style={{
@@ -312,7 +336,7 @@ export default function BottomStatusBar() {
         </div>
 
         {/* CHECK UPDATE VERSION BUTTON (Icon with arrow pointing up) */}
-        <div style={{ position: 'relative' }}>
+        <div ref={updateRef} style={{ position: 'relative' }}>
           <button
             onClick={handleCheckUpdate}
             title="Kiểm tra bản cập nhật phiên bản"

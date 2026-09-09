@@ -63,7 +63,7 @@ export default function ProxyModal() {
     <div style={{
       position: 'fixed',
       top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.6)',
+      backgroundColor: 'rgba(255, 255, 255, 0.65)',
       backdropFilter: 'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -74,7 +74,7 @@ export default function ProxyModal() {
         backgroundColor: '#FFFFFF',
         borderRadius: '8px',
         border: '1px solid #E5E7EB',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06)',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column'

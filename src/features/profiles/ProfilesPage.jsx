@@ -29,6 +29,7 @@ export default function ProfilesPage() {
     batchMoveGroupProfiles,
     setActiveProfileModal,
     selectedGroup,
+    customGroups = [],
     addLog
   } = useBrowser();
 
@@ -44,14 +45,10 @@ export default function ProfilesPage() {
     setSortBy,
     viewMode,
     setViewMode,
-    showStatsRibbon,
-    totalCount,
     runningCount,
-    idleCount,
-    proxyCount,
     filteredProfiles,
     allGroups
-  } = useProfileFilters(profiles, selectedGroup);
+  } = useProfileFilters(profiles, selectedGroup, customGroups);
 
   // Selection states
   const [selectedProfiles, setSelectedProfiles] = useState([]);
@@ -160,13 +157,8 @@ export default function ProfilesPage() {
         if (isPlayDropdownOpen) setIsPlayDropdownOpen(false);
       }}
     >
-      {/* ── TOP HEADER: STATS & FILTER TOOLBAR ── */}
+      {/* ── TOP HEADER: FILTER TOOLBAR ── */}
       <ProfileHeader
-        showStatsRibbon={showStatsRibbon}
-        totalCount={totalCount}
-        runningCount={runningCount}
-        idleCount={idleCount}
-        proxyCount={proxyCount}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         searchTerm={searchTerm}
@@ -177,6 +169,7 @@ export default function ProfilesPage() {
         setSortBy={setSortBy}
         viewMode={viewMode}
         setViewMode={setViewMode}
+        runningCount={runningCount}
         onStopAll={() => batchStopProfiles(profiles.map(p => p.id))}
         onLaunchAll={() => batchLaunchProfiles(profiles.map(p => p.id))}
         onOpenNewProfile={() => setActiveProfileModal('new')}
@@ -286,6 +279,8 @@ export default function ProfilesPage() {
             cloneProfile={cloneProfile}
             addLog={addLog}
             batchStopProfiles={batchStopProfiles}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
           />
         ) : (
           /* ── GRID CARD VIEW ── */

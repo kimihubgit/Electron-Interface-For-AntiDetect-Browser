@@ -1,13 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Languages, Shirt, Shield, Cloud, ChevronDown, Check } from 'lucide-react';
+import { Languages, Shirt, Shield, Cloud, ChevronDown, Check, Server } from 'lucide-react';
 import { useTranslation } from '../../../i18n/I18nContext';
 
 /**
  * Bottom Footer bar matching the exact screenshot:
- * Left: [文A English ⌵] with 2-line language dropdown, 👕 Appearance, 🛡️ Proxy
+ * Left: [文A English ⌵] with 2-line language dropdown, 👕 Appearance, 🛡️ Proxy, 🖥️ Server
  * Right: ☁️ Offline Space
  */
-export default function LoginFooter({ onOpenProxy, onOfflineSpace, onToggleAppearance }) {
+export default function LoginFooter({
+  onOpenProxy,
+  onOfflineSpace,
+  onToggleAppearance,
+  currentServer = 'Auto (Default (1))',
+  onOpenServerModal
+}) {
   const { t, currentLanguage, changeLanguage, supportedLanguages } = useTranslation();
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [appearance, setAppearance] = useState('Light');
@@ -254,6 +260,40 @@ export default function LoginFooter({ onOpenProxy, onOfflineSpace, onToggleAppea
         >
           <Shield size={14} style={{ color: '#475569' }} />
           <span>{t('footer.proxy')}</span>
+        </button>
+
+        {/* 4. Server Selection Button */}
+        <button
+          onClick={onOpenServerModal}
+          title="Chọn máy chủ kết nối"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: '#F8FAFC',
+            border: '1px solid #E2E8F0',
+            borderRadius: '6px',
+            padding: '4px 10px',
+            color: '#334155',
+            fontSize: '12px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#EFF6FF';
+            e.currentTarget.style.borderColor = '#BFDBFE';
+            e.currentTarget.style.color = '#1D4ED8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#F8FAFC';
+            e.currentTarget.style.borderColor = '#E2E8F0';
+            e.currentTarget.style.color = '#334155';
+          }}
+        >
+          <Server size={13} style={{ color: '#3B82F6' }} />
+          <span>Server: {currentServer}</span>
+          <ChevronDown size={12} style={{ color: '#94A3B8' }} />
         </button>
       </div>
 

@@ -5,22 +5,14 @@ import {
   Play,
   Square,
   Plus,
-  Layers,
-  Monitor,
-  Shield,
   List,
   LayoutGrid
 } from 'lucide-react';
 
 /**
- * Top stats ribbon + search, filtering, view mode switcher, and new profile action toolbar
+ * Search, filtering, view mode switcher, and new profile action toolbar
  */
 export default function ProfileHeader({
-  showStatsRibbon,
-  totalCount,
-  runningCount,
-  idleCount,
-  proxyCount,
   statusFilter,
   setStatusFilter,
   searchTerm,
@@ -31,137 +23,13 @@ export default function ProfileHeader({
   setSortBy,
   viewMode,
   setViewMode,
+  runningCount = 0,
   onStopAll,
   onLaunchAll,
   onOpenNewProfile
 }) {
   return (
     <>
-      {/* ── TOP STATS & QUICK METRICS RIBBON ── */}
-      {showStatsRibbon && (
-        <div style={{
-          padding: '14px 24px 10px 24px',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '12px',
-          borderBottom: '1px solid #F1F5F9',
-          backgroundColor: '#FAFCFF',
-          flexShrink: 0
-        }}>
-          {/* Stat 1: Total Profiles */}
-          <div
-            onClick={() => setStatusFilter('all')}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '8px',
-              backgroundColor: '#FFFFFF',
-              border: statusFilter === 'all' ? '1px solid #CBD5E1' : '1px solid #E2E8F0',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Tổng số Profile
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginTop: '2px' }}>
-                {totalCount}
-              </div>
-            </div>
-            <div style={{ width: '32px', height: '32px', borderRadius: '7px', backgroundColor: '#F1F5F9', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Layers size={16} />
-            </div>
-          </div>
-
-          {/* Stat 2: Running Profiles */}
-          <div
-            onClick={() => setStatusFilter(prev => prev === 'running' ? 'all' : 'running')}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '8px',
-              backgroundColor: statusFilter === 'running' ? '#ECFDF5' : '#FFFFFF',
-              border: statusFilter === 'running' ? '1px solid #10B981' : '1px solid #E2E8F0',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '11px', color: '#047857', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
-                Đang hoạt động
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#065F46', marginTop: '2px' }}>
-                {runningCount}
-              </div>
-            </div>
-            <div style={{ width: '32px', height: '32px', borderRadius: '7px', backgroundColor: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Play size={15} style={{ fill: '#16A34A' }} />
-            </div>
-          </div>
-
-          {/* Stat 3: Idle Profiles */}
-          <div
-            onClick={() => setStatusFilter(prev => prev === 'idle' ? 'all' : 'idle')}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '8px',
-              backgroundColor: statusFilter === 'idle' ? '#F5F3FF' : '#FFFFFF',
-              border: statusFilter === 'idle' ? '1px solid var(--apidog-purple)' : '1px solid #E2E8F0',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '11px', color: '#6D28D9', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Sẵn sàng (Idle)
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#5B21B6', marginTop: '2px' }}>
-                {idleCount}
-              </div>
-            </div>
-            <div style={{ width: '32px', height: '32px', borderRadius: '7px', backgroundColor: '#EDE9FE', color: 'var(--apidog-purple)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Monitor size={16} />
-            </div>
-          </div>
-
-          {/* Stat 4: Proxies Configured */}
-          <div style={{
-            padding: '10px 14px',
-            borderRadius: '8px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E2E8F0',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <div>
-              <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Proxy Đã gán
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', marginTop: '2px' }}>
-                {proxyCount} / {totalCount}
-              </div>
-            </div>
-            <div style={{ width: '32px', height: '32px', borderRadius: '7px', backgroundColor: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Shield size={16} />
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── ADVANCED CONTROL & FILTER TOOLBAR ── */}
       <div style={{
         padding: '12px 24px',
@@ -170,8 +38,8 @@ export default function ProfileHeader({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '12px',
-        borderBottom: '1px solid #E2E8F0',
-        backgroundColor: '#FFFFFF',
+        borderBottom: '1px solid var(--apidog-border)',
+        backgroundColor: 'var(--apidog-card-bg)',
         flexShrink: 0
       }}>
         {/* Left Side: Search & Filter Tabs */}
@@ -181,15 +49,15 @@ export default function ProfileHeader({
             position: 'relative',
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: '#F8FAFC',
+            backgroundColor: 'var(--apidog-bg)',
             borderRadius: '6px',
-            border: '1px solid #CBD5E1',
+            border: '1px solid var(--apidog-border)',
             padding: '0 10px',
             height: '32px',
             width: '260px',
             transition: 'border-color 0.15s ease'
           }}>
-            <Search size={14} style={{ color: '#94A3B8', marginRight: '6px', flexShrink: 0 }} />
+            <Search size={14} style={{ color: 'var(--apidog-text-muted)', marginRight: '6px', flexShrink: 0 }} />
             <input
               type="text"
               placeholder="Tìm theo tên, Proxy, Tag..."
@@ -201,13 +69,13 @@ export default function ProfileHeader({
                 fontSize: '12.5px',
                 width: '100%',
                 backgroundColor: 'transparent',
-                color: '#1E293B'
+                color: 'var(--apidog-text-main)'
               }}
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
+                style={{ background: 'none', border: 'none', color: 'var(--apidog-text-muted)', cursor: 'pointer', padding: '2px' }}
               >
                 <X size={13} />
               </button>

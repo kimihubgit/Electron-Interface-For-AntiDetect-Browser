@@ -24,8 +24,9 @@ export default function MoveGroupModal({
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.45)',
-      backdropFilter: 'blur(3px)',
+      backgroundColor: 'rgba(255, 255, 255, 0.65)',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -35,7 +36,7 @@ export default function MoveGroupModal({
         width: '440px',
         backgroundColor: '#FFFFFF',
         borderRadius: '12px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0, 0, 0, 0.06)',
         overflow: 'hidden',
         border: '1px solid #E2E8F0'
       }}>
