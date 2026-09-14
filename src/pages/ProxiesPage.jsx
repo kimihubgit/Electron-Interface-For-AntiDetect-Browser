@@ -1333,7 +1333,8 @@ export default function ProxiesPage() {
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {/* ── TAB 1: KHO PROXY TĨNH (STATIC POOL TABLE) ── */}
         {activeSubTab === 'pool' && (
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             {isCheckingAll ? (
               <div style={{ padding: '24px 20px', backgroundColor: '#FFFFFF' }}>
                 <SkeletonLoader type="lines" count={4} />
@@ -1742,23 +1743,24 @@ export default function ProxiesPage() {
                 </tbody>
               </table>
             )}
+            </div>
 
-            {/* ── FLOATING BATCH ACTION BAR (Matching ProfileBatchBar) ── */}
+            {/* ── FLOATING BATCH ACTION BAR (Pinned firmly to bottom) ── */}
             {selectedProxyIds.length > 0 && (
               <div
                 style={{
-                  position: 'sticky',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  padding: '10px 24px',
+                  flexShrink: 0,
+                  width: '100%',
+                  padding: '11px 24px',
                   backgroundColor: '#0F172A',
                   color: '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.2)',
-                  zIndex: 20
+                  boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.25)',
+                  zIndex: 20,
+                  boxSizing: 'border-box',
+                  animation: 'fadeInModal 0.15s ease'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
