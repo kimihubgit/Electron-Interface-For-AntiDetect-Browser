@@ -1204,7 +1204,7 @@ export default function ProxiesPage() {
             gap: '8px'
           }}
         >
-          {/* Left: Search box + Filter dropdowns */}
+          {/* Left: Search box + Protocol dropdown */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             {/* Search Box */}
             <div
@@ -1266,20 +1266,31 @@ export default function ProxiesPage() {
               <option value="HTTP">HTTP</option>
               <option value="HTTPS">HTTPS</option>
             </select>
+          </div>
+
+          {/* Right: Selected count indicator + Status Filter (Live/Die/All) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {selectedProxyIds.length > 0 && (
+              <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                Đã chọn <strong style={{ color: '#7C3AED' }}>{selectedProxyIds.length}</strong> / {filteredProxies.length} proxy
+              </div>
+            )}
 
             {/* Status Filter Segmented Button */}
-            <div style={{ display: 'flex', backgroundColor: '#E2E8F0', borderRadius: '5px', padding: '2px', gap: '2px' }}>
+            <div style={{ display: 'flex', backgroundColor: '#E2E8F0', borderRadius: '6px', padding: '2px', gap: '2px' }}>
               <button
                 onClick={() => setStatusFilter('ALL')}
                 style={{
-                  padding: '2px 8px',
+                  padding: '3px 9px',
                   border: 'none',
                   borderRadius: '4px',
                   fontSize: '11.5px',
                   fontWeight: statusFilter === 'ALL' ? 600 : 500,
                   backgroundColor: statusFilter === 'ALL' ? '#FFFFFF' : 'transparent',
                   color: statusFilter === 'ALL' ? '#1E293B' : '#64748B',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  boxShadow: statusFilter === 'ALL' ? '0 1px 2px rgba(0, 0, 0, 0.05)' : 'none',
+                  transition: 'all 0.12s'
                 }}
               >
                 Tất cả ({totalCount})
@@ -1287,14 +1298,16 @@ export default function ProxiesPage() {
               <button
                 onClick={() => setStatusFilter('live')}
                 style={{
-                  padding: '2px 8px',
+                  padding: '3px 9px',
                   border: 'none',
                   borderRadius: '4px',
                   fontSize: '11.5px',
                   fontWeight: statusFilter === 'live' ? 600 : 500,
                   backgroundColor: statusFilter === 'live' ? '#FFFFFF' : 'transparent',
-                  color: statusFilter === 'live' ? '#10B981' : '#64748B',
-                  cursor: 'pointer'
+                  color: statusFilter === 'live' ? '#059669' : '#64748B',
+                  cursor: 'pointer',
+                  boxShadow: statusFilter === 'live' ? '0 1px 2px rgba(0, 0, 0, 0.05)' : 'none',
+                  transition: 'all 0.12s'
                 }}
               >
                 ● Hoạt động ({liveCount})
@@ -1302,27 +1315,22 @@ export default function ProxiesPage() {
               <button
                 onClick={() => setStatusFilter('die')}
                 style={{
-                  padding: '2px 8px',
+                  padding: '3px 9px',
                   border: 'none',
                   borderRadius: '4px',
                   fontSize: '11.5px',
                   fontWeight: statusFilter === 'die' ? 600 : 500,
                   backgroundColor: statusFilter === 'die' ? '#FFFFFF' : 'transparent',
-                  color: statusFilter === 'die' ? '#EF4444' : '#64748B',
-                  cursor: 'pointer'
+                  color: statusFilter === 'die' ? '#DC2626' : '#64748B',
+                  cursor: 'pointer',
+                  boxShadow: statusFilter === 'die' ? '0 1px 2px rgba(0, 0, 0, 0.05)' : 'none',
+                  transition: 'all 0.12s'
                 }}
               >
                 ● Lỗi / Chết ({dieCount})
               </button>
             </div>
           </div>
-
-          {/* Right: Selected count indicator if any */}
-          {selectedProxyIds.length > 0 && (
-            <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-              Đã chọn <strong style={{ color: '#7C3AED' }}>{selectedProxyIds.length}</strong> / {filteredProxies.length} proxy
-            </div>
-          )}
         </div>
       )}
 
