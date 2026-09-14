@@ -161,6 +161,7 @@ export default function ProxiesPage() {
   const [bulkText, setBulkText] = useState('');
   const [bulkType, setBulkType] = useState('SOCKS5');
   const [bulkIpVersion, setBulkIpVersion] = useState('IPv4');
+  const [bulkAutoCheck, setBulkAutoCheck] = useState(true);
   const bulkFileInputRef = useRef(null);
 
   // Dropdown for Add Proxy Split Button
@@ -275,6 +276,20 @@ export default function ProxiesPage() {
     setIsCheckingAll(true);
     await checkAllProxies();
     setIsCheckingAll(false);
+  };
+
+  // Delete all die proxies
+  const handleDeleteDieProxies = () => {
+    const dieProxies = proxies.filter(p => p.status === 'die');
+    if (dieProxies.length === 0) {
+      showToast?.('Không có proxy Die nào để xóa!');
+      return;
+    }
+    setDeleteConfirm({
+      type: 'die',
+      count: dieProxies.length,
+      ids: dieProxies.map(p => p.id)
+    });
   };
 
   // Flexible proxy string parser supporting IPv4/IPv6, protocol prefixes, auth formats
@@ -579,6 +594,11 @@ export default function ProxiesPage() {
     setShowBulkModal(false);
     setBulkText('');
     showToast?.(`Đã nhập thành công ${count} proxy vào kho!`);
+    if (bulkAutoCheck && count > 0) {
+      setTimeout(() => {
+        handleCheckAll();
+      }, 200);
+    }
   };
 
   // Count lines in bulk text
@@ -1277,13 +1297,13 @@ export default function ProxiesPage() {
             )}
 
             {/* Status Filter Segmented Button */}
-            <div style={{ display: 'flex', backgroundColor: '#E2E8F0', borderRadius: '6px', padding: '2px', gap: '2px' }}>
+            <div style={{ display: 'flex', backgroundColor: '#E2E8F0', borderRadius: '4px', padding: '2px', gap: '2px' }}>
               <button
                 onClick={() => setStatusFilter('ALL')}
                 style={{
                   padding: '3px 9px',
                   border: 'none',
-                  borderRadius: '4px',
+                  borderRadius: '3px',
                   fontSize: '11.5px',
                   fontWeight: statusFilter === 'ALL' ? 600 : 500,
                   backgroundColor: statusFilter === 'ALL' ? '#FFFFFF' : 'transparent',
@@ -1300,7 +1320,7 @@ export default function ProxiesPage() {
                 style={{
                   padding: '3px 9px',
                   border: 'none',
-                  borderRadius: '4px',
+                  borderRadius: '3px',
                   fontSize: '11.5px',
                   fontWeight: statusFilter === 'live' ? 600 : 500,
                   backgroundColor: statusFilter === 'live' ? '#FFFFFF' : 'transparent',
@@ -1317,7 +1337,7 @@ export default function ProxiesPage() {
                 style={{
                   padding: '3px 9px',
                   border: 'none',
-                  borderRadius: '4px',
+                  borderRadius: '3px',
                   fontSize: '11.5px',
                   fontWeight: statusFilter === 'die' ? 600 : 500,
                   backgroundColor: statusFilter === 'die' ? '#FFFFFF' : 'transparent',
@@ -1330,6 +1350,31 @@ export default function ProxiesPage() {
                 ● Lỗi / Chết ({dieCount})
               </button>
             </div>
+
+            {/* Nút Xóa Proxy Die */}
+            <button
+              onClick={handleDeleteDieProxies}
+              disabled={dieCount === 0}
+              title={dieCount > 0 ? `Xóa toàn bộ ${dieCount} proxy Die khỏi danh sách` : 'Không có proxy Die'}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                height: '28px',
+                padding: '0 10px',
+                borderRadius: '4px',
+                border: dieCount > 0 ? '1px solid #FECACA' : '1px solid #E2E8F0',
+                backgroundColor: dieCount > 0 ? '#FEF2F2' : '#F8FAFC',
+                color: dieCount > 0 ? '#DC2626' : '#94A3B8',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: dieCount > 0 ? 'pointer' : 'not-allowed',
+                transition: 'all 0.12s'
+              }}
+            >
+              <Trash2 size={12} />
+              <span>Xóa Proxy Die ({dieCount})</span>
+            </button>
           </div>
         </div>
       )}
@@ -1856,19 +1901,49 @@ export default function ProxiesPage() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '5px',
-                      padding: '5px 12px',
-                      borderRadius: '5px',
+                      padding: '6px 13px',
+                      borderRadius: '4px',
                       border: 'none',
                       backgroundColor: '#2563EB',
                       color: '#FFFFFF',
-                      fontSize: '11.5px',
+                      fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer'
                     }}
                   >
                     <RefreshCw size={12} />
-                    <span>Ping đã chọn</span>
+                    <span>Ping đã chọn ({selectedProxyIds.length})</span>
                   </button>
+
+                  {/* Nút xóa die trong số đã chọn nếu có */}
+                  {selectedProxyIds.some(id => proxies.find(p => p.id === id)?.status === 'die') && (
+                    <button
+                      onClick={() => {
+                        const dieSelectedIds = selectedProxyIds.filter(id => proxies.find(p => p.id === id)?.status === 'die');
+                        setDeleteConfirm({
+                          type: 'die',
+                          count: dieSelectedIds.length,
+                          ids: dieSelectedIds
+                        });
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '6px 13px',
+                        borderRadius: '4px',
+                        border: '1px solid #FECACA',
+                        backgroundColor: '#FEF2F2',
+                        color: '#DC2626',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Trash2 size={12} />
+                      <span>Xóa Die đã chọn ({selectedProxyIds.filter(id => proxies.find(p => p.id === id)?.status === 'die').length})</span>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => setDeleteConfirm({ type: 'multiple', count: selectedProxyIds.length })}
@@ -1876,18 +1951,18 @@ export default function ProxiesPage() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '5px',
-                      padding: '5px 12px',
-                      borderRadius: '5px',
+                      padding: '6px 13px',
+                      borderRadius: '4px',
                       border: 'none',
                       backgroundColor: '#DC2626',
                       color: '#FFFFFF',
-                      fontSize: '11.5px',
+                      fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer'
                     }}
                   >
                     <Trash2 size={12} />
-                    <span>Xóa ({selectedProxyIds.length})</span>
+                    <span>Xóa tất cả ({selectedProxyIds.length})</span>
                   </button>
                 </div>
               </div>
@@ -2297,8 +2372,9 @@ export default function ProxiesPage() {
               width: '580px',
               maxWidth: '94vw',
               backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8)',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(15, 23, 42, 0.05)',
               overflow: 'hidden',
               animation: 'fadeInModal 0.15s ease'
             }}
@@ -2310,7 +2386,7 @@ export default function ProxiesPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '16px 22px',
+                padding: '15px 20px',
                 borderBottom: '1px solid #F1F5F9',
                 backgroundColor: '#FFFFFF'
               }}
@@ -2318,9 +2394,9 @@ export default function ProxiesPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div
                   style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '4px',
                     backgroundColor: '#EDE9FE',
                     color: '#7C3AED',
                     display: 'flex',
@@ -2329,7 +2405,7 @@ export default function ProxiesPage() {
                     flexShrink: 0
                   }}
                 >
-                  <Shield size={18} />
+                  <Shield size={17} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>
@@ -2348,7 +2424,7 @@ export default function ProxiesPage() {
                   color: '#94A3B8',
                   cursor: 'pointer',
                   padding: '6px',
-                  borderRadius: '8px',
+                  borderRadius: '4px',
                   display: 'flex',
                   alignItems: 'center',
                   transition: 'all 0.15s'
@@ -2370,7 +2446,7 @@ export default function ProxiesPage() {
                       border: '1px solid #FEE2E2',
                       color: '#DC2626',
                       padding: '10px 14px',
-                      borderRadius: '8px',
+                      borderRadius: '4px',
                       fontSize: '12px',
                       display: 'flex',
                       alignItems: 'center',
@@ -2396,7 +2472,7 @@ export default function ProxiesPage() {
                           width: '100%',
                           height: '38px',
                           padding: '0 28px 0 10px',
-                          borderRadius: '8px',
+                          borderRadius: '4px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#F8FAFC',
                           color: '#0F172A',
@@ -2428,7 +2504,7 @@ export default function ProxiesPage() {
                           width: '100%',
                           height: '38px',
                           padding: '0 28px 0 10px',
-                          borderRadius: '8px',
+                          borderRadius: '4px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#F8FAFC',
                           color: '#0F172A',
@@ -2465,8 +2541,8 @@ export default function ProxiesPage() {
                       style={{
                         height: '38px',
                         padding: '0 12px',
-                        borderRadius: '8px',
-                        border: '1px solid #E2E8F0',
+                        borderRadius: '4px',
+                        border: '1px solid #CBD5E1',
                         backgroundColor: '#FFFFFF',
                         color: '#475569',
                         fontSize: '12px',
@@ -2478,8 +2554,8 @@ export default function ProxiesPage() {
                         transition: 'all 0.15s',
                         whiteSpace: 'nowrap'
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F8FAFC'; e.currentTarget.style.borderColor = '#94A3B8'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
                     >
                       <Upload size={14} style={{ color: '#0EA5E9' }} />
                       <span>Chọn file</span>
@@ -2503,16 +2579,16 @@ export default function ProxiesPage() {
                         onPaste={handleHostPaste}
                         style={{
                           width: '100%',
-                          height: '40px',
-                          padding: '0 80px 0 12px',
-                          borderRadius: '8px',
+                          height: '38px',
+                          padding: '0 78px 0 10px',
+                          borderRadius: '4px',
                           border: '1px solid #CBD5E1',
                           fontSize: '13px',
                           boxSizing: 'border-box',
                           outline: 'none',
                           transition: 'border-color 0.15s, box-shadow 0.15s'
                         }}
-                        onFocus={(e) => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)'; }}
+                        onFocus={(e) => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 2px rgba(124, 58, 237, 0.15)'; }}
                         onBlur={(e) => { e.target.style.borderColor = '#CBD5E1'; e.target.style.boxShadow = 'none'; }}
                       />
                       {/* Nút Dán nằm ngay trong ô input */}
@@ -2522,15 +2598,15 @@ export default function ProxiesPage() {
                         title="Dán nhanh chuỗi proxy từ Clipboard (tự động điền Port, User, Pass nếu có)"
                         style={{
                           position: 'absolute',
-                          right: '6px',
+                          right: '5px',
                           top: '50%',
                           transform: 'translateY(-50%)',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
                           height: '28px',
-                          padding: '0 9px',
-                          borderRadius: '6px',
+                          padding: '0 8px',
+                          borderRadius: '4px',
                           backgroundColor: '#EDE9FE',
                           color: '#7C3AED',
                           border: '1px solid #DDD6FE',
@@ -2566,16 +2642,16 @@ export default function ProxiesPage() {
                       onChange={(e) => setFormData({ ...formData, port: e.target.value })}
                       style={{
                         width: '100%',
-                        height: '40px',
+                        height: '38px',
                         padding: '0 10px',
-                        borderRadius: '8px',
+                        borderRadius: '4px',
                         border: '1px solid #CBD5E1',
                         fontSize: '13px',
                         boxSizing: 'border-box',
                         outline: 'none',
                         transition: 'border-color 0.15s, box-shadow 0.15s'
                       }}
-                      onFocus={(e) => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)'; }}
+                      onFocus={(e) => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 2px rgba(124, 58, 237, 0.15)'; }}
                       onBlur={(e) => { e.target.style.borderColor = '#CBD5E1'; e.target.style.boxShadow = 'none'; }}
                     />
                   </div>
@@ -2596,7 +2672,7 @@ export default function ProxiesPage() {
                         width: '100%',
                         height: '38px',
                         padding: '0 10px',
-                        borderRadius: '8px',
+                        borderRadius: '4px',
                         border: '1px solid #CBD5E1',
                         fontSize: '13px',
                         boxSizing: 'border-box',
@@ -2618,7 +2694,7 @@ export default function ProxiesPage() {
                           width: '100%',
                           height: '38px',
                           padding: '0 34px 0 10px',
-                          borderRadius: '8px',
+                          borderRadius: '4px',
                           border: '1px solid #CBD5E1',
                           fontSize: '13px',
                           boxSizing: 'border-box',
@@ -2662,7 +2738,7 @@ export default function ProxiesPage() {
                       width: '100%',
                       height: '38px',
                       padding: '0 10px',
-                      borderRadius: '8px',
+                      borderRadius: '4px',
                       border: '1px solid #CBD5E1',
                       fontSize: '13px',
                       boxSizing: 'border-box',
@@ -2676,7 +2752,7 @@ export default function ProxiesPage() {
                   <div
                     style={{
                       padding: '10px 14px',
-                      borderRadius: '8px',
+                      borderRadius: '4px',
                       fontSize: '12px',
                       backgroundColor:
                         testResultInModal.status === 'testing'
@@ -2706,7 +2782,7 @@ export default function ProxiesPage() {
                       {testResultInModal.status === 'testing' && <RefreshCw size={14} className="spin-anim" />}
                       {testResultInModal.status === 'success' && <CheckCircle2 size={14} />}
                       {testResultInModal.status === 'error' && <AlertCircle size={14} />}
-                      <span style={{ fontWeight: 500 }}>{testResultInModal.message}</span>
+                      <span style={{ fontWeight: 600 }}>{testResultInModal.message}</span>
                     </div>
                     {testResultInModal.status === 'success' && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
@@ -2727,42 +2803,81 @@ export default function ProxiesPage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   borderTop: '1px solid #E2E8F0',
-                  padding: '14px 22px',
+                  padding: '13px 20px',
                   backgroundColor: '#F8FAFC'
                 }}
               >
-                <button
-                  type="button"
-                  onClick={handleTestInModal}
-                  disabled={testResultInModal?.status === 'testing'}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #CBD5E1',
-                    backgroundColor: '#FFFFFF',
-                    color: '#334155',
-                    fontSize: '12.5px',
-                    fontWeight: 500,
-                    cursor: testResultInModal?.status === 'testing' ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
-                >
-                  <Activity size={14} style={{ color: '#7C3AED' }} />
-                  <span>{testResultInModal?.status === 'testing' ? 'Đang test...' : 'Test kết nối'}</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Nút Test Proxy */}
+                  <button
+                    type="button"
+                    onClick={handleTestInModal}
+                    disabled={testResultInModal?.status === 'testing'}
+                    title="Kiểm tra kết nối và định vị Proxy"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      height: '34px',
+                      padding: '0 13px',
+                      borderRadius: '4px',
+                      border: '1px solid #CBD5E1',
+                      backgroundColor: '#FFFFFF',
+                      color: '#1E293B',
+                      fontSize: '12.5px',
+                      fontWeight: 600,
+                      cursor: testResultInModal?.status === 'testing' ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+                  >
+                    <Activity size={14} style={{ color: testResultInModal?.status === 'testing' ? '#94A3B8' : '#7C3AED' }} />
+                    <span>{testResultInModal?.status === 'testing' ? 'Đang test...' : 'Test kết nối'}</span>
+                  </button>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
+                  {/* Nút Xóa Proxy khi đang Edit */}
+                  {modalMode === 'edit' && currentEditingProxy && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetProxy = currentEditingProxy;
+                        setModalMode(null);
+                        setDeleteConfirm({ type: 'single', proxy: targetProxy });
+                      }}
+                      title="Xóa proxy này khỏi danh sách"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        height: '34px',
+                        padding: '0 12px',
+                        borderRadius: '4px',
+                        border: '1px solid #FECACA',
+                        backgroundColor: '#FEF2F2',
+                        color: '#DC2626',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FEF2F2'; }}
+                    >
+                      <Trash2 size={13} />
+                      <span>Xóa proxy</span>
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     type="button"
                     onClick={() => setModalMode(null)}
                     style={{
-                      padding: '8px 16px',
-                      borderRadius: '8px',
+                      height: '34px',
+                      padding: '0 16px',
+                      borderRadius: '4px',
                       border: '1px solid #CBD5E1',
                       backgroundColor: '#FFFFFF',
                       color: '#475569',
@@ -2779,15 +2894,16 @@ export default function ProxiesPage() {
                   <button
                     type="submit"
                     style={{
-                      padding: '8px 20px',
-                      borderRadius: '8px',
+                      height: '34px',
+                      padding: '0 18px',
+                      borderRadius: '4px',
                       border: 'none',
                       backgroundColor: '#7C3AED',
                       color: '#FFFFFF',
                       fontSize: '12.5px',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
+                      boxShadow: '0 1px 3px rgba(124, 58, 237, 0.25)',
                       transition: 'all 0.15s'
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#6D28D9'; }}
@@ -2823,8 +2939,9 @@ export default function ProxiesPage() {
               width: '600px',
               maxWidth: '94vw',
               backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8)',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(15, 23, 42, 0.05)',
               overflow: 'hidden',
               animation: 'fadeInModal 0.15s ease'
             }}
@@ -2836,7 +2953,7 @@ export default function ProxiesPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '16px 22px',
+                padding: '15px 20px',
                 borderBottom: '1px solid #F1F5F9',
                 backgroundColor: '#FFFFFF'
               }}
@@ -2844,9 +2961,9 @@ export default function ProxiesPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div
                   style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '4px',
                     backgroundColor: '#EDE9FE',
                     color: '#7C3AED',
                     display: 'flex',
@@ -2855,7 +2972,7 @@ export default function ProxiesPage() {
                     flexShrink: 0
                   }}
                 >
-                  <Upload size={18} />
+                  <Upload size={17} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>
@@ -2874,7 +2991,7 @@ export default function ProxiesPage() {
                   color: '#94A3B8',
                   cursor: 'pointer',
                   padding: '6px',
-                  borderRadius: '8px',
+                  borderRadius: '4px',
                   display: 'flex',
                   alignItems: 'center'
                 }}
@@ -2901,7 +3018,7 @@ export default function ProxiesPage() {
                           width: '100%',
                           height: '38px',
                           padding: '0 28px 0 10px',
-                          borderRadius: '8px',
+                          borderRadius: '4px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#F8FAFC',
                           color: '#0F172A',
@@ -2933,7 +3050,7 @@ export default function ProxiesPage() {
                           width: '100%',
                           height: '38px',
                           padding: '0 28px 0 10px',
-                          borderRadius: '8px',
+                          borderRadius: '4px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#F8FAFC',
                           color: '#0F172A',
@@ -2970,8 +3087,8 @@ export default function ProxiesPage() {
                       style={{
                         height: '38px',
                         padding: '0 12px',
-                        borderRadius: '8px',
-                        border: '1px solid #E2E8F0',
+                        borderRadius: '4px',
+                        border: '1px solid #CBD5E1',
                         backgroundColor: '#FFFFFF',
                         color: '#475569',
                         fontSize: '12px',
@@ -2983,8 +3100,8 @@ export default function ProxiesPage() {
                         transition: 'all 0.15s',
                         whiteSpace: 'nowrap'
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F8FAFC'; e.currentTarget.style.borderColor = '#94A3B8'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
                     >
                       <Upload size={14} style={{ color: '#0EA5E9' }} />
                       <span>Chọn file</span>
@@ -3007,8 +3124,8 @@ export default function ProxiesPage() {
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
-                          padding: '3px 8px',
-                          borderRadius: '5px',
+                          padding: '4px 9px',
+                          borderRadius: '4px',
                           backgroundColor: '#EDE9FE',
                           color: '#7C3AED',
                           border: '1px solid #DDD6FE',
@@ -3033,7 +3150,7 @@ export default function ProxiesPage() {
                     style={{
                       width: '100%',
                       padding: '12px',
-                      borderRadius: '8px',
+                      borderRadius: '4px',
                       border: '1px solid #CBD5E1',
                       fontSize: '12.5px',
                       fontFamily: 'Consolas, Monaco, "Courier New", monospace',
@@ -3042,9 +3159,22 @@ export default function ProxiesPage() {
                       outline: 'none',
                       transition: 'border-color 0.15s, box-shadow 0.15s'
                     }}
-                    onFocus={(e) => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)'; }}
+                    onFocus={(e) => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 2px rgba(124, 58, 237, 0.15)'; }}
                     onBlur={(e) => { e.target.style.borderColor = '#CBD5E1'; e.target.style.boxShadow = 'none'; }}
                   />
+                </div>
+
+                {/* Auto check option */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '-4px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={bulkAutoCheck}
+                      onChange={(e) => setBulkAutoCheck(e.target.checked)}
+                      style={{ accentColor: '#7C3AED', width: '14px', height: '14px', cursor: 'pointer' }}
+                    />
+                    <span>Tự động kiểm tra kết nối (Test Ping) ngay sau khi nạp proxy</span>
+                  </label>
                 </div>
               </div>
 
@@ -3056,7 +3186,7 @@ export default function ProxiesPage() {
                   justifyContent: 'flex-end',
                   gap: '10px',
                   borderTop: '1px solid #E2E8F0',
-                  padding: '14px 22px',
+                  padding: '13px 20px',
                   backgroundColor: '#F8FAFC'
                 }}
               >
@@ -3064,8 +3194,9 @@ export default function ProxiesPage() {
                   type="button"
                   onClick={() => setShowBulkModal(false)}
                   style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
+                    height: '34px',
+                    padding: '0 16px',
+                    borderRadius: '4px',
                     border: '1px solid #CBD5E1',
                     backgroundColor: '#FFFFFF',
                     color: '#475569',
@@ -3082,15 +3213,16 @@ export default function ProxiesPage() {
                   type="submit"
                   disabled={bulkLineCount === 0}
                   style={{
-                    padding: '8px 20px',
-                    borderRadius: '8px',
+                    height: '34px',
+                    padding: '0 20px',
+                    borderRadius: '4px',
                     border: 'none',
                     backgroundColor: bulkLineCount === 0 ? '#CBD5E1' : '#7C3AED',
                     color: '#FFFFFF',
                     fontSize: '12.5px',
                     fontWeight: 600,
                     cursor: bulkLineCount === 0 ? 'not-allowed' : 'pointer',
-                    boxShadow: bulkLineCount === 0 ? 'none' : '0 2px 4px rgba(124, 58, 237, 0.25)'
+                    boxShadow: bulkLineCount === 0 ? 'none' : '0 1px 3px rgba(124, 58, 237, 0.25)'
                   }}
                 >
                   Nhập {bulkLineCount > 0 ? `${bulkLineCount} Proxy` : ''}
@@ -3120,8 +3252,9 @@ export default function ProxiesPage() {
             style={{
               width: '420px',
               backgroundColor: '#FFFFFF',
-              borderRadius: '10px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
               overflow: 'hidden'
             }}
             onClick={(e) => e.stopPropagation()}
@@ -3136,7 +3269,7 @@ export default function ProxiesPage() {
             </div>
 
             <div style={{ padding: '16px 18px' }}>
-              <div style={{ padding: '8px 10px', backgroundColor: '#F8FAFC', borderRadius: '6px', border: '1px solid #E2E8F0', marginBottom: '14px', fontSize: '12px' }}>
+              <div style={{ padding: '8px 10px', backgroundColor: '#F8FAFC', borderRadius: '4px', border: '1px solid #E2E8F0', marginBottom: '14px', fontSize: '12px' }}>
                 <div style={{ color: '#64748B', fontSize: '11px' }}>Proxy được chọn:</div>
                 <strong style={{ fontFamily: 'monospace', color: '#7C3AED' }}>
                   {assignModalProxy.type}://{assignModalProxy.host}:{assignModalProxy.port}
@@ -3153,7 +3286,7 @@ export default function ProxiesPage() {
                   width: '100%',
                   height: '34px',
                   padding: '0 10px',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   border: '1px solid #CBD5E1',
                   fontSize: '12px',
                   backgroundColor: '#FFFFFF',
@@ -3172,7 +3305,7 @@ export default function ProxiesPage() {
                 <button
                   type="button"
                   onClick={() => setAssignModalProxy(null)}
-                  style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12px', cursor: 'pointer' }}
+                  style={{ padding: '6px 14px', borderRadius: '4px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12px', cursor: 'pointer' }}
                 >
                   Hủy
                 </button>
@@ -3182,7 +3315,7 @@ export default function ProxiesPage() {
                   onClick={handleAssignToProfile}
                   style={{
                     padding: '6px 16px',
-                    borderRadius: '6px',
+                    borderRadius: '4px',
                     border: 'none',
                     backgroundColor: selectedTargetProfileId ? '#7C3AED' : '#CBD5E1',
                     color: '#FFFFFF',
@@ -3220,16 +3353,17 @@ export default function ProxiesPage() {
               width: '400px',
               maxWidth: '92vw',
               backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
-              padding: '20px',
+              padding: '18px',
               overflow: 'hidden'
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: '#EDE9FE', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '4px', backgroundColor: '#EDE9FE', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <FileText size={15} />
                 </div>
                 <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>Ghi chú Proxy</h4>
@@ -3254,7 +3388,7 @@ export default function ProxiesPage() {
               style={{
                 width: '100%',
                 padding: '10px',
-                borderRadius: '8px',
+                borderRadius: '4px',
                 border: '1px solid #CBD5E1',
                 fontSize: '13px',
                 boxSizing: 'border-box',
@@ -3270,8 +3404,8 @@ export default function ProxiesPage() {
                 type="button"
                 onClick={() => setEditingNoteProxy(null)}
                 style={{
-                  padding: '7px 14px',
-                  borderRadius: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '4px',
                   border: '1px solid #CBD5E1',
                   backgroundColor: '#FFFFFF',
                   color: '#475569',
@@ -3285,8 +3419,8 @@ export default function ProxiesPage() {
                 type="button"
                 onClick={handleSaveNote}
                 style={{
-                  padding: '7px 16px',
-                  borderRadius: '6px',
+                  padding: '6px 16px',
+                  borderRadius: '4px',
                   border: 'none',
                   backgroundColor: '#7C3AED',
                   color: '#FFFFFF',
@@ -3321,24 +3455,26 @@ export default function ProxiesPage() {
             style={{
               width: '380px',
               backgroundColor: '#FFFFFF',
-              borderRadius: '10px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              borderRadius: '6px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
               padding: '18px'
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626' }}>
+              <div style={{ width: '30px', height: '30px', borderRadius: '4px', backgroundColor: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626' }}>
                 <Trash2 size={16} />
               </div>
               <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
-                Xác nhận xóa Proxy
+                {deleteConfirm.type === 'die' ? 'Xác nhận xóa Proxy Die' : 'Xác nhận xóa Proxy'}
               </span>
             </div>
 
-            <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+            <p style={{ fontSize: '12.5px', color: '#475569', lineHeight: '1.5', margin: '0 0 16px 0' }}>
               {deleteConfirm.type === 'single'
                 ? `Bạn có chắc chắn muốn xóa proxy "${deleteConfirm.proxy.host}:${deleteConfirm.proxy.port}" khỏi danh sách?`
+                : deleteConfirm.type === 'die'
+                ? `Bạn có chắc chắn muốn xóa toàn bộ ${deleteConfirm.count} proxy bị lỗi / Die khỏi kho không? Thao tác này không thể hoàn tác.`
                 : `Bạn có chắc chắn muốn xóa ${deleteConfirm.count} proxy đã chọn khỏi danh sách?`}
             </p>
 
@@ -3346,7 +3482,7 @@ export default function ProxiesPage() {
               <button
                 type="button"
                 onClick={() => setDeleteConfirm(null)}
-                style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12px', cursor: 'pointer' }}
+                style={{ padding: '6px 14px', borderRadius: '4px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12px', cursor: 'pointer' }}
               >
                 Hủy
               </button>
@@ -3355,14 +3491,19 @@ export default function ProxiesPage() {
                 onClick={() => {
                   if (deleteConfirm.type === 'single') {
                     deleteProxy(deleteConfirm.proxy.id);
+                    showToast?.('Đã xóa proxy thành công');
+                  } else if (deleteConfirm.type === 'die') {
+                    deleteMultipleProxies(deleteConfirm.ids);
+                    setSelectedProxyIds(prev => prev.filter(id => !deleteConfirm.ids.includes(id)));
+                    showToast?.(`Đã xóa ${deleteConfirm.count} proxy Die thành công`);
                   } else {
                     deleteMultipleProxies(selectedProxyIds);
                     setSelectedProxyIds([]);
+                    showToast?.('Đã xóa các proxy đã chọn thành công');
                   }
                   setDeleteConfirm(null);
-                  showToast?.('Đã xóa proxy thành công');
                 }}
-                style={{ padding: '6px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '6px 16px', borderRadius: '4px', border: 'none', backgroundColor: '#DC2626', color: '#FFFFFF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Xác nhận xóa
               </button>
@@ -3390,7 +3531,9 @@ export default function ProxiesPage() {
             style={{
               width: '460px',
               backgroundColor: '#FFFFFF',
-              borderRadius: '10px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
               padding: '18px'
             }}
             onClick={(e) => e.stopPropagation()}
@@ -3414,7 +3557,7 @@ export default function ProxiesPage() {
                   value={rotatingFormData.name}
                   onChange={(e) => setRotatingFormData({ ...rotatingFormData, name: e.target.value })}
                   placeholder="vd: TMProxy VN 4G Fast"
-                  style={{ width: '100%', height: '32px', padding: '0 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px' }}
+                  style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '12px', outline: 'none' }}
                 />
               </div>
 
@@ -3427,7 +3570,7 @@ export default function ProxiesPage() {
                   value={rotatingFormData.rotateUrl}
                   onChange={(e) => setRotatingFormData({ ...rotatingFormData, rotateUrl: e.target.value })}
                   placeholder="https://api.tmproxy.com/api/proxy/get-new-proxy?api_key=..."
-                  style={{ width: '100%', height: '32px', padding: '0 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', fontFamily: 'monospace' }}
+                  style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '12px', fontFamily: 'monospace', outline: 'none' }}
                 />
               </div>
 
@@ -3441,7 +3584,7 @@ export default function ProxiesPage() {
                     value={rotatingFormData.provider}
                     onChange={(e) => setRotatingFormData({ ...rotatingFormData, provider: e.target.value })}
                     placeholder="TMProxy / TinProxy / ProxyNo1"
-                    style={{ width: '100%', height: '32px', padding: '0 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px' }}
+                    style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '12px', outline: 'none' }}
                   />
                 </div>
                 <div>
@@ -3452,7 +3595,7 @@ export default function ProxiesPage() {
                     type="number"
                     value={rotatingFormData.cooldown}
                     onChange={(e) => setRotatingFormData({ ...rotatingFormData, cooldown: Number(e.target.value) })}
-                    style={{ width: '100%', height: '32px', padding: '0 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px' }}
+                    style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '12px', outline: 'none' }}
                   />
                 </div>
               </div>
@@ -3462,7 +3605,7 @@ export default function ProxiesPage() {
               <button
                 type="button"
                 onClick={() => setShowAddRotatingModal(false)}
-                style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12px', cursor: 'pointer' }}
+                style={{ padding: '6px 14px', borderRadius: '4px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12px', cursor: 'pointer' }}
               >
                 Hủy
               </button>
@@ -3475,7 +3618,7 @@ export default function ProxiesPage() {
                   setRotatingFormData({ name: '', provider: 'TMProxy', rotateUrl: '', protocol: 'HTTP', cooldown: 60 });
                   showToast?.('Đã thêm proxy xoay mới thành công');
                 }}
-                style={{ padding: '6px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#7C3AED', color: '#FFFFFF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '6px 16px', borderRadius: '4px', border: 'none', backgroundColor: '#7C3AED', color: '#FFFFFF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Thêm cấu hình
               </button>
@@ -3503,7 +3646,9 @@ export default function ProxiesPage() {
             style={{
               width: '420px',
               backgroundColor: '#FFFFFF',
-              borderRadius: '10px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
               padding: '18px'
             }}
             onClick={(e) => e.stopPropagation()}
@@ -3526,7 +3671,7 @@ export default function ProxiesPage() {
                   type="text"
                   value={dcomFormData.name}
                   onChange={(e) => setDcomFormData({ ...dcomFormData, name: e.target.value })}
-                  style={{ width: '100%', height: '32px', padding: '0 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px' }}
+                  style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '12px', outline: 'none' }}
                 />
               </div>
 
@@ -3540,7 +3685,7 @@ export default function ProxiesPage() {
                     value={dcomFormData.comPort}
                     onChange={(e) => setDcomFormData({ ...dcomFormData, comPort: e.target.value })}
                     placeholder="COM3"
-                    style={{ width: '100%', height: '32px', padding: '0 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', fontFamily: 'monospace' }}
+                    style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '12px', fontFamily: 'monospace', outline: 'none' }}
                   />
                 </div>
                 <div>
@@ -3551,7 +3696,7 @@ export default function ProxiesPage() {
                     type="number"
                     value={dcomFormData.localPort}
                     onChange={(e) => setDcomFormData({ ...dcomFormData, localPort: Number(e.target.value) })}
-                    style={{ width: '100%', height: '32px', padding: '0 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', fontFamily: 'monospace' }}
+                    style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '12px', fontFamily: 'monospace', outline: 'none' }}
                   />
                 </div>
               </div>
@@ -3565,7 +3710,7 @@ export default function ProxiesPage() {
                   value={dcomFormData.carrier}
                   onChange={(e) => setDcomFormData({ ...dcomFormData, carrier: e.target.value })}
                   placeholder="Viettel 4G / Vinaphone / Mobifone"
-                  style={{ width: '100%', height: '32px', padding: '0 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px' }}
+                  style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '12px', outline: 'none' }}
                 />
               </div>
             </div>
@@ -3574,7 +3719,7 @@ export default function ProxiesPage() {
               <button
                 type="button"
                 onClick={() => setShowAddDcomModal(false)}
-                style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12px', cursor: 'pointer' }}
+                style={{ padding: '6px 14px', borderRadius: '4px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', color: '#475569', fontSize: '12px', cursor: 'pointer' }}
               >
                 Hủy
               </button>
@@ -3586,7 +3731,7 @@ export default function ProxiesPage() {
                   setShowAddDcomModal(false);
                   showToast?.('Đã kết nối thiết bị DCOM thành công');
                 }}
-                style={{ padding: '6px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#7C3AED', color: '#FFFFFF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '6px 16px', borderRadius: '4px', border: 'none', backgroundColor: '#7C3AED', color: '#FFFFFF', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Kết nối
               </button>
