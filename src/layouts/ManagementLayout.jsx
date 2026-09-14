@@ -53,7 +53,7 @@ export default function ManagementLayout({ children }) {
             <main style={{ flex: 1, minHeight: 0, overflow: 'hidden', backgroundColor: 'var(--apidog-bg)' }}>
               {children}
             </main>
-            <BottomStatusBar />
+            {activeTab !== 'proxies' && <BottomStatusBar />}
           </div>
         </div>
       </div>
