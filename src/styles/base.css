@@ -56,6 +56,10 @@ body {
   }
 }
 
+.spin-anim {
+  animation: spin 0.85s linear infinite;
+}
+
 @keyframes pulseGlow {
   0%, 100% {
     transform: scale(1);

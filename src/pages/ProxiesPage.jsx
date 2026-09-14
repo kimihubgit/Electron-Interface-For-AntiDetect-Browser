@@ -38,7 +38,8 @@ import {
   Zap,
   Info,
   FileText,
-  Radio
+  Radio,
+  Loader2
 } from 'lucide-react';
 import { useBrowser } from '../store/BrowserContext';
 import { useTranslation } from '../i18n/I18nContext';
@@ -102,6 +103,7 @@ export default function ProxiesPage() {
 
   // Testing states
   const [testingId, setTestingId] = useState(null);
+  const [testingProxyIds, setTestingProxyIds] = useState([]);
   const [isCheckingAll, setIsCheckingAll] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [showPasswords, setShowPasswords] = useState({});
@@ -274,16 +276,42 @@ export default function ProxiesPage() {
   // Check single proxy
   const handleCheckSingle = async (p, e) => {
     e?.stopPropagation();
-    setTestingId(p.id);
-    await checkProxy(p.id);
-    setTestingId(null);
+    setTestingProxyIds(prev => Array.from(new Set([...prev, p.id])));
+    try {
+      await checkProxy(p.id);
+    } finally {
+      setTestingProxyIds(prev => prev.filter(id => id !== p.id));
+    }
   };
 
   // Check all proxies
   const handleCheckAll = async () => {
     setIsCheckingAll(true);
-    await checkAllProxies();
-    setIsCheckingAll(false);
+    const allIds = filteredProxies.map(p => p.id);
+    setTestingProxyIds(prev => Array.from(new Set([...prev, ...allIds])));
+    try {
+      await checkAllProxies();
+    } finally {
+      setTestingProxyIds([]);
+      setIsCheckingAll(false);
+    }
+  };
+
+  // Ping selected proxies
+  const handlePingSelected = async () => {
+    if (selectedProxyIds.length === 0) return;
+    const idsToCheck = [...selectedProxyIds];
+    setTestingProxyIds(prev => Array.from(new Set([...prev, ...idsToCheck])));
+
+    await Promise.allSettled(
+      idsToCheck.map(async (id) => {
+        try {
+          await checkProxy(id);
+        } finally {
+          setTestingProxyIds(prev => prev.filter(item => item !== id));
+        }
+      })
+    );
   };
 
   // Delete all die proxies
@@ -1586,7 +1614,7 @@ export default function ProxiesPage() {
                   <tbody>
                     {filteredProxies.map((p) => {
                       const isSelected = selectedProxyIds.includes(p.id);
-                      const isTesting = testingId === p.id;
+                      const isTesting = testingProxyIds.includes(p.id) || testingId === p.id;
                       const isLive = p.status === 'live';
                       const isDie = p.status === 'die';
                       const assignedProfiles = profiles.filter(prof => prof.proxy?.host === p.host && Number(prof.proxy?.port) === Number(p.port));
@@ -1600,14 +1628,18 @@ export default function ProxiesPage() {
                           key={p.id}
                           style={{
                             borderBottom: '1px solid #F1F5F9',
-                            backgroundColor: isSelected ? '#F5F3FF' : '#FFFFFF',
-                            transition: 'background-color 0.12s ease'
+                            backgroundColor: isTesting
+                              ? '#F0F7FF'
+                              : isSelected
+                              ? '#F5F3FF'
+                              : '#FFFFFF',
+                            transition: 'background-color 0.15s ease'
                           }}
                           onMouseEnter={(e) => {
-                            if (!isSelected) e.currentTarget.style.backgroundColor = '#FAFAFC';
+                            if (!isSelected && !isTesting) e.currentTarget.style.backgroundColor = '#FAFAFC';
                           }}
                           onMouseLeave={(e) => {
-                            if (!isSelected) e.currentTarget.style.backgroundColor = '#FFFFFF';
+                            if (!isSelected && !isTesting) e.currentTarget.style.backgroundColor = '#FFFFFF';
                           }}
                         >
                           {/* 1. Checkbox */}
@@ -1659,41 +1691,64 @@ export default function ProxiesPage() {
                           {/* 3. Outbound IP */}
                           <td style={{ padding: '12px 14px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              {/* Globe Icon với gạch chéo đỏ khi die */}
+                              {/* Globe Icon hoặc Spinner khi testing */}
                               <div
                                 style={{
                                   position: 'relative',
                                   width: '28px',
                                   height: '28px',
                                   borderRadius: '50%',
-                                  backgroundColor: isTesting ? '#F1F5F9' : isLive ? '#EFF6FF' : isDie ? '#FEF2F2' : '#F1F5F9',
-                                  color: isTesting ? '#64748B' : isLive ? '#2563EB' : isDie ? '#EF4444' : '#94A3B8',
-                                  border: isTesting ? '1px solid #E2E8F0' : isLive ? '1px solid #BFDBFE' : isDie ? '1px solid #FECACA' : '1px solid #E2E8F0',
+                                  backgroundColor: isTesting ? '#EFF6FF' : isLive ? '#EFF6FF' : isDie ? '#FEF2F2' : '#F1F5F9',
+                                  color: isTesting ? '#2563EB' : isLive ? '#2563EB' : isDie ? '#EF4444' : '#94A3B8',
+                                  border: isTesting ? '1px solid #93C5FD' : isLive ? '1px solid #BFDBFE' : isDie ? '1px solid #FECACA' : '1px solid #E2E8F0',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   flexShrink: 0
                                 }}
                               >
-                                <Globe size={15} />
-                                {isDie && (
-                                  /* Gạch chéo màu đỏ xuyên qua quả địa cầu */
-                                  <div
-                                    style={{
-                                      position: 'absolute',
-                                      width: '18px',
-                                      height: '2px',
-                                      backgroundColor: '#EF4444',
-                                      transform: 'rotate(-45deg)',
-                                      borderRadius: '1px'
-                                    }}
-                                  />
+                                {isTesting ? (
+                                  <Loader2 size={15} className="spin-anim" style={{ color: '#2563EB' }} />
+                                ) : (
+                                  <>
+                                    <Globe size={15} />
+                                    {isDie && (
+                                      /* Gạch chéo màu đỏ xuyên qua quả địa cầu */
+                                      <div
+                                        style={{
+                                          position: 'absolute',
+                                          width: '18px',
+                                          height: '2px',
+                                          backgroundColor: '#EF4444',
+                                          transform: 'rotate(-45deg)',
+                                          borderRadius: '1px'
+                                        }}
+                                      />
+                                    )}
+                                  </>
                                 )}
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   {isTesting ? (
-                                    <span style={{ fontSize: '12px', fontWeight: 500, color: '#3B82F6' }}>Đang kiểm tra...</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#2563EB' }}>Đang kiểm tra...</span>
+                                      <span
+                                        style={{
+                                          fontSize: '9.5px',
+                                          padding: '1px 6px',
+                                          borderRadius: '4px',
+                                          backgroundColor: '#DBEAFE',
+                                          color: '#1D4ED8',
+                                          fontWeight: 700,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '3px'
+                                        }}
+                                      >
+                                        <Loader2 size={9} className="spin-anim" /> PINGING
+                                      </span>
+                                    </div>
                                   ) : isLive ? (
                                     <>
                                       <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>
@@ -1728,7 +1783,7 @@ export default function ProxiesPage() {
                                 {/* Dòng dưới: Vị trí địa lý và Tốc độ ping (ms) */}
                                 <div style={{ fontSize: '11px', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                                   {isTesting ? (
-                                    <span style={{ color: '#94A3B8' }}>Đang đo ping...</span>
+                                    <span style={{ color: '#60A5FA', fontStyle: 'italic' }}>Đang đo tốc độ ping (latency)...</span>
                                   ) : isLive ? (
                                     <>
                                       <span style={{ color: '#94A3B8' }}>
@@ -2027,31 +2082,36 @@ export default function ProxiesPage() {
                 {/* Right: Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {/* Action 1: Ping */}
-                  <button
-                    onClick={() => {
-                      selectedProxyIds.forEach(id => checkProxy(id));
-                    }}
-                    title="Kiểm tra ping và trạng thái kết nối các proxy đã chọn"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      padding: '6px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #2563EB',
-                      backgroundColor: '#1D4ED8',
-                      color: '#FFFFFF',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.12s'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2563EB'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#1D4ED8'; }}
-                  >
-                    <RefreshCw size={12} />
-                    <span>Ping ({selectedProxyIds.length})</span>
-                  </button>
+                  {(() => {
+                    const isAnySelectedTesting = selectedProxyIds.some(id => testingProxyIds.includes(id));
+                    return (
+                      <button
+                        onClick={handlePingSelected}
+                        disabled={isAnySelectedTesting}
+                        title="Kiểm tra ping và trạng thái kết nối các proxy đã chọn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '6px 12px',
+                          borderRadius: '4px',
+                          border: '1px solid #2563EB',
+                          backgroundColor: '#1D4ED8',
+                          color: '#FFFFFF',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: isAnySelectedTesting ? 'not-allowed' : 'pointer',
+                          opacity: isAnySelectedTesting ? 0.85 : 1,
+                          transition: 'all 0.12s'
+                        }}
+                        onMouseEnter={(e) => { if (!isAnySelectedTesting) e.currentTarget.style.backgroundColor = '#2563EB'; }}
+                        onMouseLeave={(e) => { if (!isAnySelectedTesting) e.currentTarget.style.backgroundColor = '#1D4ED8'; }}
+                      >
+                        <RefreshCw size={12} className={isAnySelectedTesting ? 'spin-anim' : ''} />
+                        <span>{isAnySelectedTesting ? 'Đang ping...' : `Ping (${selectedProxyIds.length})`}</span>
+                      </button>
+                    );
+                  })()}
 
                   {/* Action 2: Copy to clipboard */}
                   <button
