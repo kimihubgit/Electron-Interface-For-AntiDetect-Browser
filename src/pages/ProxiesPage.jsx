@@ -389,6 +389,28 @@ export default function ProxiesPage() {
     }
   };
 
+  // Handle Ctrl+V directly on Host input
+  const handleHostPaste = (e) => {
+    const pastedText = e.clipboardData?.getData('text');
+    if (pastedText && pastedText.includes(':')) {
+      const parsed = parseProxyFlexible(pastedText.trim());
+      if (parsed && parsed.host && parsed.port) {
+        e.preventDefault();
+        setFormData(prev => ({
+          ...prev,
+          host: parsed.host,
+          port: parsed.port || prev.port,
+          user: parsed.user || '',
+          pass: parsed.pass || '',
+          type: parsed.type || prev.type,
+          ipVersion: parsed.ipVersion || (parsed.host.includes(':') ? 'IPv6' : prev.ipVersion)
+        }));
+        setFormError('');
+        showToast?.('Đã tự động nhận diện và điền các trường proxy!');
+      }
+    }
+  };
+
   // Choose file for single proxy
   const handleSingleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -2094,23 +2116,23 @@ export default function ProxiesPage() {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(5px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 9999,
-            padding: '16px'
+            padding: '20px'
           }}
           onClick={() => setModalMode(null)}
         >
           <div
             style={{
-              width: '460px',
-              maxWidth: '95vw',
+              width: '580px',
+              maxWidth: '94vw',
               backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
-              boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(226, 232, 240, 0.9)',
+              borderRadius: '16px',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8)',
               overflow: 'hidden',
               animation: 'fadeInModal 0.15s ease'
             }}
@@ -2122,16 +2144,35 @@ export default function ProxiesPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '14px 18px',
+                padding: '16px 22px',
                 borderBottom: '1px solid #F1F5F9',
                 backgroundColor: '#FFFFFF'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Shield size={16} style={{ color: '#7C3AED' }} />
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
-                  {modalMode === 'add' ? 'Thêm Proxy Mới' : 'Cập Nhật Proxy'}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: '#EDE9FE',
+                    color: '#7C3AED',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <Shield size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>
+                    {modalMode === 'add' ? 'Thêm Proxy Mới' : 'Cập Nhật Proxy'}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                    Thiết lập kết nối máy chủ Proxy cho các hồ sơ trình duyệt
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setModalMode(null)}
@@ -2140,45 +2181,46 @@ export default function ProxiesPage() {
                   border: 'none',
                   color: '#94A3B8',
                   cursor: 'pointer',
-                  padding: '4px',
-                  borderRadius: '6px',
+                  padding: '6px',
+                  borderRadius: '8px',
                   display: 'flex',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  transition: 'all 0.15s'
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; e.currentTarget.style.color = '#0F172A'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#94A3B8'; }}
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSubmitForm} style={{ padding: '16px 18px' }}>
-              {formError && (
-                <div
-                  style={{
-                    backgroundColor: '#FEF2F2',
-                    border: '1px solid #FEE2E2',
-                    color: '#DC2626',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    marginBottom: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <AlertCircle size={14} style={{ flexShrink: 0 }} />
-                  <span>{formError}</span>
-                </div>
-              )}
+            <form onSubmit={handleSubmitForm}>
+              <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                {formError && (
+                  <div
+                    style={{
+                      backgroundColor: '#FEF2F2',
+                      border: '1px solid #FEE2E2',
+                      color: '#DC2626',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                    <span>{formError}</span>
+                  </div>
+                )}
 
-              {/* Protocol & IP Version Selection + Action Buttons (Dán Proxy & Chọn File) */}
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', marginBottom: '14px' }}>
-                <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
-                  {/* Giao thức Selection */}
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
-                      Giao thức
+                {/* Section 1: Protocol & IP Version Selection + Choose file */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'flex-end' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                      Giao thức Proxy
                     </label>
                     <div style={{ position: 'relative' }}>
                       <select
@@ -2186,13 +2228,13 @@ export default function ProxiesPage() {
                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                         style={{
                           width: '100%',
-                          height: '32px',
-                          padding: '0 24px 0 8px',
-                          borderRadius: '6px',
+                          height: '38px',
+                          padding: '0 28px 0 10px',
+                          borderRadius: '8px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#F8FAFC',
-                          color: '#1E293B',
-                          fontSize: '12px',
+                          color: '#0F172A',
+                          fontSize: '13px',
                           fontWeight: 600,
                           cursor: 'pointer',
                           outline: 'none',
@@ -2204,13 +2246,12 @@ export default function ProxiesPage() {
                         <option value="HTTP">HTTP</option>
                         <option value="HTTPS">HTTPS</option>
                       </select>
-                      <ChevronDown size={14} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />
+                      <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />
                     </div>
                   </div>
 
-                  {/* Loại IP: IPv4 / IPv6 Selection */}
-                  <div style={{ width: '100px' }}>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                       Loại IP
                     </label>
                     <div style={{ position: 'relative' }}>
@@ -2219,13 +2260,13 @@ export default function ProxiesPage() {
                         onChange={(e) => setFormData({ ...formData, ipVersion: e.target.value })}
                         style={{
                           width: '100%',
-                          height: '32px',
-                          padding: '0 24px 0 8px',
-                          borderRadius: '6px',
+                          height: '38px',
+                          padding: '0 28px 0 10px',
+                          borderRadius: '8px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#F8FAFC',
-                          color: '#1E293B',
-                          fontSize: '12px',
+                          color: '#0F172A',
+                          fontSize: '13px',
                           fontWeight: 600,
                           cursor: 'pointer',
                           outline: 'none',
@@ -2236,256 +2277,282 @@ export default function ProxiesPage() {
                         <option value="IPv4">IPv4</option>
                         <option value="IPv6">IPv6</option>
                       </select>
-                      <ChevronDown size={14} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />
+                      <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />
                     </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'transparent', marginBottom: '6px' }}>
+                      Tệp
+                    </label>
+                    <input
+                      type="file"
+                      ref={singleFileInputRef}
+                      accept=".txt,.csv"
+                      onChange={handleSingleFileChange}
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => singleFileInputRef.current?.click()}
+                      title="Chọn tệp proxy (.txt, .csv)"
+                      style={{
+                        height: '38px',
+                        padding: '0 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0',
+                        backgroundColor: '#FFFFFF',
+                        color: '#475569',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                    >
+                      <Upload size={14} style={{ color: '#0EA5E9' }} />
+                      <span>Chọn file</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Action Buttons: Dán proxy & Chọn file */}
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button
-                    type="button"
-                    onClick={handlePasteSingleProxy}
-                    title="Dán từ Clipboard và tự động phân tích"
-                    style={{
-                      height: '32px',
-                      padding: '0 10px',
-                      borderRadius: '6px',
-                      border: '1px solid #CBD5E1',
-                      backgroundColor: '#FFFFFF',
-                      color: '#475569',
-                      fontSize: '11.5px',
-                      fontWeight: 500,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    <Copy size={13} style={{ color: '#7C3AED' }} />
-                    <span>Dán proxy</span>
-                  </button>
+                {/* Section 2: Host / IP & Port (NÚT DÁN NẰM TRỰC TIẾP TRONG Ô INPUT) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                      Địa chỉ Host / IP / Chuỗi Proxy *
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        required
+                        placeholder={formData.ipVersion === 'IPv6' ? 'vd: 2402:800:6000:a1b2::1' : 'vd: 14.162.90.12 hoặc dán chuỗi proxy'}
+                        value={formData.host}
+                        onChange={(e) => setFormData({ ...formData, host: e.target.value })}
+                        onPaste={handleHostPaste}
+                        style={{
+                          width: '100%',
+                          height: '40px',
+                          padding: '0 80px 0 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #CBD5E1',
+                          fontSize: '13px',
+                          boxSizing: 'border-box',
+                          outline: 'none',
+                          transition: 'border-color 0.15s, box-shadow 0.15s'
+                        }}
+                        onFocus={(e) => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)'; }}
+                        onBlur={(e) => { e.target.style.borderColor = '#CBD5E1'; e.target.style.boxShadow = 'none'; }}
+                      />
+                      {/* Nút Dán nằm ngay trong ô input */}
+                      <button
+                        type="button"
+                        onClick={handlePasteSingleProxy}
+                        title="Dán nhanh chuỗi proxy từ Clipboard (tự động điền Port, User, Pass nếu có)"
+                        style={{
+                          position: 'absolute',
+                          right: '6px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          height: '28px',
+                          padding: '0 9px',
+                          borderRadius: '6px',
+                          backgroundColor: '#EDE9FE',
+                          color: '#7C3AED',
+                          border: '1px solid #DDD6FE',
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#7C3AED';
+                          e.currentTarget.style.color = '#FFFFFF';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#EDE9FE';
+                          e.currentTarget.style.color = '#7C3AED';
+                        }}
+                      >
+                        <Copy size={12} />
+                        <span>Dán</span>
+                      </button>
+                    </div>
+                  </div>
 
-                  <input
-                    type="file"
-                    ref={singleFileInputRef}
-                    accept=".txt,.csv"
-                    onChange={handleSingleFileChange}
-                    style={{ display: 'none' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => singleFileInputRef.current?.click()}
-                    title="Chọn tệp proxy (.txt, .csv)"
-                    style={{
-                      height: '32px',
-                      padding: '0 10px',
-                      borderRadius: '6px',
-                      border: '1px solid #CBD5E1',
-                      backgroundColor: '#FFFFFF',
-                      color: '#475569',
-                      fontSize: '11.5px',
-                      fontWeight: 500,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    <Upload size={13} style={{ color: '#0EA5E9' }} />
-                    <span>Chọn file</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Host & Port */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
-                    Địa chỉ Host / IP *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={formData.ipVersion === 'IPv6' ? 'vd: 2402:800:6000:a1b2::1 hoặc [2402:...]' : 'vd: 14.162.90.12 hoặc proxy.com'}
-                    value={formData.host}
-                    onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-                    style={{
-                      width: '100%',
-                      height: '32px',
-                      padding: '0 8px',
-                      borderRadius: '6px',
-                      border: '1px solid #CBD5E1',
-                      fontSize: '12px',
-                      boxSizing: 'border-box',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
-                    Cổng Port *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="1080"
-                    value={formData.port}
-                    onChange={(e) => setFormData({ ...formData, port: e.target.value })}
-                    style={{
-                      width: '100%',
-                      height: '32px',
-                      padding: '0 8px',
-                      borderRadius: '6px',
-                      border: '1px solid #CBD5E1',
-                      fontSize: '12px',
-                      boxSizing: 'border-box',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* User & Pass */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
-                    Tài khoản (Tùy chọn)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Username"
-                    value={formData.user}
-                    onChange={(e) => setFormData({ ...formData, user: e.target.value })}
-                    style={{
-                      width: '100%',
-                      height: '32px',
-                      padding: '0 8px',
-                      borderRadius: '6px',
-                      border: '1px solid #CBD5E1',
-                      fontSize: '12px',
-                      boxSizing: 'border-box',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
-                    Mật khẩu (Tùy chọn)
-                  </label>
-                  <div style={{ position: 'relative' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                      Cổng Port *
+                    </label>
                     <input
-                      type={showPasswordInModal ? 'text' : 'password'}
-                      placeholder="Password"
-                      value={formData.pass}
-                      onChange={(e) => setFormData({ ...formData, pass: e.target.value })}
+                      type="number"
+                      required
+                      placeholder="1080"
+                      value={formData.port}
+                      onChange={(e) => setFormData({ ...formData, port: e.target.value })}
                       style={{
                         width: '100%',
-                        height: '32px',
-                        padding: '0 28px 0 8px',
-                        borderRadius: '6px',
+                        height: '40px',
+                        padding: '0 10px',
+                        borderRadius: '8px',
                         border: '1px solid #CBD5E1',
-                        fontSize: '12px',
+                        fontSize: '13px',
+                        boxSizing: 'border-box',
+                        outline: 'none',
+                        transition: 'border-color 0.15s, box-shadow 0.15s'
+                      }}
+                      onFocus={(e) => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)'; }}
+                      onBlur={(e) => { e.target.style.borderColor = '#CBD5E1'; e.target.style.boxShadow = 'none'; }}
+                    />
+                  </div>
+                </div>
+
+                {/* Section 3: User & Pass */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                      Tài khoản (Tùy chọn)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Username"
+                      value={formData.user}
+                      onChange={(e) => setFormData({ ...formData, user: e.target.value })}
+                      style={{
+                        width: '100%',
+                        height: '38px',
+                        padding: '0 10px',
+                        borderRadius: '8px',
+                        border: '1px solid #CBD5E1',
+                        fontSize: '13px',
                         boxSizing: 'border-box',
                         outline: 'none'
                       }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordInModal(!showPasswordInModal)}
-                      style={{
-                        position: 'absolute',
-                        right: '6px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: '#94A3B8',
-                        cursor: 'pointer',
-                        padding: 0,
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}
-                    >
-                      {showPasswordInModal ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
                   </div>
-                </div>
-              </div>
-
-              {/* Tag Name */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
-                  Tên gợi nhớ (Tag)
-                </label>
-                <input
-                  type="text"
-                  placeholder="vd: Residential US #01"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  style={{
-                    width: '100%',
-                    height: '32px',
-                    padding: '0 8px',
-                    borderRadius: '6px',
-                    border: '1px solid #CBD5E1',
-                    fontSize: '12px',
-                    boxSizing: 'border-box',
-                    outline: 'none'
-                  }}
-                />
-              </div>
-
-              {/* Live Test connection result box */}
-              {testResultInModal && (
-                <div
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: '6px',
-                    fontSize: '11.5px',
-                    marginBottom: '14px',
-                    backgroundColor:
-                      testResultInModal.status === 'testing'
-                        ? '#EFF6FF'
-                        : testResultInModal.status === 'success'
-                        ? '#ECFDF5'
-                        : '#FEF2F2',
-                    border:
-                      testResultInModal.status === 'testing'
-                        ? '1px solid #BFDBFE'
-                        : testResultInModal.status === 'success'
-                        ? '1px solid #A7F3D0'
-                        : '1px solid #FECACA',
-                    color:
-                      testResultInModal.status === 'testing'
-                        ? '#1D4ED8'
-                        : testResultInModal.status === 'success'
-                        ? '#047857'
-                        : '#DC2626',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '8px'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {testResultInModal.status === 'testing' && <RefreshCw size={13} className="spin-anim" />}
-                    {testResultInModal.status === 'success' && <CheckCircle2 size={13} />}
-                    {testResultInModal.status === 'error' && <AlertCircle size={13} />}
-                    <span>{testResultInModal.message}</span>
-                  </div>
-                  {testResultInModal.status === 'success' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      {testResultInModal.country && (
-                        <CountryFlag code={testResultInModal.country} width={16} height={11} />
-                      )}
-                      <span style={{ fontWeight: 700 }}>{testResultInModal.latency}ms</span>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                      Mật khẩu (Tùy chọn)
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPasswordInModal ? 'text' : 'password'}
+                        placeholder="Password"
+                        value={formData.pass}
+                        onChange={(e) => setFormData({ ...formData, pass: e.target.value })}
+                        style={{
+                          width: '100%',
+                          height: '38px',
+                          padding: '0 34px 0 10px',
+                          borderRadius: '8px',
+                          border: '1px solid #CBD5E1',
+                          fontSize: '13px',
+                          boxSizing: 'border-box',
+                          outline: 'none'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordInModal(!showPasswordInModal)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#94A3B8',
+                          cursor: 'pointer',
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        {showPasswordInModal ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
-              )}
+
+                {/* Section 4: Tag Name */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                    Tên gợi nhớ (Tag / Ghi chú)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="vd: Residential US #01, Proxy chính MMO..."
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    style={{
+                      width: '100%',
+                      height: '38px',
+                      padding: '0 10px',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '13px',
+                      boxSizing: 'border-box',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                {/* Live Test connection result box */}
+                {testResultInModal && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      backgroundColor:
+                        testResultInModal.status === 'testing'
+                          ? '#EFF6FF'
+                          : testResultInModal.status === 'success'
+                          ? '#ECFDF5'
+                          : '#FEF2F2',
+                      border:
+                        testResultInModal.status === 'testing'
+                          ? '1px solid #BFDBFE'
+                          : testResultInModal.status === 'success'
+                          ? '1px solid #A7F3D0'
+                          : '1px solid #FECACA',
+                      color:
+                        testResultInModal.status === 'testing'
+                          ? '#1D4ED8'
+                          : testResultInModal.status === 'success'
+                          ? '#047857'
+                          : '#DC2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {testResultInModal.status === 'testing' && <RefreshCw size={14} className="spin-anim" />}
+                      {testResultInModal.status === 'success' && <CheckCircle2 size={14} />}
+                      {testResultInModal.status === 'error' && <AlertCircle size={14} />}
+                      <span style={{ fontWeight: 500 }}>{testResultInModal.message}</span>
+                    </div>
+                    {testResultInModal.status === 'success' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                        {testResultInModal.country && (
+                          <CountryFlag code={testResultInModal.country} width={18} height={12} />
+                        )}
+                        <span style={{ fontWeight: 700, fontSize: '12px' }}>{testResultInModal.latency}ms</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Footer Actions */}
               <div
@@ -2494,7 +2561,8 @@ export default function ProxiesPage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   borderTop: '1px solid #E2E8F0',
-                  paddingTop: '12px'
+                  padding: '14px 22px',
+                  backgroundColor: '#F8FAFC'
                 }}
               >
                 <button
@@ -2504,51 +2572,62 @@ export default function ProxiesPage() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '5px',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
                     border: '1px solid #CBD5E1',
                     backgroundColor: '#FFFFFF',
                     color: '#334155',
-                    fontSize: '12px',
+                    fontSize: '12.5px',
                     fontWeight: 500,
-                    cursor: testResultInModal?.status === 'testing' ? 'not-allowed' : 'pointer'
+                    cursor: testResultInModal?.status === 'testing' ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.15s'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
                 >
-                  <Activity size={13} style={{ color: '#7C3AED' }} />
+                  <Activity size={14} style={{ color: '#7C3AED' }} />
                   <span>{testResultInModal?.status === 'testing' ? 'Đang test...' : 'Test kết nối'}</span>
                 </button>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
                   <button
                     type="button"
                     onClick={() => setModalMode(null)}
                     style={{
-                      padding: '6px 14px',
-                      borderRadius: '6px',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
                       border: '1px solid #CBD5E1',
                       backgroundColor: '#FFFFFF',
                       color: '#475569',
-                      fontSize: '12px',
-                      cursor: 'pointer'
+                      fontSize: '12.5px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     style={{
-                      padding: '6px 16px',
-                      borderRadius: '6px',
+                      padding: '8px 20px',
+                      borderRadius: '8px',
                       border: 'none',
                       backgroundColor: '#7C3AED',
                       color: '#FFFFFF',
-                      fontSize: '12px',
+                      fontSize: '12.5px',
                       fontWeight: 600,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
+                      transition: 'all 0.15s'
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#6D28D9'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#7C3AED'; }}
                   >
-                    {modalMode === 'add' ? 'Thêm mới' : 'Lưu thay đổi'}
+                    {modalMode === 'add' ? 'Thêm proxy' : 'Lưu thay đổi'}
                   </button>
                 </div>
               </div>
@@ -2563,24 +2642,25 @@ export default function ProxiesPage() {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(5px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 9999,
-            padding: '16px'
+            padding: '20px'
           }}
           onClick={() => setShowBulkModal(false)}
         >
           <div
             style={{
-              width: '500px',
-              maxWidth: '95vw',
+              width: '600px',
+              maxWidth: '94vw',
               backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
-              boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(226, 232, 240, 0.9)',
-              overflow: 'hidden'
+              borderRadius: '16px',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8)',
+              overflow: 'hidden',
+              animation: 'fadeInModal 0.15s ease'
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2590,16 +2670,35 @@ export default function ProxiesPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '14px 18px',
+                padding: '16px 22px',
                 borderBottom: '1px solid #F1F5F9',
                 backgroundColor: '#FFFFFF'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Upload size={16} style={{ color: '#7C3AED' }} />
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
-                  Nhập Proxy Hàng Loạt
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: '#EDE9FE',
+                    color: '#7C3AED',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <Upload size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0F172A', lineHeight: 1.3 }}>
+                    Nhập Proxy Hàng Loạt
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                    Thêm nhiều proxy cùng lúc từ văn bản hoặc tệp tin
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowBulkModal(false)}
@@ -2608,23 +2707,24 @@ export default function ProxiesPage() {
                   border: 'none',
                   color: '#94A3B8',
                   cursor: 'pointer',
-                  padding: '4px',
-                  borderRadius: '6px',
+                  padding: '6px',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center'
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; e.currentTarget.style.color = '#0F172A'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#94A3B8'; }}
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleBulkSubmit} style={{ padding: '16px 18px' }}>
-              {/* Protocol & IP Version Selection + Action Buttons (Dán Proxy & Chọn File) */}
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '8px', marginBottom: '14px' }}>
-                <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
-                  {/* Giao thức mặc định Selection */}
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+            <form onSubmit={handleBulkSubmit}>
+              <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Protocol & IP Version Selection + Choose file */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'flex-end' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                       Giao thức mặc định
                     </label>
                     <div style={{ position: 'relative' }}>
@@ -2633,13 +2733,13 @@ export default function ProxiesPage() {
                         onChange={(e) => setBulkType(e.target.value)}
                         style={{
                           width: '100%',
-                          height: '32px',
-                          padding: '0 24px 0 8px',
-                          borderRadius: '6px',
+                          height: '38px',
+                          padding: '0 28px 0 10px',
+                          borderRadius: '8px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#F8FAFC',
-                          color: '#1E293B',
-                          fontSize: '12px',
+                          color: '#0F172A',
+                          fontSize: '13px',
                           fontWeight: 600,
                           cursor: 'pointer',
                           outline: 'none',
@@ -2651,13 +2751,12 @@ export default function ProxiesPage() {
                         <option value="HTTP">HTTP</option>
                         <option value="HTTPS">HTTPS</option>
                       </select>
-                      <ChevronDown size={14} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />
+                      <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />
                     </div>
                   </div>
 
-                  {/* Loại IP: IPv4 / IPv6 Selection */}
-                  <div style={{ width: '100px' }}>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                       Loại IP
                     </label>
                     <div style={{ position: 'relative' }}>
@@ -2666,13 +2765,13 @@ export default function ProxiesPage() {
                         onChange={(e) => setBulkIpVersion(e.target.value)}
                         style={{
                           width: '100%',
-                          height: '32px',
-                          padding: '0 24px 0 8px',
-                          borderRadius: '6px',
+                          height: '38px',
+                          padding: '0 28px 0 10px',
+                          borderRadius: '8px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#F8FAFC',
-                          color: '#1E293B',
-                          fontSize: '12px',
+                          color: '#0F172A',
+                          fontSize: '13px',
                           fontWeight: 600,
                           cursor: 'pointer',
                           outline: 'none',
@@ -2683,113 +2782,133 @@ export default function ProxiesPage() {
                         <option value="IPv4">IPv4</option>
                         <option value="IPv6">IPv6</option>
                       </select>
-                      <ChevronDown size={14} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />
+                      <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />
                     </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'transparent', marginBottom: '6px' }}>
+                      Tệp
+                    </label>
+                    <input
+                      type="file"
+                      ref={bulkFileInputRef}
+                      accept=".txt,.csv"
+                      onChange={handleBulkFileChange}
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => bulkFileInputRef.current?.click()}
+                      title="Chọn tệp proxy (.txt, .csv)"
+                      style={{
+                        height: '38px',
+                        padding: '0 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0',
+                        backgroundColor: '#FFFFFF',
+                        color: '#475569',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                    >
+                      <Upload size={14} style={{ color: '#0EA5E9' }} />
+                      <span>Chọn file</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Action Buttons: Dán proxy & Chọn file */}
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button
-                    type="button"
-                    onClick={handlePasteBulk}
-                    title="Dán từ Clipboard vào danh sách"
+                {/* Textarea container with inside-toolbar */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                      Danh sách Proxy (Mỗi dòng 1 Proxy)
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={handlePasteBulk}
+                        title="Dán từ Clipboard"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '3px 8px',
+                          borderRadius: '5px',
+                          backgroundColor: '#EDE9FE',
+                          color: '#7C3AED',
+                          border: '1px solid #DDD6FE',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Copy size={11} />
+                        <span>Dán từ clipboard</span>
+                      </button>
+                      <span style={{ fontSize: '11.5px', color: '#7C3AED', fontWeight: 600, backgroundColor: '#F5F3FF', padding: '2px 8px', borderRadius: '4px' }}>
+                        {bulkLineCount} dòng
+                      </span>
+                    </div>
+                  </div>
+                  <textarea
+                    rows={8}
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    placeholder={`Định dạng hỗ trợ:\n14.162.88.10:1080\n14.162.88.10:1080:username:password\nusername:password@14.162.88.10:1080\n[2402:800:6000:a1b2::1]:1080`}
                     style={{
-                      height: '32px',
-                      padding: '0 10px',
-                      borderRadius: '6px',
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
                       border: '1px solid #CBD5E1',
-                      backgroundColor: '#FFFFFF',
-                      color: '#475569',
-                      fontSize: '11.5px',
-                      fontWeight: 500,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
+                      fontSize: '12.5px',
+                      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                      lineHeight: '1.6',
+                      boxSizing: 'border-box',
+                      outline: 'none',
+                      transition: 'border-color 0.15s, box-shadow 0.15s'
                     }}
-                  >
-                    <Copy size={13} style={{ color: '#7C3AED' }} />
-                    <span>Dán proxy</span>
-                  </button>
-
-                  <input
-                    type="file"
-                    ref={bulkFileInputRef}
-                    accept=".txt,.csv"
-                    onChange={handleBulkFileChange}
-                    style={{ display: 'none' }}
+                    onFocus={(e) => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)'; }}
+                    onBlur={(e) => { e.target.style.borderColor = '#CBD5E1'; e.target.style.boxShadow = 'none'; }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => bulkFileInputRef.current?.click()}
-                    title="Chọn tệp proxy (.txt, .csv)"
-                    style={{
-                      height: '32px',
-                      padding: '0 10px',
-                      borderRadius: '6px',
-                      border: '1px solid #CBD5E1',
-                      backgroundColor: '#FFFFFF',
-                      color: '#475569',
-                      fontSize: '11.5px',
-                      fontWeight: 500,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    <Upload size={13} style={{ color: '#0EA5E9' }} />
-                    <span>Chọn file</span>
-                  </button>
                 </div>
-              </div>
-
-              {/* Textarea */}
-              <div style={{ marginBottom: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                  <label style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569' }}>
-                    Danh sách Proxy (Mỗi dòng 1 Proxy)
-                  </label>
-                  <span style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 600 }}>
-                    {bulkLineCount} dòng
-                  </span>
-                </div>
-                <textarea
-                  rows={8}
-                  value={bulkText}
-                  onChange={(e) => setBulkText(e.target.value)}
-                  placeholder={`Định dạng hỗ trợ:\n14.162.88.10:1080\n14.162.88.10:1080:username:password\nusername:password@14.162.88.10:1080`}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #CBD5E1',
-                    fontSize: '12px',
-                    fontFamily: 'monospace',
-                    lineHeight: '1.5',
-                    boxSizing: 'border-box',
-                    outline: 'none'
-                  }}
-                />
               </div>
 
               {/* Footer */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid #E2E8F0', paddingTop: '12px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  borderTop: '1px solid #E2E8F0',
+                  padding: '14px 22px',
+                  backgroundColor: '#F8FAFC'
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setShowBulkModal(false)}
                   style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
                     border: '1px solid #CBD5E1',
                     backgroundColor: '#FFFFFF',
                     color: '#475569',
-                    fontSize: '12px',
+                    fontSize: '12.5px',
+                    fontWeight: 500,
                     cursor: 'pointer'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
                 >
                   Hủy
                 </button>
@@ -2797,14 +2916,15 @@ export default function ProxiesPage() {
                   type="submit"
                   disabled={bulkLineCount === 0}
                   style={{
-                    padding: '6px 16px',
-                    borderRadius: '6px',
+                    padding: '8px 20px',
+                    borderRadius: '8px',
                     border: 'none',
                     backgroundColor: bulkLineCount === 0 ? '#CBD5E1' : '#7C3AED',
                     color: '#FFFFFF',
-                    fontSize: '12px',
+                    fontSize: '12.5px',
                     fontWeight: 600,
-                    cursor: bulkLineCount === 0 ? 'not-allowed' : 'pointer'
+                    cursor: bulkLineCount === 0 ? 'not-allowed' : 'pointer',
+                    boxShadow: bulkLineCount === 0 ? 'none' : '0 2px 4px rgba(124, 58, 237, 0.25)'
                   }}
                 >
                   Nhập {bulkLineCount > 0 ? `${bulkLineCount} Proxy` : ''}
