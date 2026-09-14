@@ -927,20 +927,20 @@ export default function ProxiesPage() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '5px',
-                  height: '30px',
-                  padding: '0 10px',
+                  gap: '6px',
+                  height: '32px',
+                  padding: '0 12px',
                   borderRadius: '6px',
                   border: '1px solid #CBD5E1',
                   backgroundColor: '#FFFFFF',
                   color: '#334155',
-                  fontSize: '12px',
+                  fontSize: '12.5px',
                   fontWeight: 500,
                   cursor: isCheckingAll ? 'not-allowed' : 'pointer',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <RefreshCw size={12} className={isCheckingAll ? 'spin-anim' : ''} />
+                <RefreshCw size={13} className={isCheckingAll ? 'spin-anim' : ''} />
                 <span>{isCheckingAll ? 'Đang test ping...' : 'Kiểm tra Ping'}</span>
               </button>
 
@@ -950,20 +950,20 @@ export default function ProxiesPage() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '5px',
-                  height: '30px',
-                  padding: '0 10px',
+                  gap: '6px',
+                  height: '32px',
+                  padding: '0 12px',
                   borderRadius: '6px',
                   border: '1px solid #CBD5E1',
                   backgroundColor: '#FFFFFF',
                   color: '#334155',
-                  fontSize: '12px',
+                  fontSize: '12.5px',
                   fontWeight: 500,
                   cursor: 'pointer',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <Upload size={12} />
+                <Upload size={13} />
                 <span>Nhập hàng loạt</span>
               </button>
 
@@ -974,27 +974,27 @@ export default function ProxiesPage() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '5px',
-                    height: '30px',
-                    padding: '0 10px 0 12px',
+                    gap: '6px',
+                    height: '32px',
+                    padding: '0 12px 0 14px',
                     borderTopLeftRadius: '6px',
                     borderBottomLeftRadius: '6px',
                     borderTopRightRadius: '0',
                     borderBottomRightRadius: '0',
                     border: 'none',
-                    backgroundColor: '#7C3AED',
+                    backgroundColor: 'var(--apidog-purple)',
                     color: '#FFFFFF',
-                    fontSize: '12px',
+                    fontSize: '12.5px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
+                    boxShadow: '0 2px 5px rgba(124, 58, 237, 0.25)',
                     transition: 'background-color 0.15s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6D28D9'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7C3AED'}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--apidog-purple-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--apidog-purple)'}
                   title="Thêm Proxy mới"
                 >
-                  <Plus size={14} />
+                  <Plus size={15} />
                   <span>Thêm Proxy</span>
                 </button>
 
@@ -1011,22 +1011,22 @@ export default function ProxiesPage() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    height: '30px',
+                    height: '32px',
                     width: '24px',
                     borderTopRightRadius: '6px',
                     borderBottomRightRadius: '6px',
                     borderTopLeftRadius: '0',
                     borderBottomLeftRadius: '0',
                     border: 'none',
-                    backgroundColor: isAddProxyDropdownOpen ? '#6D28D9' : '#7C3AED',
+                    backgroundColor: isAddProxyDropdownOpen ? 'var(--apidog-purple-hover)' : 'var(--apidog-purple)',
                     color: '#FFFFFF',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
+                    boxShadow: '0 2px 5px rgba(124, 58, 237, 0.25)',
                     transition: 'all 0.15s ease'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6D28D9'}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--apidog-purple-hover)'}
                   onMouseLeave={(e) => {
-                    if (!isAddProxyDropdownOpen) e.currentTarget.style.backgroundColor = '#7C3AED';
+                    if (!isAddProxyDropdownOpen) e.currentTarget.style.backgroundColor = 'var(--apidog-purple)';
                   }}
                   title="Tùy chọn thêm Proxy"
                 >
@@ -1383,11 +1383,6 @@ export default function ProxiesPage() {
 
           {/* Right: Selected count indicator + Status Filter (Live/Die/All) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            {selectedProxyIds.length > 0 && (
-              <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-                Đã chọn <strong style={{ color: '#7C3AED' }}>{selectedProxyIds.length}</strong> / {filteredProxies.length} proxy
-              </div>
-            )}
 
             {/* Status Filter Segmented Button */}
             <div style={{ display: 'flex', backgroundColor: '#E2E8F0', borderRadius: '4px', padding: '2px', gap: '2px' }}>
@@ -1480,472 +1475,472 @@ export default function ProxiesPage() {
         {activeSubTab === 'pool' && (
           <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            {isCheckingAll ? (
-              <div style={{ padding: '24px 20px', backgroundColor: '#FFFFFF' }}>
-                <SkeletonLoader type="lines" count={4} />
-              </div>
-            ) : filteredProxies.length === 0 ? (
-              /* Empty State */
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '40px 20px',
-                  color: '#64748B'
-                }}
-              >
+              {isCheckingAll ? (
+                <div style={{ padding: '24px 20px', backgroundColor: '#FFFFFF' }}>
+                  <SkeletonLoader type="lines" count={4} />
+                </div>
+              ) : filteredProxies.length === 0 ? (
+                /* Empty State */
                 <div
                   style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '50%',
-                    backgroundColor: '#F1F5F9',
+                    flex: 1,
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginBottom: '12px',
-                    color: '#94A3B8'
+                    padding: '40px 20px',
+                    color: '#64748B'
                   }}
                 >
-                  <Shield size={28} />
-                </div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>
-                  {searchTerm ? 'Không tìm thấy proxy nào phù hợp' : 'Kho Proxy đang trống'}
-                </div>
-                <div style={{ fontSize: '12px', color: '#94A3B8', marginBottom: '14px', maxWidth: '340px', textAlign: 'center' }}>
-                  {searchTerm
-                    ? 'Hãy kiểm tra lại từ khóa hoặc chuyển đổi bộ lọc trạng thái để tìm lại.'
-                    : 'Thêm proxy mới hoặc nhập hàng loạt để cấp mạng cho các hồ sơ trình duyệt.'}
-                </div>
-                <button
-                  onClick={handleOpenAddModal}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
-                    backgroundColor: '#7C3AED',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  + Thêm Proxy Đầu Tiên
-                </button>
-              </div>
-            ) : (
-              /* High-Density Screenshot-Aligned Data Table */
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
-                <thead>
-                  <tr
+                  <div
                     style={{
-                      backgroundColor: '#F8FAFC',
-                      borderBottom: '1px solid #E2E8F0',
-                      color: '#475569',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: 10
+                      width: '56px',
+                      height: '56px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F1F5F9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '12px',
+                      color: '#94A3B8'
                     }}
                   >
-                    <th style={{ width: '38px', padding: '12px 14px', textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={isAllSelected}
-                        onChange={handleSelectAll}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </th>
-                    <th style={{ padding: '12px 14px', width: '280px' }}>Proxy Info</th>
-                    <th style={{ padding: '12px 14px', width: '200px' }}>Outbound IP</th>
-                    <th style={{ padding: '12px 14px', width: '90px' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <span>Notes</span>
-                        <button
-                          type="button"
-                          onClick={() => setShowNoteText(!showNoteText)}
-                          title={showNoteText ? "Chuyển thành dạng biểu tượng" : "Hiển thị chữ ghi chú"}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            padding: 0,
-                            cursor: 'pointer',
-                            color: showNoteText ? '#7C3AED' : '#94A3B8',
-                            display: 'inline-flex',
-                            alignItems: 'center'
-                          }}
-                        >
-                          <Eye size={13} />
-                        </button>
-                      </div>
-                    </th>
-                    <th style={{ padding: '12px 14px', width: '160px' }}>IP Query Channel</th>
-                    <th style={{ padding: '12px 14px', width: '150px' }}>Related Profiles</th>
-                    <th style={{ width: '140px', padding: '12px 14px', textAlign: 'right' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProxies.map((p) => {
-                    const isSelected = selectedProxyIds.includes(p.id);
-                    const isTesting = testingId === p.id;
-                    const isLive = p.status === 'live';
-                    const isDie = p.status === 'die';
-                    const assignedProfiles = profiles.filter(prof => prof.proxy?.host === p.host && Number(prof.proxy?.port) === Number(p.port));
-                    const assignedProfilesCount = assignedProfiles.length;
-                    const proxyUrl = `${(p.type || 'socks5').toLowerCase()}://${p.host}:${p.port}`;
-                    const ipTypeDisplay = (p.ipVersion || 'IPV4').toUpperCase();
-                    const noteContent = p.name || p.notes || '';
-
-                    return (
-                      <tr
-                        key={p.id}
-                        style={{
-                          borderBottom: '1px solid #F1F5F9',
-                          backgroundColor: isSelected ? '#F5F3FF' : '#FFFFFF',
-                          transition: 'background-color 0.12s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) e.currentTarget.style.backgroundColor = '#FAFAFC';
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) e.currentTarget.style.backgroundColor = '#FFFFFF';
-                        }}
-                      >
-                        {/* 1. Checkbox */}
-                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleSelectOne(p.id)}
-                            style={{ cursor: 'pointer' }}
-                          />
-                        </td>
-
-                        {/* 2. Proxy Info (dùng font mặc định đồng bộ với Outbound IP) */}
-                        <td style={{ padding: '12px 14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span
-                              style={{
-                                fontSize: '13px',
-                                fontWeight: 600,
-                                color: '#0F172A',
-                                letterSpacing: '-0.1px'
-                              }}
-                            >
-                              {proxyUrl}
-                            </span>
-                            <button
-                              onClick={() => handleCopy(proxyUrl, `pi-${p.id}`)}
-                              title="Sao chép Proxy"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: copiedId === `pi-${p.id}` ? '#10B981' : '#94A3B8',
-                                cursor: 'pointer',
-                                padding: '2px',
-                                display: 'inline-flex',
-                                alignItems: 'center'
-                              }}
-                            >
-                              {copiedId === `pi-${p.id}` ? <Check size={12} /> : <Copy size={12} />}
-                            </button>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: '#94A3B8', marginTop: '2px' }}>
-                            <span style={{ fontWeight: 500 }}>{ipTypeDisplay}</span>
-                            <span style={{ color: '#CBD5E1' }}>|</span>
-                            <span style={{ color: p.user ? '#64748B' : '#94A3B8' }}>{p.user || p.name || '--'}</span>
-                          </div>
-                        </td>
-
-                        {/* 3. Outbound IP */}
-                        <td style={{ padding: '12px 14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            {/* Globe Icon với gạch chéo đỏ khi die */}
-                            <div
-                              style={{
-                                position: 'relative',
-                                width: '28px',
-                                height: '28px',
-                                borderRadius: '50%',
-                                backgroundColor: isTesting ? '#F1F5F9' : isLive ? '#EFF6FF' : isDie ? '#FEF2F2' : '#F1F5F9',
-                                color: isTesting ? '#64748B' : isLive ? '#2563EB' : isDie ? '#EF4444' : '#94A3B8',
-                                border: isTesting ? '1px solid #E2E8F0' : isLive ? '1px solid #BFDBFE' : isDie ? '1px solid #FECACA' : '1px solid #E2E8F0',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0
-                              }}
-                            >
-                              <Globe size={15} />
-                              {isDie && (
-                                /* Gạch chéo màu đỏ xuyên qua quả địa cầu */
-                                <div
-                                  style={{
-                                    position: 'absolute',
-                                    width: '18px',
-                                    height: '2px',
-                                    backgroundColor: '#EF4444',
-                                    transform: 'rotate(-45deg)',
-                                    borderRadius: '1px'
-                                  }}
-                                />
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                {isTesting ? (
-                                  <span style={{ fontSize: '12px', fontWeight: 500, color: '#3B82F6' }}>Đang kiểm tra...</span>
-                                ) : isLive ? (
-                                  <>
-                                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>
-                                      {p.outboundIp || p.host}
-                                    </span>
-                                    {p.country && (
-                                      <CountryFlag code={p.country} width={15} height={10} />
-                                    )}
-                                  </>
-                                ) : isDie ? (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#DC2626' }}>
-                                      Mất kết nối
-                                    </span>
-                                    <span
-                                      style={{
-                                        fontSize: '9.5px',
-                                        padding: '1px 5px',
-                                        borderRadius: '4px',
-                                        backgroundColor: '#FEE2E2',
-                                        color: '#DC2626',
-                                        fontWeight: 700
-                                      }}
-                                    >
-                                      DIE
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#64748B' }}>--</span>
-                                )}
-                              </div>
-                              {/* Dòng dưới: Vị trí địa lý và Tốc độ ping (ms) */}
-                              <div style={{ fontSize: '11px', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                {isTesting ? (
-                                  <span style={{ color: '#94A3B8' }}>Đang đo ping...</span>
-                                ) : isLive ? (
-                                  <>
-                                    <span style={{ color: '#94A3B8' }}>
-                                      {p.country ? `${p.country} | ${p.city || p.region || '--'}` : '-- | --'}
-                                    </span>
-                                    {p.latency != null && (
-                                      <>
-                                        <span style={{ color: '#CBD5E1' }}>•</span>
-                                        <span style={{ color: '#059669', fontWeight: 600 }}>{p.latency}ms</span>
-                                      </>
-                                    )}
-                                  </>
-                                ) : isDie ? (
-                                  <span style={{ color: '#EF4444' }}>Không thể kết nối máy chủ</span>
-                                ) : (
-                                  <span style={{ color: '#94A3B8' }}>-- | --</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* 4. Notes 👁 */}
-                        <td style={{ padding: '12px 14px' }}>
-                          {showNoteText ? (
-                            <div
-                              onClick={() => handleOpenNoteModal(p)}
-                              title="Nhấp để sửa ghi chú"
-                              style={{
-                                fontSize: '12px',
-                                color: noteContent ? '#334155' : '#94A3B8',
-                                cursor: 'pointer',
-                                maxWidth: '120px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              {noteContent || '--'}
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenNoteModal(p)}
-                              title={noteContent || 'Nhấp để xem/thêm ghi chú'}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: noteContent ? '#7C3AED' : '#94A3B8',
-                                cursor: 'pointer',
-                                padding: '4px',
-                                borderRadius: '4px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                transition: 'all 0.15s'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.color = '#7C3AED'}
-                              onMouseLeave={(e) => e.currentTarget.style.color = noteContent ? '#7C3AED' : '#94A3B8'}
-                            >
-                              <FileText size={16} />
-                            </button>
-                          )}
-                        </td>
-
-                        {/* 5. IP Query Channel */}
-                        <td style={{ padding: '12px 14px' }}>
-                          <div
+                    <Shield size={28} />
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>
+                    {searchTerm ? 'Không tìm thấy proxy nào phù hợp' : 'Kho Proxy đang trống'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94A3B8', marginBottom: '14px', maxWidth: '340px', textAlign: 'center' }}>
+                    {searchTerm
+                      ? 'Hãy kiểm tra lại từ khóa hoặc chuyển đổi bộ lọc trạng thái để tìm lại.'
+                      : 'Thêm proxy mới hoặc nhập hàng loạt để cấp mạng cho các hồ sơ trình duyệt.'}
+                  </div>
+                  <button
+                    onClick={handleOpenAddModal}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '6px',
+                      backgroundColor: '#7C3AED',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    + Thêm Proxy Đầu Tiên
+                  </button>
+                </div>
+              ) : (
+                /* High-Density Screenshot-Aligned Data Table */
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
+                  <thead>
+                    <tr
+                      style={{
+                        backgroundColor: '#F8FAFC',
+                        borderBottom: '1px solid #E2E8F0',
+                        color: '#475569',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 10
+                      }}
+                    >
+                      <th style={{ width: '38px', padding: '12px 14px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={handleSelectAll}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </th>
+                      <th style={{ padding: '12px 14px', width: '280px' }}>Proxy Info</th>
+                      <th style={{ padding: '12px 14px', width: '200px' }}>Outbound IP</th>
+                      <th style={{ padding: '12px 14px', width: '90px' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span>Notes</span>
+                          <button
+                            type="button"
+                            onClick={() => setShowNoteText(!showNoteText)}
+                            title={showNoteText ? "Chuyển thành dạng biểu tượng" : "Hiển thị chữ ghi chú"}
                             style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              cursor: 'pointer',
+                              color: showNoteText ? '#7C3AED' : '#94A3B8',
                               display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              padding: '3px 9px',
-                              borderRadius: '6px',
-                              backgroundColor: '#F8FAFC',
-                              border: '1px solid #E2E8F0',
-                              color: '#475569',
-                              fontSize: '11.5px',
-                              fontWeight: 500
+                              alignItems: 'center'
                             }}
                           >
-                            <User size={12} style={{ color: '#64748B' }} />
-                            <span>{p.queryChannel || ipQueryChannel || 'IPRust.io'}</span>
-                          </div>
-                        </td>
+                            <Eye size={13} />
+                          </button>
+                        </div>
+                      </th>
+                      <th style={{ padding: '12px 14px', width: '160px' }}>IP Query Channel</th>
+                      <th style={{ padding: '12px 14px', width: '150px' }}>Related Profiles</th>
+                      <th style={{ width: '140px', padding: '12px 14px', textAlign: 'right' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProxies.map((p) => {
+                      const isSelected = selectedProxyIds.includes(p.id);
+                      const isTesting = testingId === p.id;
+                      const isLive = p.status === 'live';
+                      const isDie = p.status === 'die';
+                      const assignedProfiles = profiles.filter(prof => prof.proxy?.host === p.host && Number(prof.proxy?.port) === Number(p.port));
+                      const assignedProfilesCount = assignedProfiles.length;
+                      const proxyUrl = `${(p.type || 'socks5').toLowerCase()}://${p.host}:${p.port}`;
+                      const ipTypeDisplay = (p.ipVersion || 'IPV4').toUpperCase();
+                      const noteContent = p.name || p.notes || '';
 
-                        {/* 6. Related Profiles */}
-                        <td style={{ padding: '12px 14px' }}>
-                          {assignedProfilesCount > 0 ? (
-                            <button
-                              type="button"
-                              onClick={() => setAssignModalProxy(p)}
-                              title="Nhấp để xem/gán thêm hồ sơ"
+                      return (
+                        <tr
+                          key={p.id}
+                          style={{
+                            borderBottom: '1px solid #F1F5F9',
+                            backgroundColor: isSelected ? '#F5F3FF' : '#FFFFFF',
+                            transition: 'background-color 0.12s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) e.currentTarget.style.backgroundColor = '#FAFAFC';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) e.currentTarget.style.backgroundColor = '#FFFFFF';
+                          }}
+                        >
+                          {/* 1. Checkbox */}
+                          <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleSelectOne(p.id)}
+                              style={{ cursor: 'pointer' }}
+                            />
+                          </td>
+
+                          {/* 2. Proxy Info (dùng font mặc định đồng bộ với Outbound IP) */}
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span
+                                style={{
+                                  fontSize: '13px',
+                                  fontWeight: 600,
+                                  color: '#0F172A',
+                                  letterSpacing: '-0.1px'
+                                }}
+                              >
+                                {proxyUrl}
+                              </span>
+                              <button
+                                onClick={() => handleCopy(proxyUrl, `pi-${p.id}`)}
+                                title="Sao chép Proxy"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: copiedId === `pi-${p.id}` ? '#10B981' : '#94A3B8',
+                                  cursor: 'pointer',
+                                  padding: '2px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center'
+                                }}
+                              >
+                                {copiedId === `pi-${p.id}` ? <Check size={12} /> : <Copy size={12} />}
+                              </button>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: '#94A3B8', marginTop: '2px' }}>
+                              <span style={{ fontWeight: 500 }}>{ipTypeDisplay}</span>
+                              <span style={{ color: '#CBD5E1' }}>|</span>
+                              <span style={{ color: p.user ? '#64748B' : '#94A3B8' }}>{p.user || p.name || '--'}</span>
+                            </div>
+                          </td>
+
+                          {/* 3. Outbound IP */}
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              {/* Globe Icon với gạch chéo đỏ khi die */}
+                              <div
+                                style={{
+                                  position: 'relative',
+                                  width: '28px',
+                                  height: '28px',
+                                  borderRadius: '50%',
+                                  backgroundColor: isTesting ? '#F1F5F9' : isLive ? '#EFF6FF' : isDie ? '#FEF2F2' : '#F1F5F9',
+                                  color: isTesting ? '#64748B' : isLive ? '#2563EB' : isDie ? '#EF4444' : '#94A3B8',
+                                  border: isTesting ? '1px solid #E2E8F0' : isLive ? '1px solid #BFDBFE' : isDie ? '1px solid #FECACA' : '1px solid #E2E8F0',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <Globe size={15} />
+                                {isDie && (
+                                  /* Gạch chéo màu đỏ xuyên qua quả địa cầu */
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      width: '18px',
+                                      height: '2px',
+                                      backgroundColor: '#EF4444',
+                                      transform: 'rotate(-45deg)',
+                                      borderRadius: '1px'
+                                    }}
+                                  />
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {isTesting ? (
+                                    <span style={{ fontSize: '12px', fontWeight: 500, color: '#3B82F6' }}>Đang kiểm tra...</span>
+                                  ) : isLive ? (
+                                    <>
+                                      <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>
+                                        {p.outboundIp || p.host}
+                                      </span>
+                                      {p.country && (
+                                        <CountryFlag code={p.country} width={15} height={10} />
+                                      )}
+                                    </>
+                                  ) : isDie ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                      <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#DC2626' }}>
+                                        Mất kết nối
+                                      </span>
+                                      <span
+                                        style={{
+                                          fontSize: '9.5px',
+                                          padding: '1px 5px',
+                                          borderRadius: '4px',
+                                          backgroundColor: '#FEE2E2',
+                                          color: '#DC2626',
+                                          fontWeight: 700
+                                        }}
+                                      >
+                                        DIE
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#64748B' }}>--</span>
+                                  )}
+                                </div>
+                                {/* Dòng dưới: Vị trí địa lý và Tốc độ ping (ms) */}
+                                <div style={{ fontSize: '11px', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                  {isTesting ? (
+                                    <span style={{ color: '#94A3B8' }}>Đang đo ping...</span>
+                                  ) : isLive ? (
+                                    <>
+                                      <span style={{ color: '#94A3B8' }}>
+                                        {p.country ? `${p.country} | ${p.city || p.region || '--'}` : '-- | --'}
+                                      </span>
+                                      {p.latency != null && (
+                                        <>
+                                          <span style={{ color: '#CBD5E1' }}>•</span>
+                                          <span style={{ color: '#059669', fontWeight: 600 }}>{p.latency}ms</span>
+                                        </>
+                                      )}
+                                    </>
+                                  ) : isDie ? (
+                                    <span style={{ color: '#EF4444' }}>Không thể kết nối máy chủ</span>
+                                  ) : (
+                                    <span style={{ color: '#94A3B8' }}>-- | --</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 4. Notes 👁 */}
+                          <td style={{ padding: '12px 14px' }}>
+                            {showNoteText ? (
+                              <div
+                                onClick={() => handleOpenNoteModal(p)}
+                                title="Nhấp để sửa ghi chú"
+                                style={{
+                                  fontSize: '12px',
+                                  color: noteContent ? '#334155' : '#94A3B8',
+                                  cursor: 'pointer',
+                                  maxWidth: '120px',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {noteContent || '--'}
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenNoteModal(p)}
+                                title={noteContent || 'Nhấp để xem/thêm ghi chú'}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: noteContent ? '#7C3AED' : '#94A3B8',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  borderRadius: '4px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  transition: 'all 0.15s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = '#7C3AED'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = noteContent ? '#7C3AED' : '#94A3B8'}
+                              >
+                                <FileText size={16} />
+                              </button>
+                            )}
+                          </td>
+
+                          {/* 5. IP Query Channel */}
+                          <td style={{ padding: '12px 14px' }}>
+                            <div
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '4px',
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                backgroundColor: '#EFF6FF',
-                                color: '#2563EB',
-                                border: '1px solid #BFDBFE',
+                                gap: '5px',
+                                padding: '3px 9px',
+                                borderRadius: '6px',
+                                backgroundColor: '#F8FAFC',
+                                border: '1px solid #E2E8F0',
+                                color: '#475569',
                                 fontSize: '11.5px',
-                                fontWeight: 600,
-                                cursor: 'pointer'
+                                fontWeight: 500
                               }}
                             >
-                              {assignedProfilesCount} hồ sơ
-                            </button>
-                          ) : (
-                            <span style={{ color: '#94A3B8', fontSize: '13px' }}>--</span>
-                          )}
-                        </td>
+                              <User size={12} style={{ color: '#64748B' }} />
+                              <span>{p.queryChannel || ipQueryChannel || 'IPRust.io'}</span>
+                            </div>
+                          </td>
 
-                        {/* 7. Action: 4 icons (Edit, Assign/Radio, Refresh, Delete) */}
-                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-                            {/* Icon 1: Edit */}
-                            <button
-                              type="button"
-                              onClick={(e) => handleOpenEditModal(p, e)}
-                              title="Chỉnh sửa Proxy"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#64748B',
-                                cursor: 'pointer',
-                                padding: '5px',
-                                borderRadius: '5px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                transition: 'all 0.12s'
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; e.currentTarget.style.color = '#0F172A'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
-                            >
-                              <Pencil size={14} />
-                            </button>
+                          {/* 6. Related Profiles */}
+                          <td style={{ padding: '12px 14px' }}>
+                            {assignedProfilesCount > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => setAssignModalProxy(p)}
+                                title="Nhấp để xem/gán thêm hồ sơ"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  backgroundColor: '#EFF6FF',
+                                  color: '#2563EB',
+                                  border: '1px solid #BFDBFE',
+                                  fontSize: '11.5px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {assignedProfilesCount} hồ sơ
+                              </button>
+                            ) : (
+                              <span style={{ color: '#94A3B8', fontSize: '13px' }}>--</span>
+                            )}
+                          </td>
 
-                            {/* Icon 2: Assign / Radio */}
-                            <button
-                              type="button"
-                              onClick={() => setAssignModalProxy(p)}
-                              title="Gán proxy vào hồ sơ trình duyệt"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#64748B',
-                                cursor: 'pointer',
-                                padding: '5px',
-                                borderRadius: '5px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                transition: 'all 0.12s'
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; e.currentTarget.style.color = '#7C3AED'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
-                            >
-                              <Radio size={14} />
-                            </button>
+                          {/* 7. Action: 4 icons (Edit, Assign/Radio, Refresh, Delete) */}
+                          <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                              {/* Icon 1: Edit */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleOpenEditModal(p, e)}
+                                title="Chỉnh sửa Proxy"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#64748B',
+                                  cursor: 'pointer',
+                                  padding: '5px',
+                                  borderRadius: '5px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  transition: 'all 0.12s'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; e.currentTarget.style.color = '#0F172A'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
+                              >
+                                <Pencil size={14} />
+                              </button>
 
-                            {/* Icon 3: Refresh / Ping */}
-                            <button
-                              type="button"
-                              onClick={(e) => handleCheckSingle(p, e)}
-                              disabled={isTesting}
-                              title="Kiểm tra ping Proxy"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#64748B',
-                                cursor: isTesting ? 'not-allowed' : 'pointer',
-                                padding: '5px',
-                                borderRadius: '5px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                transition: 'all 0.12s'
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; e.currentTarget.style.color = '#0284C7'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
-                            >
-                              <RotateCw size={14} className={isTesting ? 'spin-anim' : ''} />
-                            </button>
+                              {/* Icon 2: Assign / Radio */}
+                              <button
+                                type="button"
+                                onClick={() => setAssignModalProxy(p)}
+                                title="Gán proxy vào hồ sơ trình duyệt"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#64748B',
+                                  cursor: 'pointer',
+                                  padding: '5px',
+                                  borderRadius: '5px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  transition: 'all 0.12s'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; e.currentTarget.style.color = '#7C3AED'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
+                              >
+                                <Radio size={14} />
+                              </button>
 
-                            {/* Icon 4: Delete */}
-                            <button
-                              type="button"
-                              onClick={() => setDeleteConfirm({ type: 'single', proxy: p })}
-                              title="Xóa Proxy"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#64748B',
-                                cursor: 'pointer',
-                                padding: '5px',
-                                borderRadius: '5px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                transition: 'all 0.12s'
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.color = '#DC2626'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
+                              {/* Icon 3: Refresh / Ping */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleCheckSingle(p, e)}
+                                disabled={isTesting}
+                                title="Kiểm tra ping Proxy"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#64748B',
+                                  cursor: isTesting ? 'not-allowed' : 'pointer',
+                                  padding: '5px',
+                                  borderRadius: '5px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  transition: 'all 0.12s'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; e.currentTarget.style.color = '#0284C7'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
+                              >
+                                <RotateCw size={14} className={isTesting ? 'spin-anim' : ''} />
+                              </button>
+
+                              {/* Icon 4: Delete */}
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirm({ type: 'single', proxy: p })}
+                                title="Xóa Proxy"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#64748B',
+                                  cursor: 'pointer',
+                                  padding: '5px',
+                                  borderRadius: '5px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  transition: 'all 0.12s'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FEF2F2'; e.currentTarget.style.color = '#DC2626'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
 
             {/* ── FLOATING BATCH ACTION BAR (Pinned firmly to bottom) ── */}
@@ -2239,40 +2234,6 @@ export default function ProxiesPage() {
                     <Radio size={12} />
                     <span>Gán hồ sơ</span>
                   </button>
-
-                  {/* Action 5: Delete dead among selected if any */}
-                  {selectedProxyIds.some(id => proxies.find(p => p.id === id)?.status === 'die') && (
-                    <button
-                      onClick={() => {
-                        const dieSelectedIds = selectedProxyIds.filter(id => proxies.find(p => p.id === id)?.status === 'die');
-                        setDeleteConfirm({
-                          type: 'die',
-                          count: dieSelectedIds.length,
-                          ids: dieSelectedIds
-                        });
-                      }}
-                      title="Chỉ xóa các proxy Die trong số đã chọn"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        padding: '6px 12px',
-                        borderRadius: '4px',
-                        border: '1px solid #FECACA',
-                        backgroundColor: '#FEF2F2',
-                        color: '#DC2626',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.12s'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FEF2F2'; }}
-                    >
-                      <Trash2 size={12} />
-                      <span>Xóa Die ({selectedProxyIds.filter(id => proxies.find(p => p.id === id)?.status === 'die').length})</span>
-                    </button>
-                  )}
 
                   {/* Action 6: Delete all selected */}
                   <button
@@ -3092,20 +3053,20 @@ export default function ProxiesPage() {
                         testResultInModal.status === 'testing'
                           ? '#EFF6FF'
                           : testResultInModal.status === 'success'
-                          ? '#ECFDF5'
-                          : '#FEF2F2',
+                            ? '#ECFDF5'
+                            : '#FEF2F2',
                       border:
                         testResultInModal.status === 'testing'
                           ? '1px solid #BFDBFE'
                           : testResultInModal.status === 'success'
-                          ? '1px solid #A7F3D0'
-                          : '1px solid #FECACA',
+                            ? '1px solid #A7F3D0'
+                            : '1px solid #FECACA',
                       color:
                         testResultInModal.status === 'testing'
                           ? '#1D4ED8'
                           : testResultInModal.status === 'success'
-                          ? '#047857'
-                          : '#DC2626',
+                            ? '#047857'
+                            : '#DC2626',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -3808,8 +3769,8 @@ export default function ProxiesPage() {
               {deleteConfirm.type === 'single'
                 ? `Bạn có chắc chắn muốn xóa proxy "${deleteConfirm.proxy.host}:${deleteConfirm.proxy.port}" khỏi danh sách?`
                 : deleteConfirm.type === 'die'
-                ? `Bạn có chắc chắn muốn xóa toàn bộ ${deleteConfirm.count} proxy bị lỗi / Die khỏi kho không? Thao tác này không thể hoàn tác.`
-                : `Bạn có chắc chắn muốn xóa ${deleteConfirm.count} proxy đã chọn khỏi danh sách?`}
+                  ? `Bạn có chắc chắn muốn xóa toàn bộ ${deleteConfirm.count} proxy bị lỗi / Die khỏi kho không? Thao tác này không thể hoàn tác.`
+                  : `Bạn có chắc chắn muốn xóa ${deleteConfirm.count} proxy đã chọn khỏi danh sách?`}
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
