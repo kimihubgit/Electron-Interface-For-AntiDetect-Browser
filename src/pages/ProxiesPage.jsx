@@ -1561,9 +1561,6 @@ export default function ProxiesPage() {
                                     {p.country && (
                                       <CountryFlag code={p.country} width={15} height={10} />
                                     )}
-                                    {p.latency && (
-                                      <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>{p.latency}ms</span>
-                                    )}
                                   </>
                                 ) : isDie ? (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -1587,15 +1584,28 @@ export default function ProxiesPage() {
                                   <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#64748B' }}>--</span>
                                 )}
                               </div>
-                              <span style={{ fontSize: '11px', color: isDie ? '#EF4444' : '#94A3B8', marginTop: '1px' }}>
-                                {isTesting
-                                  ? 'Đang đo ping...'
-                                  : isLive && (p.country || p.city)
-                                  ? `${p.country || '--'} | ${p.city || p.region || '--'}`
-                                  : isDie
-                                  ? 'Không thể kết nối máy chủ'
-                                  : '-- | --'}
-                              </span>
+                              {/* Dòng dưới: Vị trí địa lý và Tốc độ ping (ms) */}
+                              <div style={{ fontSize: '11px', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                {isTesting ? (
+                                  <span style={{ color: '#94A3B8' }}>Đang đo ping...</span>
+                                ) : isLive ? (
+                                  <>
+                                    <span style={{ color: '#94A3B8' }}>
+                                      {p.country ? `${p.country} | ${p.city || p.region || '--'}` : '-- | --'}
+                                    </span>
+                                    {p.latency != null && (
+                                      <>
+                                        <span style={{ color: '#CBD5E1' }}>•</span>
+                                        <span style={{ color: '#059669', fontWeight: 600 }}>{p.latency}ms</span>
+                                      </>
+                                    )}
+                                  </>
+                                ) : isDie ? (
+                                  <span style={{ color: '#EF4444' }}>Không thể kết nối máy chủ</span>
+                                ) : (
+                                  <span style={{ color: '#94A3B8' }}>-- | --</span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
