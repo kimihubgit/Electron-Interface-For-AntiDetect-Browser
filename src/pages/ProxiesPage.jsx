@@ -275,7 +275,6 @@ export default function ProxiesPage() {
     setIsCheckingAll(true);
     await checkAllProxies();
     setIsCheckingAll(false);
-    showToast?.('Đã kiểm tra ping toàn bộ danh sách proxy');
   };
 
   // Flexible proxy string parser supporting IPv4/IPv6, protocol prefixes, auth formats
@@ -1448,6 +1447,7 @@ export default function ProxiesPage() {
                     const isSelected = selectedProxyIds.includes(p.id);
                     const isTesting = testingId === p.id;
                     const isLive = p.status === 'live';
+                    const isDie = p.status === 'die';
                     const assignedProfiles = profiles.filter(prof => prof.proxy?.host === p.host && Number(prof.proxy?.port) === Number(p.port));
                     const assignedProfilesCount = assignedProfiles.length;
                     const proxyUrl = `${(p.type || 'socks5').toLowerCase()}://${p.host}:${p.port}`;
@@ -1479,16 +1479,15 @@ export default function ProxiesPage() {
                           />
                         </td>
 
-                        {/* 2. Proxy Info */}
+                        {/* 2. Proxy Info (dùng font mặc định đồng bộ với Outbound IP) */}
                         <td style={{ padding: '12px 14px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span
                               style={{
-                                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
                                 fontSize: '13px',
-                                fontWeight: 700,
-                                color: '#1E293B',
-                                letterSpacing: '-0.2px'
+                                fontWeight: 600,
+                                color: '#0F172A',
+                                letterSpacing: '-0.1px'
                               }}
                             >
                               {proxyUrl}
@@ -1519,14 +1518,16 @@ export default function ProxiesPage() {
                         {/* 3. Outbound IP */}
                         <td style={{ padding: '12px 14px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {/* Globe Icon với gạch chéo đỏ khi die */}
                             <div
                               style={{
+                                position: 'relative',
                                 width: '28px',
                                 height: '28px',
                                 borderRadius: '50%',
-                                backgroundColor: '#F1F5F9',
-                                color: isLive ? '#2563EB' : '#94A3B8',
-                                border: '1px solid #E2E8F0',
+                                backgroundColor: isTesting ? '#F1F5F9' : isLive ? '#EFF6FF' : isDie ? '#FEF2F2' : '#F1F5F9',
+                                color: isTesting ? '#64748B' : isLive ? '#2563EB' : isDie ? '#EF4444' : '#94A3B8',
+                                border: isTesting ? '1px solid #E2E8F0' : isLive ? '1px solid #BFDBFE' : isDie ? '1px solid #FECACA' : '1px solid #E2E8F0',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -1534,19 +1535,65 @@ export default function ProxiesPage() {
                               }}
                             >
                               <Globe size={15} />
+                              {isDie && (
+                                /* Gạch chéo màu đỏ xuyên qua quả địa cầu */
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    width: '18px',
+                                    height: '2px',
+                                    backgroundColor: '#EF4444',
+                                    transform: 'rotate(-45deg)',
+                                    borderRadius: '1px'
+                                  }}
+                                />
+                              )}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: '12.5px', fontWeight: 600, color: isLive ? '#1E293B' : '#64748B' }}>
-                                  {isTesting ? 'Đang kiểm tra...' : isLive ? (p.outboundIp || p.host) : '--'}
-                                </span>
-                                {isLive && p.country && (
-                                  <CountryFlag code={p.country} width={15} height={10} />
+                                {isTesting ? (
+                                  <span style={{ fontSize: '12px', fontWeight: 500, color: '#3B82F6' }}>Đang kiểm tra...</span>
+                                ) : isLive ? (
+                                  <>
+                                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>
+                                      {p.outboundIp || p.host}
+                                    </span>
+                                    {p.country && (
+                                      <CountryFlag code={p.country} width={15} height={10} />
+                                    )}
+                                    {p.latency && (
+                                      <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>{p.latency}ms</span>
+                                    )}
+                                  </>
+                                ) : isDie ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#DC2626' }}>
+                                      Mất kết nối
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: '9.5px',
+                                        padding: '1px 5px',
+                                        borderRadius: '4px',
+                                        backgroundColor: '#FEE2E2',
+                                        color: '#DC2626',
+                                        fontWeight: 700
+                                      }}
+                                    >
+                                      DIE
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#64748B' }}>--</span>
                                 )}
                               </div>
-                              <span style={{ fontSize: '11px', color: '#94A3B8', marginTop: '1px' }}>
-                                {isLive && (p.country || p.city)
+                              <span style={{ fontSize: '11px', color: isDie ? '#EF4444' : '#94A3B8', marginTop: '1px' }}>
+                                {isTesting
+                                  ? 'Đang đo ping...'
+                                  : isLive && (p.country || p.city)
                                   ? `${p.country || '--'} | ${p.city || p.region || '--'}`
+                                  : isDie
+                                  ? 'Không thể kết nối máy chủ'
                                   : '-- | --'}
                               </span>
                             </div>
@@ -1786,7 +1833,6 @@ export default function ProxiesPage() {
                   <button
                     onClick={() => {
                       selectedProxyIds.forEach(id => checkProxy(id));
-                      showToast?.(`Đang kiểm tra ping ${selectedProxyIds.length} proxy đã chọn`);
                     }}
                     style={{
                       display: 'flex',
