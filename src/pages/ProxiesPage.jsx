@@ -47,21 +47,6 @@ import CountryFlag from '../components/common/CountryFlag';
 import SkeletonLoader from '../components/common/SkeletonLoader';
 import { testProxyConnection, parseProxyString } from '../features/profiles/utils/proxyUtils';
 
-const COUNTRY_OPTIONS = [
-  { code: 'US', label: 'Hoa Kỳ (US)' },
-  { code: 'VN', label: 'Việt Nam (VN)' },
-  { code: 'SG', label: 'Singapore (SG)' },
-  { code: 'JP', label: 'Nhật Bản (JP)' },
-  { code: 'DE', label: 'Đức (DE)' },
-  { code: 'GB', label: 'Vương Quốc Anh (GB)' },
-  { code: 'KR', label: 'Hàn Quốc (KR)' },
-  { code: 'TH', label: 'Thái Lan (TH)' }
-];
-
-const getFlag = (code) => {
-  return <CountryFlag code={code} width={18} height={12} />;
-};
-
 export default function ProxiesPage() {
   const { t } = useTranslation();
   const {
@@ -653,6 +638,8 @@ export default function ProxiesPage() {
     }
 
     if (modalMode === 'add') {
+      const hasModalTest = testResultInModal && testResultInModal.status === 'success';
+      const isModalError = testResultInModal && testResultInModal.status === 'error';
       addProxy({
         ...formData,
         host,
@@ -660,7 +647,10 @@ export default function ProxiesPage() {
         user: formData.user.trim(),
         pass: formData.pass.trim(),
         ipVersion: formData.ipVersion || (host.includes(':') ? 'IPv6' : 'IPv4'),
-        country: (formData.country || '').toUpperCase()
+        country: hasModalTest ? (testResultInModal.country || formData.country || '').toUpperCase() : (formData.country || '').toUpperCase(),
+        status: hasModalTest ? 'live' : isModalError ? 'die' : 'unknown',
+        latency: hasModalTest && testResultInModal.latency != null ? testResultInModal.latency : null,
+        outboundIp: hasModalTest ? (testResultInModal.ip || host) : null
       });
       showToast?.('Thêm proxy mới thành công');
     } else if (modalMode === 'edit' && currentEditingProxy) {
@@ -1631,8 +1621,8 @@ export default function ProxiesPage() {
                             backgroundColor: isTesting
                               ? '#F0F7FF'
                               : isSelected
-                              ? '#F5F3FF'
-                              : '#FFFFFF',
+                                ? '#F5F3FF'
+                                : '#FFFFFF',
                             transition: 'background-color 0.15s ease'
                           }}
                           onMouseEnter={(e) => {

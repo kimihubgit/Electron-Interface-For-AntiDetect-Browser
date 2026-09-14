@@ -50,10 +50,11 @@ export function useProxies(addLog, currentUser = null) {
   const addProxy = useCallback((proxyData, closeModal) => {
     const newPx = {
       ...proxyData,
-      id: `px-${Date.now().toString().slice(-4)}`,
-      status: 'live',
-      usedCount: 0,
-      latency: Math.floor(20 + Math.random() * 80),
+      id: proxyData.id || `px-${Date.now().toString().slice(-4)}`,
+      status: proxyData.status || 'unknown',
+      usedCount: proxyData.usedCount || 0,
+      latency: proxyData.latency !== undefined ? proxyData.latency : null,
+      outboundIp: proxyData.outboundIp || null
     };
     setProxies(prev => [newPx, ...prev]);
     addLog?.(`Thêm Proxy mới: ${newPx.type}://${newPx.host}:${newPx.port}`, 'success');
@@ -120,9 +121,10 @@ export function useProxies(addLog, currentUser = null) {
           pass,
           ipVersion: host.includes(':') ? 'IPv6' : defaultIpVersion,
           country: defaultCountry,
-          latency: 0,
-          status: 'live',
-          usedCount: 0
+          latency: null,
+          status: 'unknown',
+          usedCount: 0,
+          outboundIp: null
         });
       }
     });
