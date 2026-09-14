@@ -21,6 +21,21 @@ export default class ErrorBoundary extends React.Component {
     window.location.reload();
   };
 
+  handleClearStorageAndReload = () => {
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('antidetect_open_ws_') || k.startsWith('antidetect_active_ws_') || k.startsWith('antidetect_workspaces_'))) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch {}
+    this.setState({ hasError: false, error: null, errorInfo: null });
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
       return (
@@ -97,6 +112,24 @@ export default class ErrorBoundary extends React.Component {
               }}
             >
               <RefreshCw size={14} /> Làm Mới Giao Diện
+            </button>
+            <button
+              onClick={this.handleClearStorageAndReload}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '9px 16px',
+                borderRadius: '8px',
+                backgroundColor: '#F1F5F9',
+                color: '#475569',
+                border: '1px solid #CBD5E1',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Khôi Phục Mặc Định
             </button>
           </div>
         </div>

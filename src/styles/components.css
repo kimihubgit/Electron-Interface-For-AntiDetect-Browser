@@ -122,3 +122,31 @@
   width: 0 !important;
   height: 0 !important;
 }
+
+/* ═══════════════════════════════
+   Skeleton Shimmer Loading Effect
+   ═══════════════════════════════ */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite ease-in-out;
+  border-radius: 9999px;
+}
+
+.skeleton-shimmer-dark {
+  background: linear-gradient(90deg, #1E293B 25%, #334155 50%, #1E293B 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite ease-in-out;
+  border-radius: 9999px;
+}
+
+

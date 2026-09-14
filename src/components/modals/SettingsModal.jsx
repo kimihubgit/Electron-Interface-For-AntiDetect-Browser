@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   User, 
@@ -17,13 +17,36 @@ import {
   Zap, 
   Info, 
   LogOut,
-  Check
+  Check,
+  Globe,
+  Upload,
+  Bookmark,
+  Smartphone,
+  Video,
+  Monitor,
+  HardDrive,
+  Trash2,
+  Plus,
+  Server,
+  Layers,
+  FileText,
+  CheckCircle2,
+  AlertTriangle,
+  ExternalLink,
+  ShieldCheck,
+  Filter,
+  Eye,
+  EyeOff,
+  Loader2
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
+import { useTranslation } from '../../i18n/I18nContext';
 import { applyTheme, applyAccentColor, applyFontSize } from '../../utils/themeManager';
+import { deleteAccountApi } from '../../services/authService';
 
 export default function SettingsModal() {
-  const { activeSettingsModal, setActiveSettingsModal, showToast } = useBrowser();
+  const { activeSettingsModal, setActiveSettingsModal, showToast, currentUser, logout, deleteAccount } = useBrowser();
+  const { t, language, changeLanguage, supportedLanguages, currentLanguage } = useTranslation();
 
   const [activeNav, setActiveNav] = useState(() => {
     if (typeof activeSettingsModal === 'string') return activeSettingsModal;
@@ -50,7 +73,10 @@ export default function SettingsModal() {
     setGithubConnected(next);
     localStorage.setItem('conn_github', String(next));
     if (showToast) {
-      showToast(next ? 'Đã liên kết tài khoản GitHub thành công!' : 'Đã ngắt kết nối tài khoản GitHub.', next ? 'success' : 'info');
+      showToast(
+        next ? t('toasts.githubLinked', 'Đã liên kết tài khoản GitHub thành công!') : t('toasts.githubUnlinked', 'Đã ngắt kết nối tài khoản GitHub.'),
+        next ? 'success' : 'info'
+      );
     }
   };
 
@@ -59,7 +85,10 @@ export default function SettingsModal() {
     setGoogleConnected(next);
     localStorage.setItem('conn_google', String(next));
     if (showToast) {
-      showToast(next ? 'Đã liên kết tài khoản Google thành công!' : 'Đã ngắt kết nối tài khoản Google.', next ? 'success' : 'info');
+      showToast(
+        next ? t('toasts.googleLinked', 'Đã liên kết tài khoản Google thành công!') : t('toasts.googleUnlinked', 'Đã ngắt kết nối tài khoản Google.'),
+        next ? 'success' : 'info'
+      );
     }
   };
 
@@ -86,15 +115,72 @@ export default function SettingsModal() {
     applyFontSize(fontSize);
   }, [fontSize]);
 
-  // User Profile State matching screenshot
-  const [userName, setUserName] = useState('Võ Văn Khải');
-  const [userEmail, setUserEmail] = useState('vkhai2603@gmail.com');
+  // User Profile State derived from authenticated currentUser
+  const [userName, setUserName] = useState(() => {
+    return currentUser?.full_name || currentUser?.name || currentUser?.username || 'Người dùng';
+  });
+  const [userEmail, setUserEmail] = useState(() => {
+    return currentUser?.email || '';
+  });
   const [userBio, setUserBio] = useState('-');
-  const [userRole, setUserRole] = useState('Backend Developer');
+  const [userRole, setUserRole] = useState(() => {
+    return currentUser?.workspace?.role || 'Thành viên';
+  });
   const [devMode, setDevMode] = useState('Please select the development mode.');
+
+  useEffect(() => {
+    if (currentUser) {
+      setUserName(currentUser.full_name || currentUser.name || currentUser.username || 'Người dùng');
+      setUserEmail(currentUser.email || '');
+      setUserRole(currentUser.workspace?.role || 'Thành viên');
+    }
+  }, [currentUser]);
 
   // Inline edit toggles
   const [editingField, setEditingField] = useState(null);
+
+  // Delete Account Modal states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const handleOpenDeleteDialog = () => {
+    setDeletePassword('');
+    setDeleteReason('');
+    setDeleteError('');
+    setShowDeletePassword(false);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteAccount = async (e) => {
+    e?.preventDefault();
+    if (!deletePassword.trim()) {
+      setDeleteError('Vui lòng nhập mật khẩu tài khoản để xác nhận xóa.');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    setDeleteError('');
+
+    try {
+      const deleteFn = deleteAccount || deleteAccountApi;
+      const res = await deleteFn({ password: deletePassword, reason: deleteReason });
+      if (res?.success) {
+        showToast?.(res.message || 'Tài khoản đã được xóa vĩnh viễn thành công.', 'success');
+        setIsDeleteDialogOpen(false);
+        setActiveSettingsModal?.(false);
+      } else {
+        setDeleteError(res?.error || 'Mật khẩu không chính xác hoặc không thể xóa tài khoản.');
+      }
+    } catch (err) {
+      setDeleteError(err.message || 'Lỗi khi kết nối với máy chủ để xóa tài khoản.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
 
   if (!activeSettingsModal) return null;
 
@@ -155,24 +241,23 @@ export default function SettingsModal() {
   ];
 
   const accountNavItems = [
-    { id: 'account', label: 'My Account', icon: User },
-    { id: 'connections', label: 'My Connections', icon: Share2 },
-    { id: 'tokens', label: 'Personal Access Tokens', icon: Key },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'account', label: t('settings.tabs.account', 'My Account'), icon: User },
+    { id: 'connections', label: t('settings.tabs.connections', 'My Connections'), icon: Share2 },
+    { id: 'tokens', label: t('settings.tabs.tokens', 'Personal Access Tokens'), icon: Key },
+    { id: 'notifications', label: t('settings.tabs.notifications', 'Notifications'), icon: Bell },
   ];
 
   const preferencesNavItems = [
-    { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'language', label: 'Language & Region', icon: Languages },
-    { id: 'general', label: 'General', icon: SettingsIcon },
-    { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
-    { id: 'certificates', label: 'Certificates', icon: Award },
-    { id: 'proxy', label: 'Proxy', icon: Shield },
-    { id: 'extensions', label: 'Extensions', icon: Boxes },
-    { id: 'external', label: 'External Programs', icon: AppWindow },
-    { id: 'security', label: 'Security', icon: Lock },
-    { id: 'performance', label: 'Performance Optimization', icon: Zap },
-    { id: 'about', label: 'About', icon: Info },
+    { id: 'appearance', label: t('settings.tabs.appearance', 'Appearance'), icon: Palette },
+    { id: 'language', label: t('settings.tabs.language', 'Language & Region'), icon: Languages },
+    { id: 'shortcuts', label: t('settings.tabs.shortcuts', 'Shortcuts'), icon: Keyboard },
+    { id: 'certificates', label: t('settings.tabs.certificates', 'Certificates'), icon: Award },
+    { id: 'proxy', label: t('settings.tabs.proxy', 'Proxy'), icon: Shield },
+    { id: 'extensions', label: t('settings.tabs.extensions', 'Extensions'), icon: Boxes },
+    { id: 'external', label: t('settings.tabs.external', 'External Programs'), icon: AppWindow },
+    { id: 'security', label: t('settings.tabs.security', 'Security'), icon: Lock },
+    { id: 'performance', label: t('settings.tabs.performance', 'Performance Optimization'), icon: Zap },
+    { id: 'about', label: t('settings.tabs.about', 'About'), icon: Info },
   ];
 
   return (
@@ -334,7 +419,7 @@ export default function SettingsModal() {
             <button
               onClick={() => {
                 setActiveSettingsModal(false);
-                alert('Đã đăng xuất khỏi tài khoản.');
+                logout?.();
               }}
               style={{
                 display: 'flex',
@@ -383,23 +468,22 @@ export default function SettingsModal() {
           }}>
             <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--apidog-text-main)', margin: 0 }}>
               {{
-                account: 'My Account',
-                connections: 'My Connections',
-                tokens: 'Personal Access Tokens',
-                referrals: 'Referrals and Credits',
-                notifications: 'Notifications',
-                appearance: 'Appearance',
-                language: 'Language & Region',
-                general: 'General',
-                shortcuts: 'Shortcuts',
-                certificates: 'Certificates',
-                proxy: 'Proxy',
-                extensions: 'Extensions',
-                external: 'External Programs',
-                security: 'Security',
-                performance: 'Performance Optimization',
-                about: 'About'
-              }[activeNav] || 'Settings'}
+                account: t('settings.tabs.account', 'My Account'),
+                connections: t('settings.tabs.connections', 'My Connections'),
+                tokens: t('settings.tabs.tokens', 'Personal Access Tokens'),
+                referrals: t('settings.tabs.referrals', 'Referrals and Credits'),
+                notifications: t('settings.tabs.notifications', 'Notifications'),
+                appearance: t('settings.tabs.appearance', 'Appearance'),
+                language: t('settings.tabs.language', 'Language & Region'),
+                shortcuts: t('settings.tabs.shortcuts', 'Shortcuts'),
+                certificates: t('settings.tabs.certificates', 'Certificates'),
+                proxy: t('settings.tabs.proxy', 'Proxy'),
+                extensions: t('settings.tabs.extensions', 'Extensions'),
+                external: t('settings.tabs.external', 'External Programs'),
+                security: t('settings.tabs.security', 'Security'),
+                performance: t('settings.tabs.performance', 'Performance Optimization'),
+                about: t('settings.tabs.about', 'About')
+              }[activeNav] || t('settings.title', 'Settings')}
             </h2>
             <button
               onClick={() => setActiveSettingsModal(false)}
@@ -475,7 +559,7 @@ export default function SettingsModal() {
                         borderRadius: '50%',
                         overflow: 'hidden',
                         border: '1.5px solid var(--apidog-border)',
-                        backgroundColor: '#8B5CF6',
+                        backgroundColor: '#3B82F6',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -483,15 +567,15 @@ export default function SettingsModal() {
                         fontWeight: 700,
                         fontSize: '14px'
                       }}>
-                        <img 
-                          src="https://api.dicebear.com/7.x/bottts/svg?seed=KhaiVo" 
-                          alt="Avatar" 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                        <span>K</span>
+                        {currentUser?.avatar ? (
+                          <img 
+                            src={currentUser.avatar} 
+                            alt="Avatar" 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <span>{(userName || 'U')[0].toUpperCase()}</span>
+                        )}
                       </div>
                     </div>
                     <button
@@ -758,11 +842,7 @@ export default function SettingsModal() {
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    onClick={() => {
-                      if (confirm('Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác!')) {
-                        alert('Yêu cầu xóa tài khoản đã được tiếp nhận.');
-                      }
-                    }}
+                    onClick={handleOpenDeleteDialog}
                   >
                     Delete
                   </button>
@@ -1142,35 +1222,154 @@ export default function SettingsModal() {
             </div>
           )}
 
-          {/* 3. GENERAL SETTINGS */}
-          {activeNav === 'general' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
-                General Settings
-              </h2>
-              <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#111827', marginBottom: '6px' }}>
-                    Chromium Core Path
-                  </label>
-                  <input
-                    type="text"
-                    defaultValue="C:\Program Files\Chromium\chrome.exe"
-                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '13px', fontFamily: 'var(--font-mono)' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F3F4F6', paddingTop: '14px' }}>
-                  <div>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827', display: 'block' }}>Tự động khởi động cùng hệ thống</span>
-                    <span style={{ fontSize: '12px', color: '#6B7280' }}>Khởi chạy trình quản lý ẩn ở khay hệ thống (System Tray)</span>
+          {/* 2.5. LANGUAGE & REGION SETTINGS */}
+          {activeNav === 'language' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--apidog-text-main)', margin: 0 }}>
+                  {t('settings.languageSection.title', 'Language & Region')}
+                </h2>
+                <p style={{ fontSize: '12.5px', color: 'var(--apidog-text-muted)', marginTop: '4px', margin: 0 }}>
+                  {t('settings.languageSection.desc', 'Select display language, numeric formatting, and regional date/time settings.')}
+                </p>
+              </div>
+
+              {/* Language Selection Card */}
+              <div style={{
+                border: '1px solid var(--apidog-border)',
+                borderRadius: '8px',
+                backgroundColor: 'var(--apidog-card-bg)',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Languages size={18} style={{ color: 'var(--apidog-purple)' }} />
+                    <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--apidog-text-main)' }}>
+                      {t('settings.languageSection.chooseLang', 'Select Language')}
+                    </span>
                   </div>
-                  <input type="checkbox" defaultChecked={true} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                  <span style={{ fontSize: '11.5px', color: '#10B981', fontWeight: 600, backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '3px 10px', borderRadius: '4px' }}>
+                    ✓ {t('settings.languageSection.applyInstant', 'Immediate effect without restarting')}
+                  </span>
+                </div>
+
+                {/* 12-Language Grid */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: '10px'
+                }}>
+                  {supportedLanguages.map((langItem) => {
+                    const isCurrent = (language || 'en') === langItem.id;
+                    return (
+                      <div
+                        key={langItem.id}
+                        onClick={() => {
+                          changeLanguage(langItem.id);
+                          if (showToast) {
+                            showToast(t('toasts.languageSwitched', `Ngôn ngữ đã đổi sang: ${langItem.native} (${langItem.english})`, { name: `${langItem.native} (${langItem.english})` }), 'success');
+                          }
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: isCurrent ? '2px solid var(--apidog-purple)' : '1px solid var(--apidog-border-light)',
+                          backgroundColor: isCurrent ? 'var(--apidog-purple-light)' : 'var(--apidog-sidebar-bg)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isCurrent) e.currentTarget.style.backgroundColor = 'var(--apidog-border-light)';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isCurrent) e.currentTarget.style.backgroundColor = 'var(--apidog-sidebar-bg)';
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: isCurrent ? 'var(--apidog-purple)' : 'var(--apidog-text-main)'
+                          }}>
+                            {langItem.native}
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--apidog-text-muted)' }}>
+                            {langItem.english}
+                          </span>
+                        </div>
+                        {isCurrent && (
+                          <div style={{
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--apidog-purple)',
+                            color: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <Check size={13} strokeWidth={3} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Regional Format Card */}
+              <div style={{
+                border: '1px solid var(--apidog-border)',
+                borderRadius: '8px',
+                backgroundColor: 'var(--apidog-card-bg)',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}>
+                <h3 style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--apidog-text-main)', margin: 0 }}>
+                  {t('settings.languageSection.regionalFormat', 'Regional Formatting')}
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+                  <div style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--apidog-border-light)', backgroundColor: 'var(--apidog-sidebar-bg)' }}>
+                    <span style={{ display: 'block', fontSize: '11px', color: 'var(--apidog-text-muted)', marginBottom: '4px' }}>
+                      {t('settings.languageSection.dateFormat', 'Date Format')}
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--apidog-text-main)', fontFamily: 'monospace' }}>
+                      {new Date().toLocaleDateString(language || 'en')}
+                    </span>
+                  </div>
+
+                  <div style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--apidog-border-light)', backgroundColor: 'var(--apidog-sidebar-bg)' }}>
+                    <span style={{ display: 'block', fontSize: '11px', color: 'var(--apidog-text-muted)', marginBottom: '4px' }}>
+                      {t('settings.languageSection.timeFormat', 'Time Format')}
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--apidog-text-main)', fontFamily: 'monospace' }}>
+                      {new Date().toLocaleTimeString(language || 'en')}
+                    </span>
+                  </div>
+
+                  <div style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--apidog-border-light)', backgroundColor: 'var(--apidog-sidebar-bg)' }}>
+                    <span style={{ display: 'block', fontSize: '11px', color: 'var(--apidog-text-muted)', marginBottom: '4px' }}>
+                      {t('settings.languageSection.numberFormat', 'Number Format')}
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--apidog-text-main)', fontFamily: 'monospace' }}>
+                      {(1234567.89).toLocaleString(language || 'en')}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* 4. PROXY SETTINGS */}
+          {/* 3. PROXY SETTINGS */}
           {activeNav === 'proxy' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
@@ -1209,7 +1408,7 @@ export default function SettingsModal() {
           )}
 
           {/* Fallback for other tabs */}
-          {!['account', 'connections', 'appearance', 'general', 'proxy', 'about'].includes(activeNav) && (
+          {!['account', 'connections', 'appearance', 'language', 'proxy', 'about'].includes(activeNav) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0, textTransform: 'capitalize' }}>
                 {activeNav}
@@ -1222,6 +1421,200 @@ export default function SettingsModal() {
           </div>
         </section>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {isDeleteDialogOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1500,
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--apidog-card-bg, #FFFFFF)',
+            borderRadius: '12px',
+            border: '1px solid var(--apidog-border, #E5E7EB)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            width: '100%',
+            maxWidth: '460px',
+            padding: '24px',
+            position: 'relative',
+            animation: 'fadeIn 0.15s ease-out'
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '16px' }}>
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                backgroundColor: '#FEE2E2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#DC2626',
+                flexShrink: 0
+              }}>
+                <AlertTriangle size={22} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 600, color: 'var(--apidog-text-main, #0F172A)' }}>
+                  Xác nhận xóa tài khoản
+                </h3>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--apidog-text-muted, #64748B)', lineHeight: 1.4 }}>
+                  Hành động này sẽ xóa vĩnh viễn tài khoản <strong>{userEmail || userName}</strong> cùng toàn bộ profiles, cấu hình proxy và dữ liệu liên quan. Hành động này <strong>không thể hoàn tác</strong>.
+                </p>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {deleteError && (
+              <div style={{
+                padding: '10px 12px',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FCA5A5',
+                borderRadius: '6px',
+                color: '#B91C1C',
+                fontSize: '12.5px',
+                marginBottom: '16px',
+                lineHeight: 1.4
+              }}>
+                {deleteError}
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleConfirmDeleteAccount} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Password Field */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: 'var(--apidog-text-main, #334155)', marginBottom: '6px' }}>
+                  Mật khẩu hiện tại <span style={{ color: '#EF4444' }}>*</span>
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showDeletePassword ? 'text' : 'password'}
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Nhập mật khẩu để xác thực"
+                    autoFocus
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '9px 36px 9px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--apidog-border, #CBD5E1)',
+                      backgroundColor: 'var(--apidog-bg, #FFFFFF)',
+                      color: 'var(--apidog-text-main, #0F172A)',
+                      fontSize: '13px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDeletePassword(prev => !prev)}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      border: 'none',
+                      background: 'none',
+                      color: '#94A3B8',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    {showDeletePassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Reason Field (Optional) */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: 'var(--apidog-text-main, #334155)', marginBottom: '6px' }}>
+                  Lý do xóa <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--apidog-text-muted, #94A3B8)' }}>(tùy chọn)</span>
+                </label>
+                <input
+                  type="text"
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="vd: Không còn nhu cầu sử dụng"
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--apidog-border, #CBD5E1)',
+                    backgroundColor: 'var(--apidog-bg, #FFFFFF)',
+                    color: 'var(--apidog-text-main, #0F172A)',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  disabled={isDeletingAccount}
+                  onClick={() => setIsDeleteDialogOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--apidog-border, #CBD5E1)',
+                    backgroundColor: 'transparent',
+                    color: 'var(--apidog-text-main, #334155)',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: isDeletingAccount ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isDeletingAccount || !deletePassword.trim()}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: '#DC2626',
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: (isDeletingAccount || !deletePassword.trim()) ? 'not-allowed' : 'pointer',
+                    opacity: (isDeletingAccount || !deletePassword.trim()) ? 0.65 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  {isDeletingAccount ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Đang xóa...</span>
+                    </>
+                  ) : (
+                    <span>Xác nhận xóa tài khoản</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

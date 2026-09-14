@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../i18n/I18nContext';
 import { 
   Play, 
   RotateCw, 
@@ -29,6 +30,7 @@ import {
 import { useBrowser } from '../store/BrowserContext';
 
 export default function HistoryPage() {
+  const { t } = useTranslation();
   const { 
     historyRecords = [], 
     selectedHistoryId, 
@@ -83,10 +85,10 @@ export default function HistoryPage() {
       }}>
         <Clock size={44} style={{ opacity: 0.35 }} />
         <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--apidog-text-main)' }}>
-          Chưa có phiên chạy Profile nào trong lịch sử
+          {t('history.emptyTitle')}
         </span>
         <span style={{ fontSize: '12.5px', maxWidth: '420px', textAlign: 'center', lineHeight: 1.5 }}>
-          Khi bạn nhấn "Mở" hoặc chạy bất kỳ hồ sơ trình duyệt nào, hệ thống sẽ tự động lưu lại toàn bộ vân tay, proxy, cookies và log phiên chạy tại đây.
+          {t('history.emptyDesc')}
         </span>
       </div>
     );
@@ -98,11 +100,11 @@ export default function HistoryPage() {
 
   // Sub-tabs list
   const subTabs = [
-    { id: 'fingerprint', label: 'Vân tay Fingerprint', icon: ShieldCheck, count: currentRecord.fingerprintSnapshot?.length || 10 },
-    { id: 'proxy', label: 'Proxy & Mạng', icon: Globe, badge: currentRecord.proxy?.type || 'SOCKS5' },
-    { id: 'cookies', label: 'Cookies & Lưu trữ', icon: CookieIcon, count: currentRecord.cookies?.length || currentRecord.cookiesLoaded || 0 },
-    { id: 'flags', label: 'Cờ khởi chạy (CLI Flags)', icon: Terminal, count: currentRecord.launchArgs?.length || 0 },
-    { id: 'logs', label: 'Nhật ký Console', icon: Activity, count: currentRecord.logs?.length || 0 }
+    { id: 'fingerprint', label: t('history.tabFingerprint'), icon: ShieldCheck, count: currentRecord.fingerprintSnapshot?.length || 10 },
+    { id: 'proxy', label: t('history.tabProxy'), icon: Globe, badge: currentRecord.proxy?.type || 'SOCKS5' },
+    { id: 'cookies', label: t('history.tabCookies'), icon: CookieIcon, count: currentRecord.cookies?.length || currentRecord.cookiesLoaded || 0 },
+    { id: 'flags', label: t('history.tabFlags'), icon: Terminal, count: currentRecord.launchArgs?.length || 0 },
+    { id: 'logs', label: t('history.tabLogs'), icon: Activity, count: currentRecord.logs?.length || 0 }
   ];
 
   // Filter logs if searching
@@ -154,7 +156,7 @@ export default function HistoryPage() {
               backgroundColor: isRunning ? '#10B981' : isCompleted ? '#22C55E' : '#9CA3AF',
               boxShadow: isRunning ? '0 0 8px #10B981' : 'none'
             }} />
-            <span>{currentRecord.statusLabel?.toUpperCase() || (isRunning ? 'ĐANG CHẠY' : 'HOÀN THÀNH')}</span>
+            <span>{currentRecord.statusLabel?.toUpperCase() || (isRunning ? t('history.statusRunning') : isCompleted ? t('history.statusCompleted') : t('history.statusStopped'))}</span>
           </div>
 
           {/* Profile Name */}
@@ -166,7 +168,7 @@ export default function HistoryPage() {
             overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}>
-            {currentRecord.profileName || 'Hồ sơ chưa đặt tên'}
+            {currentRecord.profileName || t('history.unnamedProfile')}
           </span>
 
           {/* Group Tag */}
@@ -198,9 +200,9 @@ export default function HistoryPage() {
 
         {/* Right: Operator, Date, Session ID */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0, fontSize: '11.5px', color: 'var(--apidog-text-muted)' }}>
-          <span>Mã phiên: <strong style={{ color: 'var(--apidog-text-main)', fontFamily: 'monospace' }}>#{currentRecord.id}</strong></span>
-          <span>Bắt đầu: <strong style={{ color: 'var(--apidog-text-main)' }}>{currentRecord.startTime}</strong></span>
-          <span>Người chạy: <strong style={{ color: 'var(--apidog-text-main)' }}>{currentRecord.operator || 'Khải'}</strong></span>
+          <span>{t('history.sessionId')}: <strong style={{ color: 'var(--apidog-text-main)', fontFamily: 'monospace' }}>#{currentRecord.id}</strong></span>
+          <span>{t('history.startedAt')}: <strong style={{ color: 'var(--apidog-text-main)' }}>{currentRecord.startTime}</strong></span>
+          <span>{t('history.operator')}: <strong style={{ color: 'var(--apidog-text-main)' }}>{currentRecord.operator || 'Khải'}</strong></span>
         </div>
       </div>
 
@@ -235,7 +237,7 @@ export default function HistoryPage() {
             color: 'var(--apidog-purple)',
             letterSpacing: '0.3px'
           }}>
-            URL ĐÍCH
+            {t('history.targetUrl')}
           </span>
           <span style={{
             flex: 1,
@@ -251,7 +253,7 @@ export default function HistoryPage() {
           {currentRecord.targetUrl && (
             <button
               onClick={() => handleCopy(currentRecord.targetUrl, 'targetUrl')}
-              title="Sao chép URL"
+              title={t('common.copy')}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -292,12 +294,12 @@ export default function HistoryPage() {
           {isRunning ? (
             <>
               <RotateCw size={13} className="spin" />
-              <span>Dừng phiên</span>
+              <span>{t('history.stopSession')}</span>
             </>
           ) : (
             <>
               <Play size={13} fill="#FFFFFF" />
-              <span>Khởi chạy lại</span>
+              <span>{t('history.relaunch')}</span>
             </>
           )}
         </button>
@@ -318,13 +320,13 @@ export default function HistoryPage() {
           }}
         >
           {copiedKey === 'sessionData' ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
-          <span>{copiedKey === 'sessionData' ? 'Đã chép JSON' : 'Xuất Snapshot'}</span>
+          <span>{copiedKey === 'sessionData' ? t('history.copiedJson') : t('history.exportSnapshot')}</span>
         </button>
 
         {/* Action 3: Xóa phiên này */}
         <button
           onClick={() => {
-            if (window.confirm(`Bạn có chắc muốn xóa lịch sử phiên chạy #${currentRecord.id}?`)) {
+            if (window.confirm(t('history.deleteConfirm', { id: currentRecord.id }))) {
               deleteHistoryRecord(currentRecord.id);
             }
           }}
@@ -341,7 +343,7 @@ export default function HistoryPage() {
             cursor: 'pointer',
             transition: 'all 0.15s ease'
           }}
-          title="Xóa phiên lịch sử này"
+          title={t('history.deleteSession')}
           onMouseEnter={(e) => {
             e.currentTarget.style.color = '#EF4444';
             e.currentTarget.style.borderColor = '#FCA5A5';
@@ -376,14 +378,14 @@ export default function HistoryPage() {
           gap: '3px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--apidog-text-muted)', fontSize: '11px', fontWeight: 600 }}>
-            <span>THỜI LƯỢNG PHIÊN</span>
+            <span>{t('history.cardDuration')}</span>
             <Clock size={13} color="var(--apidog-purple)" />
           </div>
           <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--apidog-text-main)' }}>
             {currentRecord.duration || '00:00:00'}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--apidog-text-muted)' }}>
-            Kết thúc: {currentRecord.endTime || 'Đang hoạt động'}
+            {t('common.status')}: {currentRecord.endTime || t('history.statusRunning')}
           </div>
         </div>
 
@@ -398,7 +400,7 @@ export default function HistoryPage() {
           gap: '3px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--apidog-text-muted)', fontSize: '11px', fontWeight: 600 }}>
-            <span>MÃ TIẾN TRÌNH & RAM</span>
+            <span>{t('history.cardPidRam')}</span>
             <Cpu size={13} color="#3B82F6" />
           </div>
           <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--apidog-text-main)' }}>
@@ -420,7 +422,7 @@ export default function HistoryPage() {
           gap: '3px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--apidog-text-muted)', fontSize: '11px', fontWeight: 600 }}>
-            <span>PROXY & IP ĐẦU RA</span>
+            <span>{t('history.cardProxyIp')}</span>
             <Globe size={13} color="#10B981" />
           </div>
           <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--apidog-text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -442,7 +444,7 @@ export default function HistoryPage() {
           gap: '3px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--apidog-text-muted)', fontSize: '11px', fontWeight: 600 }}>
-            <span>COOKIES ĐỒNG BỘ</span>
+            <span>{t('history.cardCookies')}</span>
             <CookieIcon size={13} color="#F59E0B" />
           </div>
           <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--apidog-text-main)' }}>
@@ -540,10 +542,10 @@ export default function HistoryPage() {
                 <ShieldCheck size={18} color="#10B981" />
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: '#10B981' }}>
-                    Điểm tin cậy vân tay: 100% (Passed PixelScan, CreepJS, BrowserLeaks)
+                    {t('history.fpScore')}
                   </div>
                   <div style={{ fontSize: '11.5px', color: 'var(--apidog-text-muted)' }}>
-                    Tất cả các thuộc tính vân tay phần cứng và phần mềm của phiên này đã được cô lập tuyệt đối.
+                    {t('history.fpIsolated')}
                   </div>
                 </div>
               </div>
@@ -553,7 +555,7 @@ export default function HistoryPage() {
                 style={{ fontSize: '11.5px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
               >
                 {copiedKey === 'fingerprint' ? <Check size={12} color="#10B981" /> : <Copy size={12} />}
-                <span>{copiedKey === 'fingerprint' ? 'Đã chép' : 'Sao chép vân tay'}</span>
+                <span>{copiedKey === 'fingerprint' ? t('common.copied') : t('history.copyFingerprint')}</span>
               </button>
             </div>
 
@@ -566,10 +568,10 @@ export default function HistoryPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--apidog-bg)', borderBottom: '1px solid var(--apidog-border)', textAlign: 'left' }}>
-                    <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '220px' }}>Thuộc tính vân tay</th>
-                    <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '120px' }}>Phân loại</th>
-                    <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600 }}>Giá trị tiêm vào Chromium</th>
-                    <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '60px', textAlign: 'center' }}>Chép</th>
+                    <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '220px' }}>{t('history.fpColProp')}</th>
+                    <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '120px' }}>{t('history.fpColCat')}</th>
+                    <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600 }}>{t('history.fpColVal')}</th>
+                    <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '60px', textAlign: 'center' }}>{t('common.copy')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -609,7 +611,7 @@ export default function HistoryPage() {
                             color: 'var(--apidog-text-muted)',
                             padding: '2px'
                           }}
-                          title="Sao chép giá trị"
+                          title={t('common.copy')}
                         >
                           {copiedKey === `fp-${idx}` ? <Check size={12} color="#10B981" /> : <Copy size={12} />}
                         </button>
@@ -640,32 +642,32 @@ export default function HistoryPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
                   <Globe size={16} color="var(--apidog-purple)" />
                   <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--apidog-text-main)' }}>
-                    Thông tin máy chủ Proxy đã kết nối
+                    {t('history.proxyServerInfo')}
                   </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12.5px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed var(--apidog-border)', paddingBottom: '6px' }}>
-                    <span style={{ color: 'var(--apidog-text-muted)' }}>Giao thức kết nối:</span>
+                    <span style={{ color: 'var(--apidog-text-muted)' }}>{t('history.proxyProto')}</span>
                     <strong style={{ color: 'var(--apidog-text-main)' }}>{currentRecord.proxy?.type || 'SOCKS5'}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed var(--apidog-border)', paddingBottom: '6px' }}>
-                    <span style={{ color: 'var(--apidog-text-muted)' }}>Máy chủ & Cổng:</span>
+                    <span style={{ color: 'var(--apidog-text-muted)' }}>{t('history.proxyHostPort')}</span>
                     <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--apidog-text-main)' }}>
-                      {currentRecord.proxy?.host ? `${currentRecord.proxy.host}:${currentRecord.proxy.port}` : 'Kết nối trực tiếp'}
+                      {currentRecord.proxy?.host ? `${currentRecord.proxy.host}:${currentRecord.proxy.port}` : 'Direct Connection'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed var(--apidog-border)', paddingBottom: '6px' }}>
-                    <span style={{ color: 'var(--apidog-text-muted)' }}>IP đầu ra kiểm tra:</span>
+                    <span style={{ color: 'var(--apidog-text-muted)' }}>{t('history.proxyExitIp')}</span>
                     <span style={{ fontFamily: 'monospace', color: '#10B981', fontWeight: 700 }}>
                       {currentRecord.proxy?.exitIp || currentRecord.proxy?.host || 'Chưa xác định'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed var(--apidog-border)', paddingBottom: '6px' }}>
-                    <span style={{ color: 'var(--apidog-text-muted)' }}>Vị trí địa lý:</span>
+                    <span style={{ color: 'var(--apidog-text-muted)' }}>{t('history.proxyLocation')}</span>
                     <span style={{ color: 'var(--apidog-text-main)' }}>{currentRecord.proxy?.location || 'Việt Nam'}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--apidog-text-muted)' }}>Độ trễ Ping:</span>
+                    <span style={{ color: 'var(--apidog-text-muted)' }}>{t('history.proxyPing')}</span>
                     <span style={{ color: '#10B981', fontWeight: 600 }}>{currentRecord.proxy?.latency || 28} ms</span>
                   </div>
                 </div>
@@ -681,32 +683,32 @@ export default function HistoryPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
                   <Shield size={16} color="#10B981" />
                   <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--apidog-text-main)' }}>
-                    Kiểm tra rò rỉ bảo mật (Leak Protection)
+                    {t('history.leakTestTitle')}
                   </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12.5px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--apidog-card-bg)', border: '1px solid var(--apidog-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckCircle2 size={15} color="#10B981" />
-                      <span>Rò rỉ DNS (DNS Leak):</span>
+                      <span>{t('history.dnsLeak')}</span>
                     </div>
-                    <strong style={{ color: '#10B981' }}>{currentRecord.proxy?.dnsLeak || 'An toàn (0 rò rỉ)'}</strong>
+                    <strong style={{ color: '#10B981' }}>{currentRecord.proxy?.dnsLeak || t('history.dnsSafe')}</strong>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--apidog-card-bg)', border: '1px solid var(--apidog-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckCircle2 size={15} color="#10B981" />
-                      <span>Rò rỉ WebRTC (WebRTC Leak):</span>
+                      <span>{t('history.webrtcLeak')}</span>
                     </div>
-                    <strong style={{ color: '#10B981' }}>{currentRecord.proxy?.webrtcLeak || 'Đã ẩn IP thật'}</strong>
+                    <strong style={{ color: '#10B981' }}>{currentRecord.proxy?.webrtcLeak || t('history.webrtcHidden')}</strong>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--apidog-card-bg)', border: '1px solid var(--apidog-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckCircle2 size={15} color="#10B981" />
-                      <span>Múi giờ đồng bộ theo IP:</span>
+                      <span>{t('history.timezoneMatch')}</span>
                     </div>
-                    <strong style={{ color: 'var(--apidog-purple)' }}>Khớp 100%</strong>
+                    <strong style={{ color: 'var(--apidog-purple)' }}>{t('history.match100')}</strong>
                   </div>
                 </div>
               </div>
@@ -719,7 +721,7 @@ export default function HistoryPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--apidog-text-main)' }}>
-                Danh sách Cookies được tải & ghi nhận trong phiên ({currentRecord.cookies?.length || 0})
+                {t('history.cookiesRecorded', { count: currentRecord.cookies?.length || 0 })}
               </div>
               <button
                 onClick={() => handleCopy(currentRecord.cookies, 'allCookies')}
@@ -727,7 +729,7 @@ export default function HistoryPage() {
                 style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 {copiedKey === 'allCookies' ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
-                <span>Sao chép toàn bộ Cookie (JSON)</span>
+                <span>{t('history.copyAllCookies')}</span>
               </button>
             </div>
 
@@ -741,7 +743,7 @@ export default function HistoryPage() {
                 border: '1px solid var(--apidog-border)',
                 fontSize: '12.5px'
               }}>
-                Chưa ghi nhận cookie mới nào được tạo trong phiên này.
+                {t('history.noCookies')}
               </div>
             ) : (
               <div style={{
@@ -753,10 +755,10 @@ export default function HistoryPage() {
                   <thead>
                     <tr style={{ backgroundColor: 'var(--apidog-bg)', borderBottom: '1px solid var(--apidog-border)', textAlign: 'left' }}>
                       <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '160px' }}>Tên Cookie</th>
-                      <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '180px' }}>Tên miền (Domain)</th>
-                      <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600 }}>Giá trị (Value)</th>
-                      <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '120px' }}>Hạn dùng</th>
-                      <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '50px', textAlign: 'center' }}>Chép</th>
+                      <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '180px' }}>Domain</th>
+                      <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600 }}>Value</th>
+                      <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '120px' }}>Expires</th>
+                      <th style={{ padding: '8px 14px', color: 'var(--apidog-text-muted)', fontWeight: 600, width: '50px', textAlign: 'center' }}>{t('common.copy')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -784,7 +786,7 @@ export default function HistoryPage() {
                           <button
                             onClick={() => handleCopy(c.value, `cookie-${idx}`)}
                             style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--apidog-text-muted)', padding: '2px' }}
-                            title="Sao chép giá trị cookie"
+                            title={t('common.copy')}
                           >
                             {copiedKey === `cookie-${idx}` ? <Check size={12} color="#10B981" /> : <Copy size={12} />}
                           </button>
@@ -803,7 +805,7 @@ export default function HistoryPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--apidog-text-main)' }}>
-                Dòng lệnh Chromium CLI được thực thi khi mở phiên
+                {t('history.cliFlagsDesc')}
               </div>
               <button
                 onClick={() => handleCopy((currentRecord.launchArgs || []).join(' '), 'allFlags')}
@@ -811,7 +813,7 @@ export default function HistoryPage() {
                 style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 {copiedKey === 'allFlags' ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
-                <span>Sao chép chuỗi tham số</span>
+                <span>{t('history.copyCliFlags')}</span>
               </button>
             </div>
 
@@ -869,7 +871,7 @@ export default function HistoryPage() {
                 <Search size={13} style={{ color: 'var(--apidog-text-muted)', marginRight: '6px' }} />
                 <input
                   type="text"
-                  placeholder="Lọc nhật ký phiên..."
+                  placeholder={t('history.filterLogsPlaceholder')}
                   value={logFilterTerm}
                   onChange={(e) => setLogFilterTerm(e.target.value)}
                   style={{
@@ -889,7 +891,7 @@ export default function HistoryPage() {
                 style={{ fontSize: '12px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 {copiedKey === 'fullLog' ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
-                <span>Sao chép toàn bộ Log</span>
+                <span>{t('history.copyAllLogs')}</span>
               </button>
             </div>
 
@@ -906,7 +908,7 @@ export default function HistoryPage() {
               border: '1px solid #1E293B'
             }}>
               {displayedLogs.length === 0 ? (
-                <div style={{ color: '#64748B' }}>Không tìm thấy dòng nhật ký phù hợp</div>
+                <div style={{ color: '#64748B' }}>{t('common.noData')}</div>
               ) : (
                 displayedLogs.map((line, idx) => {
                   let color = '#94A3B8';
@@ -956,7 +958,7 @@ export default function HistoryPage() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11.5px', fontWeight: 600, color: 'var(--apidog-text-main)' }}>
             <Terminal size={13} color="var(--apidog-purple)" />
-            <span>Đầu ra tiến trình Sandbox (Process Stream Output)</span>
+            <span>{t('history.processOutputDrawer')}</span>
             <span style={{
               fontSize: '10px',
               padding: '1px 6px',
@@ -969,7 +971,7 @@ export default function HistoryPage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--apidog-text-muted)' }}>
-            <span style={{ fontSize: '11px' }}>{isConsoleDrawerOpen ? 'Thu gọn' : 'Mở rộng'}</span>
+            <span style={{ fontSize: '11px' }}>{isConsoleDrawerOpen ? t('history.collapse') : t('history.expand')}</span>
             {isConsoleDrawerOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           </div>
         </div>
@@ -1024,7 +1026,11 @@ export default function HistoryPage() {
 
         <div>
           <button
-            onClick={clearHistory}
+            onClick={() => {
+              if (window.confirm(t('history.confirmClearAll'))) {
+                clearHistory();
+              }
+            }}
             style={{
               background: 'transparent',
               border: 'none',
@@ -1036,7 +1042,7 @@ export default function HistoryPage() {
             onMouseEnter={(e) => e.currentTarget.style.color = '#EF4444'}
             onMouseLeave={(e) => e.currentTarget.style.color = 'var(--apidog-text-muted)'}
           >
-            Xóa toàn bộ lịch sử chạy profile
+            {t('history.clearAllHistory')}
           </button>
         </div>
       </div>

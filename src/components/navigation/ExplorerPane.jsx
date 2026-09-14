@@ -32,11 +32,15 @@ import {
   Info,
   Check,
   Download,
-  Sparkles
+  Sparkles,
+  Layers
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
+import { useTranslation } from '../../i18n/I18nContext';
+import WorkspaceMenuPopover from '../workspace/WorkspaceMenuPopover';
 
 export default function ExplorerPane() {
+  const { t } = useTranslation();
   const {
     activeTab,
     setActiveTab,
@@ -56,6 +60,7 @@ export default function ExplorerPane() {
     setActiveProxyModal,
     setActiveGroupModal,
     setActiveTrashModal,
+    setActiveUpgradeModal,
     activeSettingsSection = 'general',
     setActiveSettingsSection,
     historyRecords = [],
@@ -67,7 +72,11 @@ export default function ExplorerPane() {
     setHistorySearchTerm,
     deleteHistoryRecord,
     deleteHistoryGroup,
-    addLog = () => { }
+    addLog = () => { },
+    currentWorkspace = null,
+    workspaces = [],
+    switchWorkspace,
+    createWorkspace
   } = useBrowser();
 
   const safeProfiles = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
@@ -76,38 +85,14 @@ export default function ExplorerPane() {
   const safeDcomDevices = Array.isArray(dcomDevices) ? dcomDevices.filter(Boolean) : [];
   const safeHistory = Array.isArray(historyRecords) ? historyRecords.filter(Boolean) : [];
 
-  // Workspace / Branch management state
-  const [currentWorkspace, setCurrentWorkspace] = useState(() => {
-    return localStorage.getItem('antidetect_current_workspace') || 'main';
-  });
-  const [workspaceList, setWorkspaceList] = useState(() => {
-    try {
-      const saved = localStorage.getItem('antidetect_workspaces');
-      return saved ? JSON.parse(saved) : ['main', 'marketing-ads', 'crypto-airdrop', 'ecommerce'];
-    } catch {
-      return ['main', 'marketing-ads', 'crypto-airdrop', 'ecommerce'];
-    }
-  });
-  const [generalBranchList] = useState(['production', 'staging', 'release/v2.4']);
-  const [branchTab, setBranchTab] = useState('sprint'); // 'sprint' | 'general'
-  const [branchSearch, setBranchSearch] = useState('');
-  const [standardCollapsed, setStandardCollapsed] = useState(false);
-  const [aiCollapsed, setAiCollapsed] = useState(false);
+  // Workspace Popover state
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
-  const [newWorkspaceInput, setNewWorkspaceInput] = useState('');
-  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const workspaceMenuRef = useRef(null);
-
-  const activeBranchPool = branchTab === 'sprint' ? workspaceList : generalBranchList;
-  const filteredBranches = activeBranchPool.filter(b =>
-    b.toLowerCase().includes(branchSearch.toLowerCase())
-  );
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (workspaceMenuRef.current && !workspaceMenuRef.current.contains(e.target)) {
         setShowWorkspaceMenu(false);
-        setIsCreatingWorkspace(false);
       }
     };
     if (showWorkspaceMenu) {
@@ -117,30 +102,6 @@ export default function ExplorerPane() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showWorkspaceMenu]);
-
-  const handleSelectWorkspace = (ws) => {
-    setCurrentWorkspace(ws);
-    localStorage.setItem('antidetect_current_workspace', ws);
-    setShowWorkspaceMenu(false);
-    addLog(`Đã chuyển sang không gian làm việc: ${ws}`, 'info');
-  };
-
-  const handleAddWorkspace = (e) => {
-    e.preventDefault();
-    if (!newWorkspaceInput.trim()) return;
-    const name = newWorkspaceInput.trim().toLowerCase().replace(/\s+/g, '-');
-    if (!workspaceList.includes(name)) {
-      const updated = [...workspaceList, name];
-      setWorkspaceList(updated);
-      localStorage.setItem('antidetect_workspaces', JSON.stringify(updated));
-      setCurrentWorkspace(name);
-      localStorage.setItem('antidetect_current_workspace', name);
-      addLog(`Đã tạo không gian làm việc mới: ${name}`, 'success');
-    }
-    setNewWorkspaceInput('');
-    setIsCreatingWorkspace(false);
-    setShowWorkspaceMenu(false);
-  };
 
   const [collapsedDates, setCollapsedDates] = useState({});
   const [hoveredDate, setHoveredDate] = useState(null);
@@ -153,29 +114,27 @@ export default function ExplorerPane() {
     }));
   };
 
+  // Folders expand/collapse state in Explorer
   const [foldersOpen, setFoldersOpen] = useState({
     protocols: true,
     proxyStatus: true,
-    countries: true,
-    automation: true,
-    history: true,
-    settings: true
+    locations: true
   });
 
   const toggleFolder = (key) => {
     setFoldersOpen(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Group stats for Profiles & Groups Tab
+  // Grouping for Profiles: Ungrouped + Custom groups
+  const ungroupedProfiles = safeProfiles.filter(p => !p.group || p.group === 'Ungrouped' || p.group === 'Chưa phân nhóm');
   const groups = [
-    { name: 'All', label: 'Tất cả hồ sơ', count: safeProfiles.length, color: '#6B7280' },
+    { name: 'All', label: t('profiles.all', 'Tất cả'), count: safeProfiles.length, isAll: true },
+    { name: 'Ungrouped', label: t('profiles.ungrouped', 'Chưa phân nhóm'), count: ungroupedProfiles.length },
     ...customGroups.map(g => ({
-      id: g.id,
       name: g.name,
       label: g.name,
-      count: safeProfiles.filter(p => p && p.group === g.name).length,
-      color: g.color || '#7C3AED',
-      desc: g.desc
+      count: safeProfiles.filter(p => p.group === g.name).length,
+      color: g.color
     }))
   ];
 
@@ -190,16 +149,16 @@ export default function ExplorerPane() {
     switch (activeTab) {
       case 'proxies':
         return {
-          title: 'QUẢN LÝ PROXY',
+          title: t('proxy.title', 'Quản lý Proxy').toUpperCase(),
           badge: 'Proxy Pool ▾',
           badgeBg: '#FCE7F3',
           badgeColor: '#DB2777',
           onAdd: () => setActiveProxyModal(true),
-          addTitle: 'Thêm Proxy Mới'
+          addTitle: t('proxy.addProxy', 'Thêm Proxy Mới')
         };
       case 'groups':
         return {
-          title: 'QUẢN LÝ NHÓM',
+          title: t('groups.title', 'Quản lý Nhóm').toUpperCase(),
           badge: `${customGroups.length} nhóm`,
           badgeBg: '#EDE9FE',
           badgeColor: '#7C3AED',
@@ -207,11 +166,11 @@ export default function ExplorerPane() {
             if (activeTab !== 'groups') setActiveTab('groups');
             if (setActiveGroupModal) setActiveGroupModal({ mode: 'create' });
           },
-          addTitle: 'Thêm Nhóm Mới'
+          addTitle: t('groups.newGroup', 'Thêm Nhóm Mới')
         };
       case 'scripts':
         return {
-          title: 'KỊCH BẢN MÃ NGUỒN',
+          title: t('nav.scripts', 'Kịch bản mã nguồn').toUpperCase(),
           badge: 'Scripts ▾',
           badgeBg: '#EFF6FF',
           badgeColor: '#2563EB',
@@ -220,7 +179,7 @@ export default function ExplorerPane() {
         };
       case 'history':
         return {
-          title: 'LỊCH SỬ PHIÊN CHẠY',
+          title: t('nav.history', 'Lịch sử phiên chạy').toUpperCase(),
           badge: `${historyRecords.length} phiên`,
           badgeBg: 'rgba(124, 58, 237, 0.1)',
           badgeColor: 'var(--apidog-purple)',
@@ -229,22 +188,22 @@ export default function ExplorerPane() {
         };
       case 'settings':
         return {
-          title: 'CÀI ĐẶT HỆ THỐNG',
-          badge: 'Config ▾',
-          badgeBg: '#F1F5F9',
-          badgeColor: '#475569',
+          title: t('settings.title', 'Cài đặt hệ thống').toUpperCase(),
+          badge: null,
+          badgeBg: null,
+          badgeColor: null,
           onAdd: null,
           addTitle: null
         };
       case 'profiles':
       default:
         return {
-          title: 'HỒ SƠ TRÌNH DUYỆT',
+          title: t('profiles.title', 'Hồ sơ trình duyệt').toUpperCase(),
           badge: null,
           badgeBg: null,
           badgeColor: null,
           onAdd: () => setActiveProfileModal('new'),
-          addTitle: 'Tạo Profile mới'
+          addTitle: t('profiles.newProfile', 'Tạo Profile mới')
         };
     }
   };
@@ -300,22 +259,23 @@ export default function ExplorerPane() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                padding: '3px 6px',
-                borderRadius: '5px',
-                backgroundColor: showWorkspaceMenu ? '#F1F5F9' : 'transparent',
+                gap: '5px',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                backgroundColor: showWorkspaceMenu ? 'var(--apidog-bg-hover, #F1F5F9)' : 'transparent',
                 border: '1px solid',
-                borderColor: showWorkspaceMenu ? '#CBD5E1' : 'transparent',
-                color: '#475569',
+                borderColor: showWorkspaceMenu ? 'var(--apidog-border, #CBD5E1)' : 'transparent',
+                color: 'var(--apidog-text-primary, #334155)',
                 cursor: 'pointer',
                 fontSize: '11.5px',
-                fontWeight: 500,
-                transition: 'all 0.12s ease'
+                fontWeight: 600,
+                transition: 'all 0.12s ease',
+                maxWidth: '130px'
               }}
               onMouseEnter={(e) => {
                 if (!showWorkspaceMenu) {
-                  e.currentTarget.style.backgroundColor = '#F1F5F9';
-                  e.currentTarget.style.borderColor = '#E2E8F0';
+                  e.currentTarget.style.backgroundColor = 'var(--apidog-bg-hover, #F1F5F9)';
+                  e.currentTarget.style.borderColor = 'var(--apidog-border, #E2E8F0)';
                 }
               }}
               onMouseLeave={(e) => {
@@ -324,365 +284,33 @@ export default function ExplorerPane() {
                   e.currentTarget.style.borderColor = 'transparent';
                 }
               }}
-              title={`Không gian làm việc: ${currentWorkspace}`}
+              title={`Không gian làm việc: ${currentWorkspace?.name || 'Mặc định'}`}
             >
-              <GitBranch size={13} style={{ color: '#64748B', flexShrink: 0 }} />
+              <div style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '2px',
+                backgroundColor: currentWorkspace?.color || '#3B82F6',
+                flexShrink: 0
+              }} />
               <span style={{
-                maxWidth: '60px',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                color: '#334155',
-                fontSize: '11.5px',
+                fontSize: '11px',
                 fontWeight: 600
               }}>
-                {currentWorkspace}
+                {currentWorkspace?.name || 'Workspace'}
               </span>
-              <ChevronDown size={11} style={{ color: '#94A3B8', flexShrink: 0 }} />
+              <ChevronDown size={11} style={{ color: 'var(--apidog-text-muted, #94A3B8)', flexShrink: 0 }} />
             </button>
 
-            {/* Spacious Workspace / Branch Popover Menu matching user's image */}
+            {/* Clean Workspace Popover Switcher */}
             {showWorkspaceMenu && (
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                top: '28px',
-                width: '345px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '10px',
-                border: '1px solid #E2E8F0',
-                boxShadow: '0 20px 30px -10px rgba(15, 23, 42, 0.18), 0 10px 15px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04)',
-                zIndex: 99999,
-                padding: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                boxSizing: 'border-box',
-                textAlign: 'left'
-              }}>
-                {/* 1. Top Segmented Tabs: Sprint Branches | General Branches */}
-                <div style={{
-                  display: 'flex',
-                  backgroundColor: '#F1F5F9',
-                  borderRadius: '7px',
-                  padding: '3px',
-                  gap: '3px'
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => setBranchTab('sprint')}
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      padding: '6px 10px',
-                      borderRadius: '5px',
-                      border: 'none',
-                      backgroundColor: branchTab === 'sprint' ? '#FFFFFF' : 'transparent',
-                      boxShadow: branchTab === 'sprint' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-                      color: branchTab === 'sprint' ? '#0F172A' : '#64748B',
-                      fontSize: '12px',
-                      fontWeight: branchTab === 'sprint' ? 600 : 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.12s ease'
-                    }}
-                  >
-                    <GitBranch size={13} style={{ color: branchTab === 'sprint' ? '#0F172A' : '#64748B' }} />
-                    <span>Sprint Branches</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setBranchTab('general')}
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      padding: '6px 10px',
-                      borderRadius: '5px',
-                      border: 'none',
-                      backgroundColor: branchTab === 'general' ? '#FFFFFF' : 'transparent',
-                      boxShadow: branchTab === 'general' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-                      color: branchTab === 'general' ? '#0F172A' : '#64748B',
-                      fontSize: '12px',
-                      fontWeight: branchTab === 'general' ? 600 : 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.12s ease'
-                    }}
-                  >
-                    <GitBranch size={13} style={{ color: branchTab === 'general' ? '#0F172A' : '#64748B' }} />
-                    <span>General Branches</span>
-                  </button>
-                </div>
-
-                {/* 2. Search Branches Input */}
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <Search
-                    size={14}
-                    style={{
-                      position: 'absolute',
-                      left: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: '#94A3B8'
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search branches..."
-                    value={branchSearch}
-                    onChange={(e) => setBranchSearch(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '7px 10px 7px 32px',
-                      borderRadius: '6px',
-                      border: '1px solid #E2E8F0',
-                      fontSize: '12.5px',
-                      color: '#1E293B',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      backgroundColor: '#FFFFFF'
-                    }}
-                  />
-                </div>
-
-                {/* 3. Standard Branches Collapsible */}
-                <div>
-                  <div
-                    onClick={() => setStandardCollapsed(!standardCollapsed)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      cursor: 'pointer',
-                      color: '#64748B',
-                      fontSize: '11.5px',
-                      fontWeight: 600,
-                      padding: '2px 0 4px 0',
-                      userSelect: 'none'
-                    }}
-                  >
-                    <span>Standard Branches</span>
-                    {standardCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                  </div>
-
-                  {!standardCollapsed && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '160px', overflowY: 'auto' }}>
-                      {filteredBranches.map(b => {
-                        const isSelected = b === currentWorkspace;
-                        return (
-                          <div
-                            key={b}
-                            onClick={() => handleSelectWorkspace(b)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '8px 10px',
-                              borderRadius: '6px',
-                              backgroundColor: isSelected ? '#F1F5F9' : 'transparent',
-                              cursor: 'pointer',
-                              transition: 'background-color 0.1s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <GitBranch size={14} style={{ color: isSelected ? '#0F172A' : '#64748B' }} />
-                              <span style={{ fontSize: '13px', fontWeight: isSelected ? 700 : 500, color: '#0F172A' }}>
-                                {b}
-                              </span>
-                            </div>
-                            <span style={{
-                              fontSize: '10.5px',
-                              color: '#64748B',
-                              backgroundColor: isSelected ? '#FFFFFF' : '#F1F5F9',
-                              padding: '1px 7px',
-                              borderRadius: '10px',
-                              border: '1px solid #E2E8F0',
-                              fontWeight: 500
-                            }}>
-                              {b === 'main' ? 'main' : 'branch'}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* 4. AI Branches Collapsible */}
-                <div>
-                  <div
-                    onClick={() => setAiCollapsed(!aiCollapsed)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      cursor: 'pointer',
-                      color: '#64748B',
-                      fontSize: '11.5px',
-                      fontWeight: 600,
-                      padding: '4px 0',
-                      userSelect: 'none'
-                    }}
-                  >
-                    <span>AI Branches</span>
-                    <Info size={12} style={{ color: '#94A3B8' }} />
-                    {aiCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                  </div>
-
-                  {!aiCollapsed && (
-                    <div style={{
-                      padding: '14px 0',
-                      textAlign: 'center',
-                      color: '#94A3B8',
-                      fontSize: '12px',
-                      fontWeight: 500
-                    }}>
-                      No branches yet
-                    </div>
-                  )}
-                </div>
-
-                {/* 5. Footer Actions */}
-                <div style={{
-                  borderTop: '1px solid #F1F5F9',
-                  paddingTop: '6px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px'
-                }}>
-                  {isCreatingWorkspace ? (
-                    <form onSubmit={handleAddWorkspace} style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: '#F8FAFC', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
-                      <input
-                        type="text"
-                        autoFocus
-                        placeholder="Branch name..."
-                        value={newWorkspaceInput}
-                        onChange={(e) => setNewWorkspaceInput(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px 8px',
-                          borderRadius: '4px',
-                          border: '1px solid #CBD5E1',
-                          fontSize: '12px',
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                        <button
-                          type="button"
-                          onClick={() => setIsCreatingWorkspace(false)}
-                          style={{
-                            padding: '3px 8px',
-                            fontSize: '11px',
-                            borderRadius: '4px',
-                            border: '1px solid #CBD5E1',
-                            backgroundColor: '#FFFFFF',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          style={{
-                            padding: '3px 10px',
-                            fontSize: '11px',
-                            borderRadius: '4px',
-                            border: 'none',
-                            backgroundColor: '#0F172A',
-                            color: '#FFFFFF',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Create
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div
-                      onClick={() => setIsCreatingWorkspace(true)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '6px 8px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '12.5px',
-                        color: '#334155',
-                        fontWeight: 500,
-                        transition: 'background-color 0.1s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <Plus size={14} style={{ color: '#475569' }} />
-                      <span>New Sprint Branch</span>
-                    </div>
-                  )}
-
-                  <div
-                    onClick={() => {
-                      addLog?.('Mở danh sách Merge Requests', 'info');
-                      setShowWorkspaceMenu(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '6px 8px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12.5px',
-                      color: '#334155',
-                      fontWeight: 500,
-                      transition: 'background-color 0.1s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <GitPullRequest size={14} style={{ color: '#475569' }} />
-                    <span>Merge Requests</span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      addLog?.('Mở cài đặt quản lý Sprint Branches', 'info');
-                      setShowWorkspaceMenu(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '6px 8px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12.5px',
-                      color: '#334155',
-                      fontWeight: 500,
-                      transition: 'background-color 0.1s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <Settings size={14} style={{ color: '#475569' }} />
-                    <span>Manage Sprint Branches</span>
-                  </div>
-                </div>
-              </div>
+              <WorkspaceMenuPopover
+                onClose={() => setShowWorkspaceMenu(false)}
+                align="left"
+              />
             )}
           </div>
         ) : (
@@ -1307,7 +935,7 @@ export default function ExplorerPane() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
                 {Object.keys(dateGroups).length === 0 ? (
                   <div style={{ padding: '14px 6px', fontSize: '11.5px', color: 'var(--apidog-text-muted)', textAlign: 'center' }}>
-                    Chưa có lịch sử chạy nào
+                    {t('history.emptyTitle', 'Chưa có lịch sử chạy nào')}
                   </div>
                 ) : (
                   Object.entries(dateGroups).map(([date, records]) => {
@@ -1353,13 +981,13 @@ export default function ExplorerPane() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm(`Bạn có chắc muốn xóa tất cả ${records.length} phiên chạy của "${date}"?`)) {
+                                if (window.confirm(t('history.deleteDateConfirm', { count: records.length, date }))) {
                                   if (deleteHistoryGroup) {
                                     deleteHistoryGroup(date);
                                   }
                                 }
                               }}
-                              title={`Xóa tất cả phiên chạy của ${date}`}
+                              title={t('history.deleteDateConfirm', { count: records.length, date })}
                               style={{
                                 background: 'transparent',
                                 border: 'none',
@@ -1501,12 +1129,12 @@ export default function ExplorerPane() {
 
 
             {[
-              { id: 'browser', label: 'Cấu hình Browser & Khởi chạy', icon: Globe },
-              { id: 'general', label: 'Cấu hình chung hệ thống', icon: Settings },
-              { id: 'fingerprint', label: 'Vân tay Fingerprint & WebGL', icon: Fingerprint },
-              { id: 'network', label: 'Cấu hình Mạng & DNS Leaks', icon: Shield },
-              { id: 'cookie', label: 'Kho Cookie & Tiện ích mở rộng', icon: Cookie },
-              { id: 'license', label: 'Bản quyền & Nâng cấp gói', icon: Key }
+              { id: 'browser', label: t('settings.tabs.browser', 'Browser'), icon: Globe },
+              { id: 'general', label: t('settings.tabs.general', 'General'), icon: Settings },
+              { id: 'fingerprint', label: t('settings.tabs.fingerprint', 'Fingerprint'), icon: Fingerprint },
+              { id: 'network', label: t('settings.tabs.network', 'Network'), icon: Shield },
+              { id: 'cookie', label: t('settings.tabs.cookie', 'Cookie'), icon: Cookie },
+              { id: 'license', label: t('settings.tabs.license', 'License'), icon: Key }
             ].map((item) => {
               const Icon = item.icon;
               const isSelected = (activeSettingsSection || 'browser') === item.id;
@@ -1577,10 +1205,10 @@ export default function ExplorerPane() {
             e.currentTarget.style.backgroundColor = 'transparent';
             e.currentTarget.style.color = '#64748B';
           }}
-          title="Mở Thùng rác hồ sơ đã xóa"
+          title={t('home.openTrash', 'Mở Thùng rác (Trash)')}
         >
           <Trash2 size={14} style={{ color: '#DC2626' }} />
-          <span style={{ color: '#DC2626', fontWeight: 600 }}>Thùng rác ({trashProfiles.length})</span>
+          <span style={{ color: '#DC2626', fontWeight: 600 }}>{t('nav.recycleBin', 'Thùng rác')} ({trashProfiles.length})</span>
         </div>
       </div>
     </div>

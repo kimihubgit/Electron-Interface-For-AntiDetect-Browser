@@ -43,3 +43,68 @@
   background-color: #E81123 !important;
   color: #FFFFFF !important;
 }
+
+/* ═══════════════════════════════
+   Workspace Multi-Tab Bar & Elastic Shrinking
+   ═══════════════════════════════ */
+.ws-tabs-scroll-container {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  max-width: 100%;
+}
+
+.ws-tabs-scroll-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.ws-tab-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  flex-shrink: 1;
+  min-width: 34px;
+  max-width: 145px;
+  position: relative;
+}
+
+.ws-tab-item.active {
+  flex-shrink: 0;
+  max-width: 160px;
+}
+
+.ws-tab-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  border: none;
+  background: transparent;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+}
+
+.ws-tab-item:hover .ws-tab-close-btn,
+.ws-tab-item.active .ws-tab-close-btn {
+  opacity: 1;
+}
+
+.ws-tab-close-btn:hover {
+  background-color: #FEE2E2 !important;
+  color: #EF4444 !important;
+}
+

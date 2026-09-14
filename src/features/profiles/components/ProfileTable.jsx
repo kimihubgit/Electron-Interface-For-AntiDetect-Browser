@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { Play, Square, Edit3, Trash2, MoreVertical, PlusCircle } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { MoreVertical } from 'lucide-react';
 import PinnedRunningBar from './PinnedRunningBar';
-import ProfileActionMenu from './ProfileActionMenu';
+import ProfileTableRow from './ProfileTableRow';
 import ColumnVisibilityPopover, { getInitialColumns } from './ColumnVisibilityPopover';
 import { getCountryFlag } from '../utils/profileUtils';
+import { useTranslation } from '../../../i18n/I18nContext';
 
 /**
  * Table view displaying profiles in rows with configurable columns, badges, and inline actions.
@@ -30,6 +31,8 @@ export default function ProfileTable({
   sortBy = 'latest',
   setSortBy
 }) {
+  const { t } = useTranslation();
+
   // Column configuration state
   const [columns, setColumns] = useState(getInitialColumns);
   const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
@@ -37,10 +40,10 @@ export default function ProfileTable({
   // Visible columns in order
   const visibleColumns = useMemo(() => columns.filter(c => c.visible), [columns]);
 
-  // CSS Grid template: Checkbox (44px) + Title (minmax(240px, 2fr)) + [dynamic columns] + (+) header (38px) + Launch (60px) + Actions (86px)
+  // CSS Grid template: Checkbox (44px) + Title (minmax(240px, 2fr)) + [dynamic columns] + Launch (70px) + Actions / (+) Header (96px)
   const gridTemplate = useMemo(() => {
     const dynamicColsStr = visibleColumns.map(c => c.flex || '1fr').join(' ');
-    return `44px minmax(240px, 2fr) ${dynamicColsStr ? dynamicColsStr + ' ' : ''}38px 60px 86px`;
+    return `44px minmax(240px, 2fr) ${dynamicColsStr ? dynamicColsStr + ' ' : ''}70px 96px`;
   }, [visibleColumns]);
 
   // Min-width for entire table so that it never gets overly compressed
@@ -49,11 +52,11 @@ export default function ProfileTable({
       const val = parseInt(c.minWidth || '120px', 10);
       return acc + (isNaN(val) ? 120 : val);
     }, 0);
-    return Math.max(960, 44 + 240 + colsTotalMin + 38 + 60 + 86 + 48);
+    return Math.max(960, 44 + 240 + colsTotalMin + 70 + 96 + 48);
   }, [visibleColumns]);
 
   // Render individual cell content based on column ID
-  const renderColumnCell = (p, colId, isRunning) => {
+  const renderColumnCell = useCallback((p, colId, isRunning) => {
     switch (colId) {
       case 'description':
         return (
@@ -190,7 +193,7 @@ export default function ProfileTable({
       case 'size':
         return (
           <div style={{ fontSize: '12px', color: 'var(--apidog-text-muted)', fontFamily: 'monospace' }}>
-            {p.cacheSize || p.size || '36.8 MB'}
+            {p.diskSize || p.cacheSize || (p.size && !p.size.includes('36.8') ? p.size : '0 KB')}
           </div>
         );
 
@@ -249,7 +252,7 @@ export default function ProfileTable({
       default:
         return <div>—</div>;
     }
-  };
+  }, []);
 
   return (
     <div style={{ minWidth: `${tableMinWidth}px`, position: 'relative' }}>
@@ -285,7 +288,7 @@ export default function ProfileTable({
 
         {/* Col 1: Title & Sort indicator matching screenshot */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '14px' }}>
-          <span>Title</span>
+          <span>{t('profiles.colTitle', 'Title')}</span>
           {setSortBy && (
             <button
               onClick={() => {
@@ -309,7 +312,15 @@ export default function ProfileTable({
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               title="Nhấn để đổi cách sắp xếp"
             >
-              <span>Sort by {sortBy === 'oldest' ? 'Oldest ↑' : sortBy === 'name-asc' ? 'Name A-Z' : 'Created ↓'}</span>
+              <span>
+                {t('profiles.sortBy', 'Sort by {type}', {
+                  type: sortBy === 'oldest'
+                    ? t('profiles.sortOldest', 'Oldest ↑')
+                    : sortBy === 'name-asc'
+                    ? t('profiles.sortNameAsc', 'Name A-Z')
+                    : t('profiles.sortLatest', 'Created ↓')
+                })}
+              </span>
             </button>
           )}
         </div>
@@ -325,23 +336,26 @@ export default function ProfileTable({
               paddingRight: '8px'
             }}
           >
-            {col.label}
+            {t(`profiles.col_${col.id}`, col.label)}
           </div>
         ))}
 
-        {/* (+) Icon Trigger Column Header matching screenshot */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Khởi chạy Header */}
+        <div style={{ textAlign: 'center' }}>{t('profiles.start', 'Khởi Chạy')}</div>
+
+        {/* Nút 3 chấm đứng ẩn/hiện và tùy chỉnh cột đưa ra cuối cùng thay thế cho nút Thao Tác */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '4px' }}>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setIsColumnMenuOpen(prev => !prev);
             }}
-            title="Thêm hoặc ẩn cột (Columns)"
+            title={t('profiles.customizeColumnsTooltip', 'Tùy chỉnh cột hiển thị')}
             style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
+              width: '26px',
+              height: '26px',
+              borderRadius: '6px',
               border: isColumnMenuOpen ? '1.5px solid #2563EB' : '1px solid #CBD5E1',
               backgroundColor: isColumnMenuOpen ? '#EFF6FF' : '#FFFFFF',
               color: isColumnMenuOpen ? '#2563EB' : '#64748B',
@@ -366,7 +380,7 @@ export default function ProfileTable({
               }
             }}
           >
-            <PlusCircle size={15} />
+            <MoreVertical size={16} />
           </button>
 
           {/* Column Visibility Customizer Popover */}
@@ -377,12 +391,6 @@ export default function ProfileTable({
             onSaveColumns={(updated) => setColumns(updated)}
           />
         </div>
-
-        {/* Khởi chạy Header */}
-        <div style={{ textAlign: 'center' }}>Khởi Chạy</div>
-
-        {/* Thao tác Header */}
-        <div style={{ textAlign: 'right' }}>Thao Tác</div>
       </div>
 
       {/* ── TABLE BODY ── */}
@@ -396,228 +404,32 @@ export default function ProfileTable({
           batchStopProfiles={batchStopProfiles}
         />
 
-        {/* Profile Rows */}
+        {/* Profile Rows (Memoized ProfileTableRow to prevent full-table re-rendering) */}
         {filteredProfiles.map((p, index) => {
           const isRunning = p.status === 'running';
           const isSelected = selectedProfiles.includes(p.id);
 
           return (
-            <div
+            <ProfileTableRow
               key={p.id}
-              data-profile-id={p.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: gridTemplate,
-                alignItems: 'center',
-                padding: '12px 24px',
-                borderBottom: '1px solid var(--apidog-border-light)',
-                fontSize: '12.5px',
-                backgroundColor: isSelected
-                  ? 'var(--apidog-purple-light)'
-                  : (isRunning
-                    ? 'rgba(16, 185, 129, 0.08)'
-                    : (index % 2 === 1 ? 'var(--apidog-bg)' : 'var(--apidog-card-bg)')),
-                boxShadow: isSelected ? 'inset 0 0 0 1.5px var(--apidog-purple)' : 'none',
-                transition: 'background-color 0.12s ease'
-              }}
-              onMouseEnter={(e) => {
-                if (!isRunning && !isSelected) e.currentTarget.style.backgroundColor = 'var(--apidog-border-light)';
-              }}
-              onMouseLeave={(e) => {
-                if (!isRunning && !isSelected) e.currentTarget.style.backgroundColor = index % 2 === 1 ? 'var(--apidog-bg)' : 'var(--apidog-card-bg)';
-              }}
-            >
-              {/* Col 0: Checkbox */}
-              <div>
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => handleToggleSelect(p.id)}
-                  style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: 'var(--apidog-purple)' }}
-                />
-              </div>
-
-              {/* Col 1: Title & OS & Name */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', paddingRight: '12px' }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '7px',
-                  backgroundColor: isRunning ? '#DCFCE7' : '#EFF6FF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  fontSize: '15px'
-                }}>
-                  {p.os === 'macos' ? '🍎' : p.os === 'linux' ? '🐧' : '🪟'}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                  <div
-                    onClick={() => setActiveProfileModal(p)}
-                    style={{
-                      fontWeight: 600,
-                      color: 'var(--apidog-text-main)',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      fontSize: '13px'
-                    }}
-                    title={p.name}
-                  >
-                    {p.name}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                    <span style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'monospace' }}>
-                      {p.id}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dynamic Column Data Cells */}
-              {visibleColumns.map((col) => (
-                <div key={col.id} style={{ overflow: 'hidden', paddingRight: '8px' }}>
-                  {renderColumnCell(p, col.id, isRunning)}
-                </div>
-              ))}
-
-              {/* Empty cell matching (+) column space */}
-              <div />
-
-              {/* Play/Stop Launch Button */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <button
-                  onClick={() => toggleLaunchProfile(p.id)}
-                  title={isRunning ? "Dừng hồ sơ" : "Khởi chạy hồ sơ"}
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '6px',
-                    border: isRunning ? '1px solid #FECACA' : '1px solid #BBF7D0',
-                    backgroundColor: isRunning ? '#FEF2F2' : '#F0FDF4',
-                    color: isRunning ? '#DC2626' : '#15803D',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    padding: 0
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = isRunning ? '#FEE2E2' : '#DCFCE7';
-                    e.currentTarget.style.transform = 'scale(1.08)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = isRunning ? '#FEF2F2' : '#F0FDF4';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                >
-                  {isRunning ? (
-                    <Square size={11} style={{ fill: '#DC2626' }} />
-                  ) : (
-                    <Play size={11} style={{ fill: '#15803D', marginLeft: '1px' }} />
-                  )}
-                </button>
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-                <button
-                  onClick={() => setActiveProfileModal(p)}
-                  title="Chỉnh sửa cấu hình hồ sơ"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '6px',
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    color: '#475569',
-                    display: 'flex',
-                    alignItems: 'center',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#E0E7FF';
-                    e.currentTarget.style.color = 'var(--apidog-purple)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#475569';
-                  }}
-                >
-                  <Edit3 size={14} />
-                </button>
-
-                {/* 3-dots More Actions Menu button */}
-                <div style={{ position: 'relative' }}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveMenuId(prev => prev === p.id ? null : p.id);
-                    }}
-                    title="Tùy chọn thao tác khác"
-                    style={{
-                      background: activeMenuId === p.id ? '#EDE9FE' : 'none',
-                      border: 'none',
-                      padding: '6px',
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                      color: activeMenuId === p.id ? 'var(--apidog-purple)' : '#475569',
-                      display: 'flex',
-                      alignItems: 'center',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (activeMenuId !== p.id) {
-                        e.currentTarget.style.backgroundColor = '#F1F5F9';
-                        e.currentTarget.style.color = '#0F172A';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (activeMenuId !== p.id) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#475569';
-                      }
-                    }}
-                  >
-                    <MoreVertical size={14} />
-                  </button>
-
-                  {activeMenuId === p.id && (
-                    <ProfileActionMenu
-                      profile={p}
-                      isUpward={index >= filteredProfiles.length - 2}
-                      onClose={() => setActiveMenuId(null)}
-                      saveProfile={saveProfile}
-                      cloneProfile={cloneProfile}
-                      addLog={addLog}
-                    />
-                  )}
-                </div>
-
-                <button
-                  onClick={() => deleteProfile(p.id)}
-                  title="Chuyển hồ sơ vào Thùng rác"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '6px',
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    color: '#DC2626',
-                    display: 'flex',
-                    alignItems: 'center',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEE2E2'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
+              profile={p}
+              index={index}
+              isSelected={isSelected}
+              isRunning={isRunning}
+              isMenuOpen={activeMenuId === p.id}
+              gridTemplate={gridTemplate}
+              visibleColumns={visibleColumns}
+              renderColumnCell={renderColumnCell}
+              handleToggleSelect={handleToggleSelect}
+              setActiveProfileModal={setActiveProfileModal}
+              toggleLaunchProfile={toggleLaunchProfile}
+              setActiveMenuId={setActiveMenuId}
+              deleteProfile={deleteProfile}
+              saveProfile={saveProfile}
+              cloneProfile={cloneProfile}
+              addLog={addLog}
+              t={t}
+            />
           );
         })}
       </div>

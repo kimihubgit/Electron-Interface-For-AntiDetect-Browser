@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Globe, Plus } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 
@@ -9,6 +9,8 @@ import ProfileGrid from './components/ProfileGrid';
 import ProfileBatchBar from './components/ProfileBatchBar';
 import MoveGroupModal from './components/MoveGroupModal';
 import DragSelectionBox from './components/DragSelectionBox';
+import EngineDownloadModal from '../../components/modals/EngineDownloadModal';
+import SkeletonLoader from '../../components/common/SkeletonLoader';
 import { useProfileFilters } from './hooks/useProfileFilters';
 import { useProfileDragSelect } from './hooks/useProfileDragSelect';
 
@@ -19,6 +21,7 @@ import { useProfileDragSelect } from './hooks/useProfileDragSelect';
 export default function ProfilesPage() {
   const {
     profiles = [],
+    isLoadingProfiles,
     toggleLaunchProfile,
     saveProfile,
     deleteProfile,
@@ -54,17 +57,17 @@ export default function ProfilesPage() {
   const [selectedProfiles, setSelectedProfiles] = useState([]);
   const isAllSelected = filteredProfiles.length > 0 && selectedProfiles.length === filteredProfiles.length;
 
-  const handleSelectAll = (e) => {
+  const handleSelectAll = useCallback((e) => {
     if (e.target.checked) {
       setSelectedProfiles(filteredProfiles.map(p => p.id));
     } else {
       setSelectedProfiles([]);
     }
-  };
+  }, [filteredProfiles]);
 
-  const handleToggleSelect = (id) => {
+  const handleToggleSelect = useCallback((id) => {
     setSelectedProfiles(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
-  };
+  }, []);
 
   // Drag-to-select hook
   const contentContainerRef = useRef(null);
@@ -101,6 +104,19 @@ export default function ProfilesPage() {
     });
   }, [profiles]);
 
+  // On-demand kernel download modal state
+  const [downloadModalData, setDownloadModalData] = useState(null); // { version, profile }
+
+  useEffect(() => {
+    const handleNeedDownload = (e) => {
+      if (e.detail) {
+        setDownloadModalData(e.detail);
+      }
+    };
+    window.addEventListener('antidetect-need-engine-download', handleNeedDownload);
+    return () => window.removeEventListener('antidetect-need-engine-download', handleNeedDownload);
+  }, []);
+
   // Pinned running profiles in chronological launched order
   const runningProfiles = useMemo(() => {
     const runningMap = new Map(profiles.filter(p => p.status === 'running').map(p => [p.id, p]));
@@ -119,29 +135,29 @@ export default function ProfilesPage() {
   }, [profiles, runningOrder]);
 
   // Batch Action Handlers
-  const handlePlayQuick = () => {
+  const handlePlayQuick = useCallback(() => {
     setIsPlayDropdownOpen(false);
     if (!selectedProfiles.length) return;
     batchLaunchProfiles(selectedProfiles);
     addLog?.(`Khởi chạy nhanh ${selectedProfiles.length} hồ sơ đã chọn`, 'success');
-  };
+  }, [selectedProfiles, batchLaunchProfiles, addLog]);
 
-  const handlePlayAndArrange = () => {
+  const handlePlayAndArrange = useCallback(() => {
     setIsPlayDropdownOpen(false);
     if (!selectedProfiles.length) return;
     batchLaunchProfiles(selectedProfiles);
     addLog?.(`Đang khởi chạy và tự động sắp xếp ${selectedProfiles.length} cửa sổ trình duyệt theo dạng lưới (Grid)...`, 'success');
     alert(`⚡ Đã khởi chạy và tự động sắp xếp ${selectedProfiles.length} cửa sổ trình duyệt theo dạng lưới trên màn hình thành công!`);
-  };
+  }, [selectedProfiles, batchLaunchProfiles, addLog]);
 
-  const handleConfirmMoveGroup = () => {
+  const handleConfirmMoveGroup = useCallback(() => {
     const chosen = customGroupInput.trim() || targetGroup;
     if (!chosen || !selectedProfiles.length) return;
     batchMoveGroupProfiles(selectedProfiles, chosen);
     setIsMoveGroupModalOpen(false);
     setCustomGroupInput('');
     addLog?.(`Đã chuyển ${selectedProfiles.length} hồ sơ đã chọn sang nhóm "${chosen}"`, 'success');
-  };
+  }, [customGroupInput, targetGroup, selectedProfiles, batchMoveGroupProfiles, addLog]);
 
   return (
     <div
@@ -173,6 +189,7 @@ export default function ProfilesPage() {
         onStopAll={() => batchStopProfiles(profiles.map(p => p.id))}
         onLaunchAll={() => batchLaunchProfiles(profiles.map(p => p.id))}
         onOpenNewProfile={() => setActiveProfileModal('new')}
+        onOpenBatchProfile={() => setActiveProfileModal('batch')}
       />
 
       {/* ── MAIN CONTENT: TABLE VIEW OR GRID VIEW ── */}
@@ -188,7 +205,11 @@ export default function ProfilesPage() {
           userSelect: dragBox ? 'none' : 'auto'
         }}
       >
-        {filteredProfiles.length === 0 ? (
+        {isLoadingProfiles ? (
+          <div style={{ padding: '24px 20px', backgroundColor: '#FFFFFF', flex: 1 }}>
+            <SkeletonLoader type="lines" count={4} />
+          </div>
+        ) : filteredProfiles.length === 0 ? (
           /* Empty Search / No Profiles Result */
           <div style={{
             flex: 1,
@@ -335,6 +356,19 @@ export default function ProfilesPage() {
           setSelectedProfiles([]);
         }}
       />
+
+      {/* ── ON-DEMAND ENGINE DOWNLOAD MODAL ── */}
+      {downloadModalData && (
+        <EngineDownloadModal
+          isOpen={!!downloadModalData}
+          onClose={() => setDownloadModalData(null)}
+          version={downloadModalData.version}
+          profile={downloadModalData.profile}
+          onSuccessLaunch={(p) => {
+            if (p?.id) toggleLaunchProfile(p.id);
+          }}
+        />
+      )}
 
       {/* ── DRAG SELECTION MARQUEE BOX ── */}
       <DragSelectionBox dragBox={dragBox} />

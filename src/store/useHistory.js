@@ -1,26 +1,34 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { INITIAL_HISTORY_RECORDS } from '../constants/initialData';
 
 /**
  * Hook that owns all profile run history sessions, filtering, and selection state.
+ * Reference-stabilized with useCallback and useMemo.
  */
-export function useHistory(addLog) {
-  const [historyRecords, setHistoryRecords] = useLocalStorage('antidetect_history', INITIAL_HISTORY_RECORDS);
+export function useHistory(addLog, currentUser = null) {
+  const userScopeKey = currentUser
+    ? (currentUser.workspace?.id || currentUser.id || (currentUser.email ? currentUser.email.replace(/[^a-zA-Z0-9]/g, '_') : 'user'))
+    : 'guest';
+  const isRealUser = Boolean(currentUser && !currentUser.isOffline);
+
+  const historyKey = isRealUser ? `antidetect_history_${userScopeKey}` : 'antidetect_history';
+  const [historyRecords, setHistoryRecords] = useLocalStorage(historyKey, isRealUser ? [] : INITIAL_HISTORY_RECORDS);
   const [selectedHistoryId, setSelectedHistoryId] = useState(() => {
-    return INITIAL_HISTORY_RECORDS[0]?.id || null;
+    return isRealUser ? null : (INITIAL_HISTORY_RECORDS[0]?.id || null);
   });
   const [historyScope, setHistoryScope] = useState('all'); // 'all' | 'running' | 'completed'
   const [historySearchTerm, setHistorySearchTerm] = useState('');
 
-  const addHistoryRecord = (record) => {
+  const addHistoryRecord = useCallback((record) => {
     const isRunning = record.status === 'running';
+    const operatorName = currentUser?.full_name || currentUser?.name || currentUser?.username || 'Người dùng';
     const newRecord = {
       id: `run-${Date.now().toString().slice(-6)}`,
       startTime: new Date().toLocaleString('vi-VN'),
       endTime: isRunning ? 'Đang chạy...' : new Date().toLocaleTimeString('vi-VN'),
       dateGroup: `Hôm nay (${new Date().toLocaleDateString('vi-VN')})`,
-      operator: 'Võ Văn Khải',
+      operator: operatorName,
       status: record.status || 'running',
       statusLabel: isRunning ? 'Đang chạy' : record.status === 'stopped' ? 'Đã dừng' : 'Hoàn thành',
       statusColor: isRunning ? '#10B981' : record.status === 'stopped' ? '#6B7280' : '#10B981',
@@ -35,35 +43,40 @@ export function useHistory(addLog) {
     if (addLog) {
       addLog(`Lịch sử: Đã ghi nhận phiên chạy "${newRecord.profileName || newRecord.targetUrl}"`, 'info');
     }
-  };
+  }, [addLog, setHistoryRecords]);
 
-  const deleteHistoryRecord = (id) => {
-    setHistoryRecords(prev => prev.filter(item => item.id !== id));
-    if (selectedHistoryId === id) {
-      const remaining = historyRecords.filter(item => item.id !== id);
-      setSelectedHistoryId(remaining[0]?.id || null);
-    }
-  };
+  const deleteHistoryRecord = useCallback((id) => {
+    setHistoryRecords(prev => {
+      const next = prev.filter(item => item.id !== id);
+      setSelectedHistoryId(curr => curr === id ? (next[0]?.id || null) : curr);
+      return next;
+    });
+  }, [setHistoryRecords]);
 
-  const deleteHistoryGroup = (dateGroup) => {
-    setHistoryRecords(prev => prev.filter(item => (item.dateGroup || 'Hôm nay') !== dateGroup));
-    const current = historyRecords.find(item => item.id === selectedHistoryId);
-    if (current && (current.dateGroup || 'Hôm nay') === dateGroup) {
-      const remaining = historyRecords.filter(item => (item.dateGroup || 'Hôm nay') !== dateGroup);
-      setSelectedHistoryId(remaining[0]?.id || null);
-    }
+  const deleteHistoryGroup = useCallback((dateGroup) => {
+    setHistoryRecords(prev => {
+      const next = prev.filter(item => (item.dateGroup || 'Hôm nay') !== dateGroup);
+      setSelectedHistoryId(curr => {
+        const currentItem = prev.find(item => item.id === curr);
+        if (currentItem && (currentItem.dateGroup || 'Hôm nay') === dateGroup) {
+          return next[0]?.id || null;
+        }
+        return curr;
+      });
+      return next;
+    });
     if (addLog) addLog(`Đã xóa toàn bộ lịch sử ngày: ${dateGroup}`, 'warn');
-  };
+  }, [addLog, setHistoryRecords]);
 
-  const clearHistory = () => {
+  const clearHistory = useCallback(() => {
     if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử chạy profile?')) {
       setHistoryRecords([]);
       setSelectedHistoryId(null);
       if (addLog) addLog('Đã dọn sạch toàn bộ nhật ký phiên chạy profile', 'warn');
     }
-  };
+  }, [addLog, setHistoryRecords]);
 
-  return {
+  return useMemo(() => ({
     historyRecords,
     setHistoryRecords,
     selectedHistoryId,
@@ -76,5 +89,15 @@ export function useHistory(addLog) {
     deleteHistoryRecord,
     deleteHistoryGroup,
     clearHistory
-  };
+  }), [
+    historyRecords,
+    selectedHistoryId,
+    historyScope,
+    historySearchTerm,
+    setHistoryRecords,
+    addHistoryRecord,
+    deleteHistoryRecord,
+    deleteHistoryGroup,
+    clearHistory
+  ]);
 }

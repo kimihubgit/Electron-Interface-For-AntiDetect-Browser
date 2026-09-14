@@ -199,7 +199,7 @@ export const INITIAL_TRASH_PROFILES = [
     os: 'windows',
     browser: 'Chrome 128',
     branchVersion: 'Chrome 128 / Windows 11',
-    operator: 'Admin',
+    operator: 'Thành viên',
     daysRemaining: 29,
     deletedAt: '2026-09-05T09:00:00Z',
     proxy: { type: 'SOCKS5', host: '154.21.32.88', port: 1080 }
@@ -212,7 +212,7 @@ export const INITIAL_TRASH_PROFILES = [
     os: 'windows',
     browser: 'Chrome 128',
     branchVersion: 'Chrome 128 / Windows 11',
-    operator: 'Admin',
+    operator: 'Thành viên',
     daysRemaining: 27,
     deletedAt: '2026-09-04T11:20:00Z',
     proxy: { type: 'HTTP', host: '113.161.44.12', port: 8080 }

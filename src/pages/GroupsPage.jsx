@@ -12,6 +12,7 @@ import {
   Layers
 } from 'lucide-react';
 import { useBrowser } from '../store/BrowserContext';
+import { useTranslation } from '../i18n/I18nContext';
 
 const PRESET_COLORS = [
   { label: 'Tím APIDog', value: '#7C3AED' },
@@ -25,6 +26,7 @@ const PRESET_COLORS = [
 ];
 
 export default function GroupsPage() {
+  const { t } = useTranslation();
   const { 
     profiles = [], 
     customGroups = [], 
@@ -167,7 +169,7 @@ export default function GroupsPage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#111827', margin: 0 }}>
-                Quản Lý Nhóm Hồ Sơ
+                {t('groups.title', 'Quản Lý Nhóm Hồ Sơ')}
               </h2>
               <span style={{
                 padding: '2px 8px',
@@ -177,11 +179,11 @@ export default function GroupsPage() {
                 backgroundColor: '#EDE9FE',
                 color: '#7C3AED'
               }}>
-                {customGroups.length} nhóm
+                {t('groups.totalGroups', { count: customGroups.length })}
               </span>
             </div>
             <p style={{ fontSize: '12.5px', color: '#6B7280', margin: '3px 0 0 0' }}>
-              Tổ chức và phân loại hồ sơ trình duyệt theo từng chiến dịch, mục đích chạy
+              {t('groups.subtitle', 'Tổ chức và phân loại hồ sơ trình duyệt theo từng chiến dịch, mục đích chạy')}
             </p>
           </div>
         </div>
@@ -209,7 +211,7 @@ export default function GroupsPage() {
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7C3AED'}
         >
           <Plus size={16} />
-          <span>Thêm nhóm mới</span>
+          <span>{t('groups.newGroup', 'Thêm nhóm mới')}</span>
         </button>
       </div>
 
@@ -242,10 +244,10 @@ export default function GroupsPage() {
             <FolderTree size={28} />
           </div>
           <div style={{ fontSize: '16px', fontWeight: 700, color: '#374151' }}>
-            Chưa có nhóm hồ sơ nào
+            {t('groups.noGroups', 'Chưa có nhóm hồ sơ nào')}
           </div>
           <div style={{ fontSize: '13px', color: '#6B7280', maxWidth: '360px' }}>
-            Tạo nhóm đầu tiên để dễ dàng phân loại và quản lý các profile tài khoản.
+            {t('groups.emptyGroup', 'Tạo nhóm đầu tiên để dễ dàng phân loại và quản lý các profile tài khoản.')}
           </div>
           <button
             onClick={handleOpenCreateModal}
@@ -261,7 +263,7 @@ export default function GroupsPage() {
               cursor: 'pointer'
             }}
           >
-            + Thêm nhóm ngay
+            + {t('groups.newGroup', 'Thêm nhóm mới')}
           </button>
         </div>
       ) : (
@@ -347,7 +349,7 @@ export default function GroupsPage() {
                           gap: '5px'
                         }}>
                           <Layers size={13} />
-                          Tổng: {totalCount} profile
+                          {t('groups.profileCount', { count: totalCount })}
                         </span>
                       </div>
                     </div>
@@ -359,7 +361,7 @@ export default function GroupsPage() {
                     >
                       <button
                         onClick={(e) => handleOpenEditModal(g, e)}
-                        title="Chỉnh sửa thông tin nhóm"
+                        title={t('groups.editGroup', 'Chỉnh sửa thông tin nhóm')}
                         style={{
                           width: '32px',
                           height: '32px',
@@ -392,7 +394,7 @@ export default function GroupsPage() {
                           e.stopPropagation();
                           setDeleteConfirmGroup(g);
                         }}
-                        title="Xóa nhóm"
+                        title={t('groups.deleteGroup', 'Xóa nhóm')}
                         style={{
                           width: '32px',
                           height: '32px',
@@ -453,7 +455,7 @@ export default function GroupsPage() {
                     overflow: 'hidden',
                     fontStyle: g.desc ? 'normal' : 'italic'
                   }}>
-                    {g.desc || 'Chưa có mô tả chi tiết cho nhóm này'}
+                    {g.desc || t('groups.noDesc', 'Chưa có mô tả chi tiết cho nhóm này')}
                   </p>
                 </div>
 
@@ -470,10 +472,10 @@ export default function GroupsPage() {
                     {runningCount > 0 ? (
                       <span style={{ color: '#10B981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
-                        {runningCount} profile đang mở
+                        {t('groups.runningCount', { count: runningCount })}
                       </span>
                     ) : (
-                      <span>Tất cả đang nghỉ ({totalCount})</span>
+                      <span>{t('groups.allIdle', { count: totalCount })}</span>
                     )}
                   </div>
 
@@ -485,7 +487,7 @@ export default function GroupsPage() {
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    Xem hồ sơ <ArrowRight size={13} />
+                    {t('groups.viewProfiles', 'Xem hồ sơ')} <ArrowRight size={13} />
                   </span>
                 </div>
               </div>
@@ -532,10 +534,10 @@ export default function GroupsPage() {
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#374151' }}>
-                Tạo thêm nhóm mới
+                {t('groups.newGroup', 'Tạo thêm nhóm mới')}
               </div>
               <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '3px' }}>
-                Phân loại theo chiến dịch, tài khoản...
+                {t('groups.subtitle', 'Phân loại theo chiến dịch, tài khoản...')}
               </div>
             </div>
           </div>
@@ -598,12 +600,12 @@ export default function GroupsPage() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: '15.5px', fontWeight: 700, color: '#111827', margin: 0 }}>
-                    {activeGroupModal.mode === 'create' ? 'Tạo Nhóm Hồ Sơ Mới' : 'Chỉnh Sửa Nhóm Hồ Sơ'}
+                    {activeGroupModal.mode === 'create' ? t('groups.newGroup', 'Tạo Nhóm Hồ Sơ Mới') : t('groups.editGroup', 'Chỉnh Sửa Nhóm Hồ Sơ')}
                   </h3>
                   <p style={{ fontSize: '11.5px', color: '#6B7280', margin: '2px 0 0 0' }}>
                     {activeGroupModal.mode === 'create' 
-                      ? 'Thiết lập tên và màu sắc nhận diện cho nhóm mới' 
-                      : `Đang sửa thông tin nhóm: "${activeGroupModal.group?.name}"`
+                      ? t('groups.createNewDesc', 'Thiết lập tên và màu sắc nhận diện cho nhóm mới') 
+                      : t('groups.editingDesc', { name: activeGroupModal.group?.name })
                     }
                   </p>
                 </div>
@@ -652,7 +654,7 @@ export default function GroupsPage() {
               {/* Tên nhóm */}
               <div style={{ marginBottom: '18px' }}>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>
-                  Tên nhóm <span style={{ color: '#EF4444' }}>*</span>
+                  {t('groups.groupName', 'Tên nhóm')} <span style={{ color: '#EF4444' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -683,7 +685,7 @@ export default function GroupsPage() {
               {/* Mô tả nhóm */}
               <div style={{ marginBottom: '18px' }}>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>
-                  Mô tả nhóm <span style={{ fontSize: '11.5px', fontWeight: 400, color: '#9CA3AF' }}>(Không bắt buộc)</span>
+                  {t('groups.groupDesc', 'Mô tả')} <span style={{ fontSize: '11.5px', fontWeight: 400, color: '#9CA3AF' }}>({t('common.optional', 'Không bắt buộc')})</span>
                 </label>
                 <textarea
                   placeholder="Mô tả mục đích, danh sách tài khoản hoặc ghi chú quản lý..."
@@ -710,7 +712,7 @@ export default function GroupsPage() {
               {/* Màu sắc nhận diện */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>
-                  Màu sắc nhận diện
+                  {t('groups.groupColor', 'Màu đại diện')}
                 </label>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {PRESET_COLORS.map(c => {
@@ -767,7 +769,7 @@ export default function GroupsPage() {
                   <FolderTree size={18} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 600 }}>XEM TRƯỚC HIỂN THỊ</div>
+                  <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 600 }}>{t('groups.previewTitle', 'XEM TRƯỚC HIỂN THỊ')}</div>
                   <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#111827' }}>
                     {formData.name.trim() || 'Tên nhóm hiển thị'}
                   </div>
@@ -781,7 +783,7 @@ export default function GroupsPage() {
                     backgroundColor: `${formData.color}15`,
                     color: formData.color
                   }}>
-                    Tổng: 0 profile
+                    {t('groups.profileCount', { count: 0 })}
                   </span>
                 </div>
               </div>
@@ -802,7 +804,7 @@ export default function GroupsPage() {
                     cursor: 'pointer'
                   }}
                 >
-                  Hủy bỏ
+                  {t('common.cancel', 'Hủy bỏ')}
                 </button>
                 <button
                   type="submit"
@@ -822,7 +824,7 @@ export default function GroupsPage() {
                   }}
                 >
                   <Check size={16} />
-                  <span>{activeGroupModal.mode === 'create' ? 'Tạo nhóm mới' : 'Lưu thay đổi'}</span>
+                  <span>{activeGroupModal.mode === 'create' ? t('groups.newGroup', 'Tạo nhóm mới') : t('groups.saveChanges', 'Lưu thay đổi')}</span>
                 </button>
               </div>
             </form>
@@ -882,10 +884,10 @@ export default function GroupsPage() {
               </div>
               <div>
                 <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#991B1B', margin: 0 }}>
-                  Xác Nhận Xóa Nhóm
+                  {t('groups.deleteTitle', 'Xác Nhận Xóa Nhóm')}
                 </h3>
                 <p style={{ fontSize: '11.5px', color: '#B91C1C', margin: '2px 0 0 0' }}>
-                  Hành động này sẽ xóa nhóm khỏi danh sách phân loại
+                  {t('groups.deleteSubtitle', 'Hành động này sẽ xóa nhóm khỏi danh sách phân loại')}
                 </p>
               </div>
             </div>
@@ -893,7 +895,7 @@ export default function GroupsPage() {
             {/* Body */}
             <div style={{ padding: '22px' }}>
               <p style={{ fontSize: '13.5px', color: '#1F2937', lineHeight: '1.6', margin: '0 0 14px 0' }}>
-                Bạn có chắc chắn muốn xóa nhóm <strong style={{ color: '#7C3AED' }}>"{deleteConfirmGroup.name}"</strong>?
+                {t('groups.deletePrompt', { name: deleteConfirmGroup.name })}
               </p>
 
               {(() => {
@@ -909,9 +911,7 @@ export default function GroupsPage() {
                       color: '#92400E',
                       lineHeight: '1.5'
                     }}>
-                      ⚠️ <strong>An toàn dữ liệu:</strong> Nhóm này đang chứa <strong>{count} hồ sơ</strong>. 
-                      Khi xóa, toàn bộ {count} hồ sơ này sẽ được tự động chuyển sang nhóm <strong>"Chung"</strong>. 
-                      Hồ sơ, proxy, cookies và cấu hình vân tay của bạn được bảo toàn 100%.
+                      ⚠️ {t('groups.deleteWarning', { count })}
                     </div>
                   );
                 } else {
@@ -923,7 +923,7 @@ export default function GroupsPage() {
                       fontSize: '12px',
                       color: '#4B5563'
                     }}>
-                      Nhóm này hiện chưa có hồ sơ nào.
+                      {t('groups.noProfiles', 'Nhóm này hiện chưa có hồ sơ nào.')}
                     </div>
                   );
                 }
@@ -945,7 +945,7 @@ export default function GroupsPage() {
                     cursor: 'pointer'
                   }}
                 >
-                  Hủy bỏ
+                  {t('common.cancel', 'Hủy bỏ')}
                 </button>
                 <button
                   type="button"
@@ -966,7 +966,7 @@ export default function GroupsPage() {
                   }}
                 >
                   <Trash2 size={15} />
-                  <span>Xóa nhóm</span>
+                  <span>{t('groups.deleteGroup', 'Xóa nhóm')}</span>
                 </button>
               </div>
             </div>

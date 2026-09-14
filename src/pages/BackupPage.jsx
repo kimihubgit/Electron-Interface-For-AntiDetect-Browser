@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  CloudUpload, 
-  Database, 
-  History, 
-  Clock, 
-  ShieldCheck, 
+import {
+  CloudUpload,
+  Database,
+  History,
+  Clock,
+  ShieldCheck,
   Sparkles,
   Play,
   CheckCircle2,
@@ -232,15 +232,6 @@ export default function BackupPage() {
         {/* Tab 1: Providers Grid (9 providers) */}
         {activeSubTab === 'providers' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>
-                Hỗ trợ 9 nền tảng lưu trữ đám mây chuẩn S3, Web API & Telegram:
-              </span>
-              <span style={{ fontSize: '12px', color: '#64748B' }}>
-                Nhấn "Cấu hình ngay" để nhập Access Key hoặc Bot Token
-              </span>
-            </div>
-
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',

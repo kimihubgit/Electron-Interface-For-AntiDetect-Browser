@@ -1,14 +1,15 @@
 {
   "name": "antidetectbrowser",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "app": "electron electron-main.cjs"
+    "app": "electron electron/main.cjs",
+    "build:exe": "vite build && electron-builder --win nsis --x64"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
@@ -21,8 +22,35 @@
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
     "electron": "^44.2.0",
+    "electron-builder": "^26.15.3",
     "oxlint": "^1.79.0",
     "vite": "^8.2.2"
   },
-  "main": "electron-main.cjs"
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.antidetect.browser",
+    "productName": "AntidetectBrowser",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "electron-main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AntidetectBrowser",
+      "uninstallDisplayName": "AntidetectBrowser",
+      "runAfterFinish": true
+    }
+  }
 }

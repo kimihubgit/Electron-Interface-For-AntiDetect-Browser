@@ -23,9 +23,15 @@ import {
   HardDrive,
   Eye,
   Zap,
-  ExternalLink
+  ExternalLink,
+  Download,
+  Shuffle,
+  ShieldCheck
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
+import { useTranslation } from '../../i18n/I18nContext';
+import BrowserCoreManagerModal from './BrowserCoreManagerModal';
+import { getInstalledBrowserOptions } from '../../services/browserCoreService';
 
 // Standard User-Agents by OS & Browser
 const OS_PRESETS = {
@@ -34,43 +40,166 @@ const OS_PRESETS = {
     versions: ['11', '10', '7'],
     defaultVersion: '10',
     uaTemplate: (v, bVer) => `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${bVer}.0.0.0 Safari/537.36`,
-    uaFullVersion: (bVer) => `${bVer}.0.7871.102`
+    uaFullVersion: (bVer) => String(bVer) === '152' ? '152.0.7958.0' : `${bVer}.0.7871.102`
   },
   mac: {
     name: 'macOS',
     versions: ['14 (Sonoma)', '13 (Ventura)', '12 (Monterey)'],
     defaultVersion: '14 (Sonoma)',
     uaTemplate: (v, bVer) => `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${bVer}.0.0.0 Safari/537.36`,
-    uaFullVersion: (bVer) => `${bVer}.0.7871.102`
+    uaFullVersion: (bVer) => String(bVer) === '152' ? '152.0.7958.0' : `${bVer}.0.7871.102`
   },
   linux: {
     name: 'Linux',
     versions: ['Ubuntu 24.04', 'Debian 12', 'Fedora 40'],
     defaultVersion: 'Ubuntu 24.04',
     uaTemplate: (v, bVer) => `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${bVer}.0.0.0 Safari/537.36`,
-    uaFullVersion: (bVer) => `${bVer}.0.7871.102`
+    uaFullVersion: (bVer) => String(bVer) === '152' ? '152.0.7958.0' : `${bVer}.0.7871.102`
   },
   ios: {
     name: 'iOS',
     versions: ['iOS 17.5', 'iOS 17.0', 'iOS 16.6'],
     defaultVersion: 'iOS 17.5',
     uaTemplate: (v, bVer) => `Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/${bVer}.0.0.0 Mobile/15E148 Safari/604.1`,
-    uaFullVersion: (bVer) => `${bVer}.0.7871.102`
+    uaFullVersion: (bVer) => String(bVer) === '152' ? '152.0.7958.0' : `${bVer}.0.7871.102`
   },
   android: {
     name: 'Android',
     versions: ['Android 14', 'Android 13', 'Android 12'],
     defaultVersion: 'Android 14',
     uaTemplate: (v, bVer) => `Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${bVer}.0.0.0 Mobile Safari/537.36`,
-    uaFullVersion: (bVer) => `${bVer}.0.7871.102`
+    uaFullVersion: (bVer) => String(bVer) === '152' ? '152.0.7958.0' : `${bVer}.0.7871.102`
   }
 };
 
+// OS Icons
+const WindowsIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#0078D7">
+    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.551H10.949M0 12.6h9.75V22.05L0 20.7m10.949-8.1H24V24l-13.051-1.8" fill="currentColor"/>
+  </svg>
+);
+
+const AppleIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#0F172A">
+    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.92-2.85-.9.04-2 .6-2.65 1.35-.58.67-1.09 1.74-.96 2.77 1 .08 2.03-.51 2.69-1.27z"/>
+  </svg>
+);
+
+const LinuxIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#F59E0B">
+    <path d="M12 2C9.5 2 7.5 4 7.5 6.5c0 1.2.5 2.3 1.2 3.1-.7.6-1.2 1.5-1.2 2.5 0 .5.1 1 .4 1.4-1.1.8-1.9 2-1.9 3.5 0 2.2 1.8 4 4 4h4c2.2 0 4-1.8 4-4 0-1.5-.8-2.7-1.9-3.5.3-.4.4-.9.4-1.4 0-1-.5-1.9-1.2-2.5.7-.8 1.2-1.9 1.2-3.1C16.5 4 14.5 2 12 2z"/>
+  </svg>
+);
+
+const AndroidIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#3DDC84">
+    <path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-4.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C13.85 2.23 12.95 2 12 2c-.96 0-1.86.23-2.66.63L7.85 1.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.31 1.31C6.97 4.26 6 6.01 6 8h12c0-1.99-.97-3.75-2.47-4.84zM10 5.5c-.41 0-.75-.34-.75-.75s.34-.75.75-.75.75.34.75.75-.34.75-.75.75zm4 0c-.41 0-.75-.34-.75-.75s.34-.75.75-.75.75.34.75.75-.34.75-.75.75z"/>
+  </svg>
+);
+
+const renderOsIcon = (osKey, size = 16) => {
+  switch (osKey) {
+    case 'windows': return <WindowsIcon size={size} />;
+    case 'mac': return <AppleIcon size={size} />;
+    case 'linux': return <LinuxIcon size={size} />;
+    case 'android': return <AndroidIcon size={size} />;
+    case 'ios': return <AppleIcon size={size} />;
+    default: return <WindowsIcon size={size} />;
+  }
+};
+
+const getDisplayOsVersion = (osKey, v) => {
+  if (!v) return 'Mặc định';
+  if (osKey === 'windows') {
+    return v.startsWith('Windows') ? v : `Windows ${v}`;
+  }
+  if (osKey === 'mac') {
+    return v.startsWith('macOS') ? v : `macOS ${v}`;
+  }
+  return v;
+};
+
+// Kernel / Browser Core Icon (Blue circle with stylized ring matching screenshot)
+const KernelIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" stroke="#0284C7" strokeWidth="2.2" fill="#E0F2FE" />
+    <circle cx="12" cy="12" r="4.5" fill="#0284C7" />
+    <path d="M12 2A10 10 0 0 1 20.66 7L12 12" stroke="#0284C7" strokeWidth="1.8" />
+    <path d="M20.66 17A10 10 0 0 1 7.34 20.66L12 12" stroke="#0284C7" strokeWidth="1.8" />
+    <path d="M3.34 7A10 10 0 0 1 12 2L12 12" stroke="#0284C7" strokeWidth="1.8" />
+  </svg>
+);
+
+const getDisplayKernel = (choice) => {
+  if (!choice) return 'RoxyChrome 138';
+  const ver = choice.version || '138';
+  return `RoxyChrome ${ver}`;
+};
+
+// Search Engine Icons & Options
+const GoogleIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+  </svg>
+);
+
+const BingIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#008373">
+    <path d="M5 3v18l5.5-3.2L16 21l3-1.8V7.5L13.5 5 10.5 8V4.5L8.5 3H5zm5.5 8.2l3-1.8v5.1l-3 1.8v-5.1z" />
+  </svg>
+);
+
+const DuckDuckGoIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#DE5833">
+    <circle cx="12" cy="12" r="10" fill="#DE5833"/>
+    <path d="M8 14c1.5 2 5.5 2 7 0" stroke="#FFF" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="9" cy="10" r="1.5" fill="#FFF"/>
+    <circle cx="15" cy="10" r="1.5" fill="#FFF"/>
+  </svg>
+);
+
+const YahooIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#6001D2">
+    <rect width="24" height="24" rx="4" fill="#6001D2" />
+    <path d="M6 6l4 7v5h2v-5l4-7h-2.5l-2.5 5-2.5-5H6zM17 14h2v4h-2z" fill="#FFF" />
+  </svg>
+);
+
+const YandexIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#FC3F1D">
+    <circle cx="12" cy="12" r="10" fill="#FC3F1D" />
+    <path d="M14 6h-2.5c-2 0-3.5 1.5-3.5 3.5 0 1.5.8 2.7 2 3.2L7.5 18H10l2.5-5.3h.5V18H15V6h-1zm-.5 4.7h-1c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5h1v3z" fill="#FFF" />
+  </svg>
+);
+
+const BaiduIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#2932E1">
+    <circle cx="6.5" cy="9.5" r="2" fill="#2932E1"/>
+    <circle cx="17.5" cy="9.5" r="2" fill="#2932E1"/>
+    <circle cx="9.5" cy="5.5" r="2" fill="#2932E1"/>
+    <circle cx="14.5" cy="5.5" r="2" fill="#2932E1"/>
+    <path d="M12 10c-3 0-5 2-5 5 0 2 2 4 5 4s5-2 5-4c0-3-2-5-5-5z" fill="#2932E1"/>
+  </svg>
+);
+
+const SEARCH_ENGINE_OPTIONS = [
+  { id: 'google', label: 'Google', url: 'https://www.google.com', icon: GoogleIcon },
+  { id: 'bing', label: 'Bing', url: 'https://www.bing.com', icon: BingIcon },
+  { id: 'duckduckgo', label: 'DuckDuckGo', url: 'https://duckduckgo.com', icon: DuckDuckGoIcon },
+  { id: 'yahoo', label: 'Yahoo', url: 'https://search.yahoo.com', icon: YahooIcon },
+  { id: 'yandex', label: 'Yandex', url: 'https://yandex.com', icon: YandexIcon },
+  { id: 'baidu', label: 'Baidu', url: 'https://www.baidu.com', icon: BaiduIcon }
+];
+
 const BROWSER_OPTIONS = [
-  { id: '150', label: 'MostChrome 150', version: '150' },
-  { id: '132', label: 'Chrome 132 (Stable)', version: '132' },
-  { id: '130', label: 'Chrome 130', version: '130' },
-  { id: '128', label: 'Chrome 128', version: '128' }
+  { id: '152', label: 'RoxyChrome 152 (Khuyên dùng)', version: '152' },
+  { id: '138', label: 'RoxyChrome 138 (Stable)', version: '138' },
+  { id: '132', label: 'RoxyChrome 132', version: '132' },
+  { id: '130', label: 'RoxyChrome 130', version: '130' },
+  { id: '128', label: 'RoxyChrome 128', version: '128' }
 ];
 
 const TIMEZONE_OPTIONS = [
@@ -131,7 +260,7 @@ const WEBGL_RENDERERS = [
 const TARGET_WEBSITE_PRESETS = [
   { label: 'Facebook', url: 'https://www.facebook.com' },
   { label: 'TikTok', url: 'https://seller-vn.tiktok.com' },
-  { label: 'Google', url: 'https://www.google.com' },
+  { label: 'Shopee', url: 'https://shopee.vn' },
   { label: 'Amazon', url: 'https://www.amazon.com' },
   { label: 'YouTube', url: 'https://www.youtube.com' },
   { label: 'Twitter / X', url: 'https://x.com' },
@@ -139,6 +268,7 @@ const TARGET_WEBSITE_PRESETS = [
 ];
 
 export default function ProfileModal() {
+  const { t } = useTranslation();
   const { 
     activeProfileModal,
     setActiveProfileModal, 
@@ -166,24 +296,54 @@ export default function ProfileModal() {
   // 1. GENERAL TAB STATES
   const [folder, setFolder] = useState(initialData.group || (customGroups[0]?.name || 'Chung'));
   const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
-  const [title, setTitle] = useState(initialData.name || (isEditing ? '' : 'YT music'));
+  const [title, setTitle] = useState(initialData.name || '');
   const [selectedOs, setSelectedOs] = useState(initialData.os || 'windows');
   const [osVersion, setOsVersion] = useState(initialData.osVersion || '10');
+  const [installedCores, setInstalledCores] = useState(() => getInstalledBrowserOptions());
+  const [isCoreManagerOpen, setIsCoreManagerOpen] = useState(false);
+
+  // Sync with core update events
+  useEffect(() => {
+    const handleCoresUpdated = () => {
+      const opts = getInstalledBrowserOptions();
+      setInstalledCores(opts);
+    };
+    window.addEventListener('antidetect-cores-updated', handleCoresUpdated);
+    return () => window.removeEventListener('antidetect-cores-updated', handleCoresUpdated);
+  }, []);
+
   const [browserChoice, setBrowserChoice] = useState(() => {
+    const opts = getInstalledBrowserOptions();
     if (initialData.browser) {
-      const match = BROWSER_OPTIONS.find(b => initialData.browser.includes(b.version));
+      const match = opts.find(b => initialData.browser.includes(b.version));
       if (match) return match;
     }
-    return BROWSER_OPTIONS[0];
+    return opts[0] || BROWSER_OPTIONS[0];
   });
-  const [isBrowserDropdownOpen, setIsBrowserDropdownOpen] = useState(false);
+  const [isOsDropdownOpen, setIsOsDropdownOpen] = useState(false);
   const [isOsVersionDropdownOpen, setIsOsVersionDropdownOpen] = useState(false);
+  const [isKernelDropdownOpen, setIsKernelDropdownOpen] = useState(false);
+  const [searchEngine, setSearchEngine] = useState(initialData.searchEngine || 'google');
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest?.('.system-kernel-dropdown')) {
+        setIsOsDropdownOpen(false);
+        setIsOsVersionDropdownOpen(false);
+        setIsKernelDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   const [customUserAgent, setCustomUserAgent] = useState(initialData.userAgent || '');
   const [isEditingUa, setIsEditingUa] = useState(false);
   const [remark, setRemark] = useState(initialData.remark || initialData.notes || '');
   
   // Website đích (Target / Start URL)
-  const [startUrls, setStartUrls] = useState(initialData.startUrls || initialData.targetUrl || 'https://www.google.com');
+  const [startUrls, setStartUrls] = useState(initialData.startUrls || initialData.targetUrl || '');
 
   // 2. PROXY TAB STATES
   const hasProxy = initialData.proxy && initialData.proxy.type && initialData.proxy.type !== 'NO_PROXY';
@@ -279,9 +439,6 @@ export default function ProfileModal() {
     setWebglImageNoise('noise');
     setCustomUserAgent('');
 
-    if (showToast) {
-      showToast('Đã tạo ngẫu nhiên toàn bộ dấu vân tay hồ sơ (Randomized fingerprint)!', 'success');
-    }
     if (addLog) addLog('Đã tạo ngẫu nhiên toàn bộ dấu vân tay hồ sơ', 'info');
   };
 
@@ -326,7 +483,8 @@ export default function ProfileModal() {
         user: proxyUser,
         pass: proxyPass
       },
-      // Website đích
+      // Website đích & Search Engine
+      searchEngine,
       targetUrl: startUrls.trim(),
       startUrls: startUrls.trim(),
       // Timezone & Location & Language
@@ -364,7 +522,12 @@ export default function ProfileModal() {
 
     saveProfile(profilePayload);
     if (showToast) {
-      showToast(isEditing ? `Đã cập nhật hồ sơ "${profilePayload.name}"` : `Tạo mới hồ sơ "${profilePayload.name}" thành công!`, 'success');
+      showToast(
+        isEditing
+          ? t('toasts.profileUpdated', `Đã cập nhật hồ sơ "${profilePayload.name}" thành công!`, { name: profilePayload.name })
+          : t('toasts.profileCreated', `Tạo mới hồ sơ "${profilePayload.name}" thành công!`, { name: profilePayload.name }),
+        'success'
+      );
     }
     if (addLog) addLog(isEditing ? `Đã cập nhật hồ sơ: "${profilePayload.name}"` : `Đã tạo thành công hồ sơ: "${profilePayload.name}"`, 'success');
     setActiveProfileModal(null);
@@ -498,17 +661,25 @@ export default function ProfileModal() {
         <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
 
           {/* ═══════════════════════════════════════════════════════════ */}
-          {/* LEFT COLUMN: MAIN CONFIGURATION FORM                       */}
+          {/* LEFT COLUMN: MAIN CONFIGURATION FORM & STICKY ACTIONS       */}
           {/* ═══════════════════════════════════════════════════════════ */}
           <div style={{
             flex: 1,
             minWidth: 0,
-            overflowY: 'auto',
-            padding: '24px 32px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '20px'
+            overflow: 'hidden',
+            position: 'relative'
           }}>
+            {/* Scrollable Form Content */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px 32px 28px 32px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}>
 
             {/* ───────────────────────────────────────────────────────── */}
             {/* TAB 1: GENERAL (Tổng quan & Website đích)                 */}
@@ -626,7 +797,7 @@ export default function ProfileModal() {
                     type="text"
                     value={startUrls}
                     onChange={(e) => setStartUrls(e.target.value)}
-                    placeholder="https://www.facebook.com hoặc https://seller-vn.tiktok.com..."
+                    placeholder="https://www.facebook.com... (để trống sẽ mở trang tìm kiếm mặc định)"
                     style={{
                       width: '100%',
                       height: '38px',
@@ -665,76 +836,351 @@ export default function ProfileModal() {
                   </div>
                 </div>
 
-                {/* 4. Hệ điều hành (OS) */}
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ width: '160px', fontSize: '13.5px', fontWeight: 600, color: '#334155' }}>
-                    Hệ điều hành (OS)
+                {/* 4. System & Kernel */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13.5px', fontWeight: 600, color: '#334155' }}>
+                    System & Kernel
+                  </label>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {/* Left: OS Selection (OS Icon + Version Dropdown) */}
+                    <div className="system-kernel-dropdown" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {/* OS Icon Button with Dropdown */}
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsOsDropdownOpen(prev => !prev);
+                            setIsOsVersionDropdownOpen(false);
+                            setIsKernelDropdownOpen(false);
+                          }}
+                          style={{
+                            height: '38px',
+                            padding: '0 10px',
+                            borderRadius: '6px',
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          title={`Hệ điều hành: ${OS_PRESETS[selectedOs]?.name || selectedOs}`}
+                        >
+                          {renderOsIcon(selectedOs, 16)}
+                          <ChevronDown size={13} color="#64748B" />
+                        </button>
+
+                        {isOsDropdownOpen && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '42px',
+                            left: 0,
+                            width: '160px',
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #CBD5E1',
+                            borderRadius: '8px',
+                            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.12)',
+                            zIndex: 50,
+                            padding: '4px 0',
+                            overflow: 'hidden'
+                          }}>
+                            {Object.keys(OS_PRESETS).map(key => {
+                              const os = OS_PRESETS[key];
+                              const isSelected = selectedOs === key;
+                              return (
+                                <div
+                                  key={key}
+                                  onClick={() => {
+                                    setSelectedOs(key);
+                                    setOsVersion(os.defaultVersion);
+                                    setCustomUserAgent('');
+                                    setIsOsDropdownOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '8px 12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '8px',
+                                    fontSize: '13px',
+                                    cursor: 'pointer',
+                                    backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                                    color: isSelected ? '#2563EB' : '#1E293B'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {renderOsIcon(key, 16)}
+                                    <span>{os.name}</span>
+                                  </div>
+                                  {isSelected && <Check size={14} color="#2563EB" />}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* OS Version Dropdown */}
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsOsVersionDropdownOpen(prev => !prev);
+                            setIsOsDropdownOpen(false);
+                            setIsKernelDropdownOpen(false);
+                          }}
+                          style={{
+                            width: '100%',
+                            height: '38px',
+                            padding: '0 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            fontSize: '13px',
+                            color: '#1E293B',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <span>{getDisplayOsVersion(selectedOs, osVersion)}</span>
+                          <ChevronDown size={14} color="#64748B" />
+                        </button>
+
+                        {isOsVersionDropdownOpen && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '42px',
+                            left: 0,
+                            right: 0,
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #CBD5E1',
+                            borderRadius: '8px',
+                            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.12)',
+                            zIndex: 50,
+                            padding: '4px 0',
+                            maxHeight: '200px',
+                            overflowY: 'auto'
+                          }}>
+                            {OS_PRESETS[selectedOs]?.versions.map(v => {
+                              const isSelected = osVersion === v;
+                              return (
+                                <div
+                                  key={v}
+                                  onClick={() => {
+                                    setOsVersion(v);
+                                    setCustomUserAgent('');
+                                    setIsOsVersionDropdownOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '8px 14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    fontSize: '13px',
+                                    cursor: 'pointer',
+                                    backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                                    color: isSelected ? '#2563EB' : '#1E293B'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                                  }}
+                                >
+                                  <span>{getDisplayOsVersion(selectedOs, v)}</span>
+                                  {isSelected && <Check size={14} color="#2563EB" />}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right: Kernel Dropdown */}
+                    <div className="system-kernel-dropdown" style={{ flex: 1, position: 'relative' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsKernelDropdownOpen(prev => !prev);
+                          setIsOsDropdownOpen(false);
+                          setIsOsVersionDropdownOpen(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          height: '38px',
+                          padding: '0 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          backgroundColor: '#FFFFFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '13px',
+                          color: '#1E293B',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                          <KernelIcon size={17} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {getDisplayKernel(browserChoice)}
+                          </span>
+                        </div>
+                        <ChevronDown size={14} color="#64748B" />
+                      </button>
+
+                      {isKernelDropdownOpen && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '42px',
+                          left: 0,
+                          right: 0,
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: '8px',
+                          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.12)',
+                          zIndex: 50,
+                          padding: '4px 0',
+                          maxHeight: '260px',
+                          overflowY: 'auto'
+                        }}>
+                          <div style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Nhân Browser Core khả dụng
+                          </div>
+                          {installedCores.map(b => {
+                            const isSelected = browserChoice.version === b.version;
+                            return (
+                              <div
+                                key={b.version}
+                                onClick={() => {
+                                  setBrowserChoice(b);
+                                  setIsKernelDropdownOpen(false);
+                                }}
+                                style={{
+                                  padding: '8px 12px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  fontSize: '13px',
+                                  cursor: 'pointer',
+                                  backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                                  color: isSelected ? '#2563EB' : '#1E293B'
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                                  <KernelIcon size={16} />
+                                  <span style={{ fontWeight: isSelected ? 600 : 400 }}>{getDisplayKernel(b)}</span>
+                                  {b.isRecommended && (
+                                    <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#ECFDF5', color: '#059669', fontWeight: 600 }}>
+                                      Khuyên dùng
+                                    </span>
+                                  )}
+                                </div>
+                                {isSelected && <Check size={14} color="#2563EB" />}
+                              </div>
+                            );
+                          })}
+
+                          <div style={{ borderTop: '1px solid #F1F5F9', marginTop: '4px', paddingTop: '4px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsKernelDropdownOpen(false);
+                                setIsCoreManagerOpen(true);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '8px 12px',
+                                border: 'none',
+                                background: 'transparent',
+                                color: '#7C3AED',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F5F3FF'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              <Download size={13} />
+                              <span>Quản lý & Tải thêm nhân Core khác...</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ flex: 1, display: 'flex', gap: '8px' }}>
-                    {Object.keys(OS_PRESETS).map((key) => {
-                      const os = OS_PRESETS[key];
-                      const isSelected = selectedOs === key;
+                </div>
+
+                {/* 5. Công cụ tìm kiếm (Search Engine) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Compass size={15} style={{ color: '#7C3AED' }} />
+                      <span>Công cụ tìm kiếm mặc định (Search Engine)</span>
+                    </div>
+                    <span style={{ fontSize: '11.5px', color: '#64748B' }}>
+                      Công cụ tìm kiếm của thanh địa chỉ & tab mới
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {SEARCH_ENGINE_OPTIONS.map(eng => {
+                      const isSelected = searchEngine === eng.id;
+                      const Icon = eng.icon;
                       return (
                         <button
-                          key={key}
+                          key={eng.id}
                           type="button"
-                          onClick={() => setSelectedOs(key)}
+                          onClick={() => setSearchEngine(eng.id)}
                           style={{
-                            flex: 1,
                             height: '36px',
-                            border: isSelected ? '1.5px solid #2563EB' : '1px solid #E2E8F0',
+                            padding: '0 12px',
                             borderRadius: '6px',
-                            backgroundColor: isSelected ? '#EFF6FF' : '#FFFFFF',
-                            color: isSelected ? '#2563EB' : '#475569',
+                            border: isSelected ? '1.5px solid #7C3AED' : '1px solid #CBD5E1',
+                            backgroundColor: isSelected ? '#F5F3FF' : '#FFFFFF',
+                            color: isSelected ? '#7C3AED' : '#334155',
                             fontWeight: isSelected ? 600 : 500,
                             fontSize: '12.5px',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px'
+                            gap: '7px',
+                            boxShadow: isSelected ? '0 2px 4px rgba(124, 58, 237, 0.12)' : 'none',
+                            transition: 'all 0.15s ease'
                           }}
                         >
-                          {os.name}
+                          <Icon size={16} />
+                          <span>{eng.label}</span>
+                          {isSelected && <Check size={13} color="#7C3AED" />}
                         </button>
                       );
                     })}
-                  </div>
-                </div>
-
-                {/* 5. Phiên bản OS & Trình duyệt */}
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                    <div style={{ width: '160px', fontSize: '13.5px', fontWeight: 600, color: '#334155' }}>
-                      Phiên bản OS
-                    </div>
-                    <select
-                      value={osVersion}
-                      onChange={(e) => setOsVersion(e.target.value)}
-                      style={{ flex: 1, height: '36px', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '0 10px', fontSize: '13px' }}
-                    >
-                      {OS_PRESETS[selectedOs]?.versions.map(v => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                    <div style={{ width: '100px', fontSize: '13.5px', fontWeight: 600, color: '#334155' }}>
-                      Lõi Browser
-                    </div>
-                    <select
-                      value={browserChoice.version}
-                      onChange={(e) => {
-                        const found = BROWSER_OPTIONS.find(b => b.version === e.target.value);
-                        if (found) setBrowserChoice(found);
-                      }}
-                      style={{ flex: 1, height: '36px', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '0 10px', fontSize: '13px' }}
-                    >
-                      {BROWSER_OPTIONS.map(b => (
-                        <option key={b.version} value={b.version}>{b.label}</option>
-                      ))}
-                    </select>
                   </div>
                 </div>
 
@@ -1370,31 +1816,54 @@ export default function ProfileModal() {
               </div>
             )}
 
-            {/* Spacer */}
-            <div style={{ flex: 1 }} />
+            </div>
 
-            {/* ── BOTTOM ACTIONS BAR ── */}
+            {/* Sticky Action Buttons bar at the bottom of the left column */}
             <div style={{
+              position: 'relative',
+              padding: '16px 32px',
+              backgroundColor: '#FFFFFF',
+              borderTop: '1px solid #EDF2F7',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
               gap: '12px',
-              paddingTop: '20px',
-              borderTop: '1px solid #EDF2F7'
+              flexShrink: 0,
+              zIndex: 10
             }}>
+              {/* Trắng mờ / Frosted white gradient blur directly above buttons */}
+              <div style={{
+                position: 'absolute',
+                top: '-24px',
+                left: 0,
+                right: 0,
+                height: '24px',
+                background: 'linear-gradient(to top, #FFFFFF 0%, rgba(255, 255, 255, 0.85) 45%, rgba(255, 255, 255, 0) 100%)',
+                pointerEvents: 'none'
+              }} />
+
               <button
                 type="button"
                 onClick={() => setActiveProfileModal(null)}
                 style={{
-                  height: '36px',
+                  height: '38px',
                   padding: '0 20px',
-                  border: '1px solid #E2E8F0',
+                  border: '1px solid #CBD5E1',
                   borderRadius: '6px',
                   backgroundColor: '#FFFFFF',
                   color: '#475569',
                   fontSize: '13px',
                   fontWeight: 500,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#F8FAFC';
+                  e.currentTarget.style.borderColor = '#94A3B8';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FFFFFF';
+                  e.currentTarget.style.borderColor = '#CBD5E1';
                 }}
               >
                 Hủy bỏ (Cancel)
@@ -1404,8 +1873,8 @@ export default function ProfileModal() {
                 type="button"
                 onClick={handleConfirm}
                 style={{
-                  height: '36px',
-                  padding: '0 24px',
+                  height: '38px',
+                  padding: '0 26px',
                   border: 'none',
                   borderRadius: '6px',
                   backgroundColor: '#2563EB',
@@ -1413,8 +1882,11 @@ export default function ProfileModal() {
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  boxShadow: '0 1px 2px rgba(37, 99, 235, 0.2)'
+                  boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)',
+                  transition: 'all 0.15s ease'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1D4ED8'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
               >
                 {isEditing ? 'Lưu cập nhật' : 'Tạo hồ sơ (Confirm)'}
               </button>
@@ -1437,36 +1909,17 @@ export default function ProfileModal() {
             gap: '10px'
           }}>
 
-            {/* Header: Overview + Random fingerprint button */}
+            {/* Header: Overview */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: '6px'
+              marginBottom: '2px'
             }}>
               <span style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>Tổng quan cấu hình</span>
-              
-              <button
-                type="button"
-                onClick={handleRandomize}
-                style={{
-                  border: 'none',
-                  background: '#EFF6FF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  color: '#2563EB',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: '5px 8px',
-                  borderRadius: '6px'
-                }}
-                title="Tạo ngẫu nhiên dấu vân tay"
-              >
-                <Shield size={13} color="#2563EB" />
-                <span>Random vân tay</span>
-              </button>
+              <span style={{ fontSize: '11px', color: '#64748B', backgroundColor: '#F1F5F9', padding: '2px 8px', borderRadius: '10px' }}>
+                Real-time
+              </span>
             </div>
 
             {/* Overview Key-Value List */}
@@ -1492,9 +1945,16 @@ export default function ProfileModal() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748B' }}>Công cụ tìm kiếm</span>
+                <span style={{ color: '#7C3AED', fontWeight: 600 }}>
+                  {SEARCH_ENGINE_OPTIONS.find(s => s.id === searchEngine)?.label || 'Google'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: '#64748B' }}>Website đích</span>
                 <span style={{ color: '#2563EB', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
-                  {startUrls || '-'}
+                  {startUrls || '(Mặc định Search Engine)'}
                 </span>
               </div>
 
@@ -1580,6 +2040,43 @@ export default function ProfileModal() {
                 </div>
               </div>
 
+              {/* Prominent "Generate random fingerprint" Button - At the BOTTOM of overview! */}
+              <div style={{ marginTop: 'auto', paddingTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={handleRandomize}
+                  style={{
+                    width: '100%',
+                    height: '42px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #7DD3FC',
+                    backgroundColor: '#FFFFFF',
+                    color: '#0284C7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontSize: '13.5px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 3px rgba(2, 132, 199, 0.08)',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#F0F9FF';
+                    e.currentTarget.style.borderColor = '#38BDF8';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#FFFFFF';
+                    e.currentTarget.style.borderColor = '#7DD3FC';
+                  }}
+                  title="Tạo ngẫu nhiên lại toàn bộ dấu vân tay thiết bị & phần cứng"
+                >
+                  <Shuffle size={16} color="#0284C7" />
+                  <span>Generate random fingerprint</span>
+                </button>
+              </div>
+
             </div>
 
           </div>
@@ -1587,6 +2084,21 @@ export default function ProfileModal() {
         </div>
 
       </div>
+
+      {/* ── BROWSER CORE MANAGER MODAL ── */}
+      <BrowserCoreManagerModal
+        isOpen={isCoreManagerOpen}
+        onClose={() => setIsCoreManagerOpen(false)}
+        onCoreSelected={(core) => {
+          setBrowserChoice({
+            id: core.version,
+            label: core.name,
+            version: core.version,
+            fullVersion: core.fullVersion,
+            engine: core.engine
+          });
+        }}
+      />
     </div>
   );
 }

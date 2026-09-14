@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Home,
   Plus,
@@ -20,15 +20,43 @@ import {
   Bot,
   Puzzle,
   ChevronRight,
+  ChevronDown,
   ArrowLeftRight,
   User,
   Share2,
   Sparkles,
-  History
+  History,
+  Languages,
+  Layers,
+  Crown,
+  PanelRight,
+  Clock,
+  CheckCheck,
+  ExternalLink
 } from 'lucide-react';
+
+function formatRelativeTime(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  
+  const diffMs = Date.now() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHours = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSec < 60) return 'Vừa xong';
+  if (diffMin < 60) return `${diffMin}p trước`;
+  if (diffHours < 24) return `${diffHours}h trước`;
+  if (diffDays === 1) return 'Hôm qua';
+  if (diffDays < 7) return `${diffDays} ngày trước`;
+  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+}
 import { useBrowser } from '../../store/BrowserContext';
 import { useTranslation } from '../../i18n/I18nContext';
-import { INITIAL_ACCOUNTS } from '../navigation/AccountSwitchMenu';
+import { getSavedAccounts, switchToAccount, removeSavedAccount, loginWithApi } from '../../services/authService';
+import WorkspaceMenuPopover from '../workspace/WorkspaceMenuPopover';
 
 export default function TitleBar({ isLoginScreen = false }) {
   const { t } = useTranslation();
@@ -42,11 +70,30 @@ export default function TitleBar({ isLoginScreen = false }) {
     toggleSidebar,
     addLog,
     currentUser,
+    currentPlan,
     login,
     logout,
+    openLoginForNewAccount,
     showToast,
     isReloading,
-    reloadApp
+    reloadApp,
+    workspaces = [],
+    currentWorkspace = null,
+    openWorkspaceIds = [],
+    switchWorkspace,
+    openWorkspaceTab,
+    closeWorkspaceTab,
+    closeOtherWorkspaceTabs,
+    createWorkspace,
+    notificationsOnly = [],
+    todosOnly = [],
+    unreadNotificationsCount = 0,
+    unreadTodosCount = 0,
+    totalUnreadCount = 0,
+    isLoading: isNotifLoading = false,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead
   } = useBrowser();
   const [isPinned, setIsPinned] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -54,29 +101,99 @@ export default function TitleBar({ isLoginScreen = false }) {
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [showTabMenu, setShowTabMenu] = useState(false);
   const [isAutomationTabOpen, setIsAutomationTabOpen] = useState(false);
+  const [isAiAgentTabOpen, setIsAiAgentTabOpen] = useState(true);
   const tabMenuRef = useRef(null);
 
-  // Switch account flyout states
-  const [savedAccounts, setSavedAccounts] = useState(() => {
-    try {
-      const saved = localStorage.getItem('antidetect_saved_accounts_v1');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+  // Multi-tab Workspace states
+  const [showWorkspacePopover, setShowWorkspacePopover] = useState(false);
+  const [activePopoverWsId, setActivePopoverWsId] = useState(null);
+  const [showTabsOverview, setShowTabsOverview] = useState(false);
+  const workspaceTabsContainerRef = useRef(null);
+  const tabsOverviewRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (workspaceTabsContainerRef.current && !workspaceTabsContainerRef.current.contains(e.target)) {
+        setShowWorkspacePopover(false);
+        setActivePopoverWsId(null);
       }
-    } catch (e) {
-      console.error(e);
+      if (tabsOverviewRef.current && !tabsOverviewRef.current.contains(e.target)) {
+        setShowTabsOverview(false);
+      }
+    };
+    if (showWorkspacePopover || showTabsOverview) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-    return INITIAL_ACCOUNTS;
-  });
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showWorkspacePopover, showTabsOverview]);
+
+  // Handle horizontal mouse wheel scroll on workspace tabs container
+  const handleTabsWheel = useCallback((e) => {
+    if (workspaceTabsContainerRef.current) {
+      if (e.deltaY !== 0) {
+        workspaceTabsContainerRef.current.scrollLeft += e.deltaY * 0.8;
+      }
+    }
+  }, []);
+
+  // Derive list of open workspace objects
+  const openTabsList = useMemo(() => {
+    const rawIds = Array.isArray(openWorkspaceIds) ? openWorkspaceIds : [];
+    const validWorkspaces = Array.isArray(workspaces)
+      ? workspaces.filter(w => w && typeof w === 'object' && w.id)
+      : [];
+    const currentId = (currentWorkspace && typeof currentWorkspace === 'object') ? currentWorkspace.id : null;
+
+    const openSet = new Set(rawIds.filter(Boolean));
+    if (currentId) {
+      openSet.add(currentId);
+    }
+
+    const list = [];
+    openSet.forEach(id => {
+      const found = validWorkspaces.find(w => w.id === id);
+      if (found) list.push(found);
+    });
+
+    if (list.length === 0) {
+      if (currentWorkspace && typeof currentWorkspace === 'object' && currentWorkspace.id) {
+        list.push(currentWorkspace);
+      } else if (validWorkspaces.length > 0) {
+        list.push(validWorkspaces[0]);
+      }
+    }
+    return list;
+  }, [openWorkspaceIds, currentWorkspace, workspaces]);
+
+  const getPlanBadgeConfig = (planId) => {
+    switch (planId) {
+      case 'plan_enterprise':
+        return { label: 'Enterprise', bg: '#FEF3C7', color: '#D97706', border: '#FDE68A' };
+      case 'plan_pro':
+        return { label: 'Pro', bg: '#F5F3FF', color: '#7C3AED', border: '#DDD6FE' };
+      case 'plan_basic':
+        return { label: 'Base', bg: '#EFF6FF', color: '#2563EB', border: '#BFDBFE' };
+      case 'plan_free':
+      default:
+        return { label: 'Free', bg: '#F1F5F9', color: '#64748B', border: '#E2E8F0' };
+    }
+  };
+
+  // Switch account flyout states
+  const [savedAccounts, setSavedAccounts] = useState(() => getSavedAccounts());
   const [isSwitchHoveredInTitleBar, setIsSwitchHoveredInTitleBar] = useState(false);
   const [hoveredAccIdInTitleBar, setHoveredAccIdInTitleBar] = useState(null);
-  const [isAddingAccInTitleBar, setIsAddingAccInTitleBar] = useState(false);
-  const [newEmailTitleBar, setNewEmailTitleBar] = useState('');
+
+  useEffect(() => {
+    setSavedAccounts(getSavedAccounts());
+  }, [currentUser]);
 
   useEffect(() => {
     if (activeTab === 'automation') {
       setIsAutomationTabOpen(true);
+    }
+    if (activeTab === 'ai-agent' || activeTab === 'mcp') {
+      setIsAiAgentTabOpen(true);
     }
   }, [activeTab]);
 
@@ -237,8 +354,15 @@ export default function TitleBar({ isLoginScreen = false }) {
       position: 'relative',
       zIndex: 100
     }}>
-      {/* Left section: Logo + Tabs (Home tab, Kimidev tab, ...) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', WebkitAppRegion: 'no-drag' }}>
+      {/* Left section: Logo + Tabs (Home tab, Backup tab, Workspace tabs, Automation, AI Agent, ...) */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+        WebkitAppRegion: 'no-drag',
+        flex: '0 1 auto',
+        minWidth: 0
+      }}>
         {/* Apidog 4-petal clover logo */}
         <div
           onClick={() => setActiveTab('workspace')}
@@ -249,7 +373,8 @@ export default function TitleBar({ isLoginScreen = false }) {
             marginRight: '6px',
             cursor: 'pointer',
             padding: '2px 4px',
-            borderRadius: '4px'
+            borderRadius: '4px',
+            flexShrink: 0
           }}
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -279,7 +404,8 @@ export default function TitleBar({ isLoginScreen = false }) {
             color: activeTab === 'workspace' ? '#1E293B' : '#64748B',
             fontWeight: activeTab === 'workspace' ? 600 : 500,
             cursor: 'pointer',
-            transition: 'all 0.15s ease'
+            transition: 'all 0.15s ease',
+            flexShrink: 0
           }}
           onMouseEnter={(e) => {
             if (activeTab !== 'workspace') e.currentTarget.style.backgroundColor = '#E2E5EB';
@@ -293,7 +419,7 @@ export default function TitleBar({ isLoginScreen = false }) {
         </div>
 
         {/* Vertical Divider '|' */}
-        <span style={{ color: '#CBD5E1', margin: '0 3px', fontSize: '11px', userSelect: 'none' }}>|</span>
+        <span style={{ color: '#CBD5E1', margin: '0 3px', fontSize: '11px', userSelect: 'none', flexShrink: 0 }}>|</span>
 
         {/* Backup Tab (Copy of Home tab) */}
         <div
@@ -311,7 +437,8 @@ export default function TitleBar({ isLoginScreen = false }) {
             color: activeTab === 'backup' ? '#1E293B' : '#64748B',
             fontWeight: activeTab === 'backup' ? 600 : 500,
             cursor: 'pointer',
-            transition: 'all 0.15s ease'
+            transition: 'all 0.15s ease',
+            flexShrink: 0
           }}
           onMouseEnter={(e) => {
             if (activeTab !== 'backup') e.currentTarget.style.backgroundColor = '#E2E5EB';
@@ -325,68 +452,221 @@ export default function TitleBar({ isLoginScreen = false }) {
         </div>
 
         {/* Vertical Divider '|' */}
-        <span style={{ color: '#CBD5E1', margin: '0 3px', fontSize: '11px', userSelect: 'none' }}>|</span>
+        <span style={{ color: '#CBD5E1', margin: '0 3px', fontSize: '11px', userSelect: 'none', flexShrink: 0 }}>|</span>
 
-        {/* Secondary / Workspace Tab: Kimidev */}
+        {/* Open Workspace Tabs Container (Elastic, scrollable with mouse wheel, sits tightly with adjacent tabs) */}
         <div
-          onClick={() => setActiveTab('profiles')}
+          ref={workspaceTabsContainerRef}
+          onWheel={handleTabsWheel}
+          className="ws-tabs-scroll-container"
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            padding: '0 6px 0 10px',
-            height: '26px',
-            borderRadius: '6px',
-            backgroundColor: (activeTab !== 'workspace' && activeTab !== 'backup' && activeTab !== 'automation') ? '#FFFFFF' : 'transparent',
-            boxShadow: (activeTab !== 'workspace' && activeTab !== 'backup' && activeTab !== 'automation') ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-            border: (activeTab !== 'workspace' && activeTab !== 'backup' && activeTab !== 'automation') ? '1px solid #D8DCE3' : '1px solid transparent',
-            color: (activeTab !== 'workspace' && activeTab !== 'backup' && activeTab !== 'automation') ? '#1E293B' : '#475569',
-            fontWeight: (activeTab !== 'workspace' && activeTab !== 'backup' && activeTab !== 'automation') ? 600 : 500,
-            cursor: 'pointer',
-            transition: 'all 0.15s ease'
-          }}
-          onMouseEnter={(e) => {
-            if (activeTab === 'workspace' || activeTab === 'backup' || activeTab === 'automation') e.currentTarget.style.backgroundColor = '#E2E5EB';
-          }}
-          onMouseLeave={(e) => {
-            if (activeTab === 'workspace' || activeTab === 'backup' || activeTab === 'automation') e.currentTarget.style.backgroundColor = 'transparent';
+            gap: '3px',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            flex: '0 1 auto',
+            minWidth: 0,
+            maxWidth: 'calc(100vw - 1000px)',
+            scrollbarWidth: 'none'
           }}
         >
-          <span>Kimidev</span>
-          {/* Close / Thu tab button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveTab('workspace');
-            }}
-            title="Đóng / Thu tab Kimidev"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '16px',
-              height: '16px',
-              borderRadius: '3px',
-              border: 'none',
-              background: 'transparent',
-              color: '#9CA3AF',
-              cursor: 'pointer',
-              padding: 0,
-              marginLeft: '2px',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#F3F4F6';
-              e.currentTarget.style.color = '#111827';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#9CA3AF';
-            }}
-          >
-            <X size={12} />
-          </button>
+          {openTabsList.map((ws) => {
+            if (!ws || typeof ws !== 'object' || !ws.id) return null;
+            const isTabActive = (activeTab !== 'workspace' && activeTab !== 'backup' && activeTab !== 'automation' && activeTab !== 'ai-agent' && activeTab !== 'mcp') && currentWorkspace?.id === ws.id;
+            const badge = getPlanBadgeConfig(ws.plan_id);
+            const isPopoverOpenForThisTab = showWorkspacePopover && activePopoverWsId === ws.id;
+            const wsName = ws.name || 'Workspace';
+
+            return (
+              <div
+                key={ws.id}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                  maxWidth: isTabActive ? '200px' : '160px'
+                }}
+              >
+                <div
+                  className={`ws-tab-item ${isTabActive ? 'active' : ''}`}
+                  onClick={() => {
+                    if (isTabActive) {
+                      // Click on the currently active tab -> toggle dropdown
+                      setShowWorkspacePopover(prev => (activePopoverWsId === ws.id ? !prev : true));
+                      setActivePopoverWsId(ws.id);
+                    } else {
+                      // Click on an inactive tab -> switch directly to that space
+                      setShowWorkspacePopover(false);
+                      setActivePopoverWsId(null);
+                      switchWorkspace(ws);
+                      setActiveTab('profiles');
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: isTabActive ? '0 5px 0 8px' : '0 6px',
+                    height: '26px',
+                    width: '100%',
+                    borderRadius: '6px',
+                    backgroundColor: isTabActive ? '#FFFFFF' : 'transparent',
+                    boxShadow: isTabActive ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                    border: isTabActive ? '1px solid #CBD5E1' : '1px solid transparent',
+                    color: isTabActive ? '#0F172A' : '#475569',
+                    fontWeight: isTabActive ? 600 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    userSelect: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isTabActive) e.currentTarget.style.backgroundColor = '#E2E5EB';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isTabActive) e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                  title={isTabActive ? `Đang ở: ${wsName} (Nhấn lần nữa để sổ danh sách Space)` : `Chuyển sang Không gian: ${wsName}`}
+                >
+                  {/* Small icon badge */}
+                  <div style={{
+                    width: '15px',
+                    height: '15px',
+                    borderRadius: '4px',
+                    backgroundColor: ws.color || '#3B82F6',
+                    color: '#FFFFFF',
+                    fontSize: '9.5px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {wsName[0]?.toUpperCase() || 'W'}
+                  </div>
+
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: isTabActive ? 700 : 500,
+                    color: isTabActive ? '#0F172A' : '#475569',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    minWidth: 0,
+                    flex: 1
+                  }}>
+                    {wsName}
+                  </span>
+
+                  {/* Plan Badge (Visible on active tab to save space) */}
+                  {isTabActive && (
+                    <span style={{
+                      fontSize: '9.5px',
+                      fontWeight: 700,
+                      padding: '0 4px',
+                      borderRadius: '3px',
+                      backgroundColor: badge.bg,
+                      color: badge.color,
+                      border: `1px solid ${badge.border}`,
+                      flexShrink: 0
+                    }}>
+                      {badge.label}
+                    </span>
+                  )}
+
+                  {/* Dropdown Chevron button (visible on active tab) */}
+                  {isTabActive && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowWorkspacePopover(prev => (activePopoverWsId === ws.id ? !prev : true));
+                        setActivePopoverWsId(ws.id);
+                      }}
+                      title="Sổ danh sách Không gian làm việc"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '16px',
+                        height: '16px',
+                        borderRadius: '3px',
+                        border: 'none',
+                        backgroundColor: isPopoverOpenForThisTab ? '#E2E8F0' : 'transparent',
+                        color: '#64748B',
+                        cursor: 'pointer',
+                        padding: 0,
+                        marginLeft: '1px',
+                        flexShrink: 0,
+                        transition: 'background-color 0.12s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E2E8F0'}
+                      onMouseLeave={(e) => {
+                        if (!isPopoverOpenForThisTab) e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <ChevronDown
+                        size={11}
+                        style={{
+                          transform: isPopoverOpenForThisTab ? 'rotate(180deg)' : 'none',
+                          transition: 'transform 0.15s ease'
+                        }}
+                      />
+                    </button>
+                  )}
+
+                  {/* Close tab button (Show when more than 1 workspace tab is open) */}
+                  {openTabsList.length > 1 && (
+                    <button
+                      type="button"
+                      className="ws-tab-close-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeWorkspaceTab(ws.id);
+                        setShowWorkspacePopover(false);
+                        setActivePopoverWsId(null);
+                      }}
+                      title={`Đóng tab ${wsName}`}
+                      style={{
+                        marginLeft: '1px',
+                        flexShrink: 0
+                      }}
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Workspace Dropdown Popover attached to this tab */}
+                {isPopoverOpenForThisTab && (
+                  <WorkspaceMenuPopover
+                    workspaces={workspaces}
+                    currentWorkspace={currentWorkspace}
+                    onSelectWorkspace={(targetWs) => {
+                      openWorkspaceTab(targetWs);
+                      setActiveTab('profiles');
+                      setShowWorkspacePopover(false);
+                      setActivePopoverWsId(null);
+                    }}
+                    onCreateWorkspace={createWorkspace}
+                    onOpenUpgrade={() => {
+                      setActiveUpgradeModal(true);
+                      setShowWorkspacePopover(false);
+                      setActivePopoverWsId(null);
+                    }}
+                    onClose={() => {
+                      setShowWorkspacePopover(false);
+                      setActivePopoverWsId(null);
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
+
 
         {/* Tab Tự Động Hóa (kế bên tab Kimidev) */}
         {isAutomationTabOpen && (
@@ -405,7 +685,8 @@ export default function TitleBar({ isLoginScreen = false }) {
               color: activeTab === 'automation' ? '#1E293B' : '#475569',
               fontWeight: activeTab === 'automation' ? 600 : 500,
               cursor: 'pointer',
-              transition: 'all 0.15s ease'
+              transition: 'all 0.15s ease',
+              flexShrink: 0
             }}
             onMouseEnter={(e) => {
               if (activeTab !== 'automation') e.currentTarget.style.backgroundColor = '#E2E5EB';
@@ -455,8 +736,76 @@ export default function TitleBar({ isLoginScreen = false }) {
           </div>
         )}
 
+        {/* Tab AI Agent Debugger (Matching user screenshot) */}
+        {isAiAgentTabOpen && (
+          <div
+            onClick={() => setActiveTab('ai-agent')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '0 8px 0 10px',
+              height: '26px',
+              borderRadius: '6px',
+              backgroundColor: (activeTab === 'ai-agent' || activeTab === 'mcp') ? '#262930' : 'transparent',
+              boxShadow: (activeTab === 'ai-agent' || activeTab === 'mcp') ? '0 1px 3px rgba(0,0,0,0.2)' : 'none',
+              border: (activeTab === 'ai-agent' || activeTab === 'mcp') ? '1px solid #1E2024' : '1px solid transparent',
+              color: (activeTab === 'ai-agent' || activeTab === 'mcp') ? '#FFFFFF' : '#475569',
+              fontWeight: (activeTab === 'ai-agent' || activeTab === 'mcp') ? 600 : 500,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              flexShrink: 0
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'ai-agent' && activeTab !== 'mcp') e.currentTarget.style.backgroundColor = '#E2E5EB';
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'ai-agent' && activeTab !== 'mcp') e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <Bot size={13} style={{ color: (activeTab === 'ai-agent' || activeTab === 'mcp') ? '#A78BFA' : '#64748B' }} />
+            <span>AI Agent Debugger</span>
+            {/* Close button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAiAgentTabOpen(false);
+                if (activeTab === 'ai-agent' || activeTab === 'mcp') {
+                  setActiveTab('profiles');
+                }
+              }}
+              title="Đóng tab AI Agent Debugger"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '16px',
+                height: '16px',
+                borderRadius: '3px',
+                border: 'none',
+                background: 'transparent',
+                color: (activeTab === 'ai-agent' || activeTab === 'mcp') ? '#94A3B8' : '#9CA3AF',
+                cursor: 'pointer',
+                padding: 0,
+                marginLeft: '2px',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = (activeTab === 'ai-agent' || activeTab === 'mcp') ? '#3A3D45' : '#F3F4F6';
+                e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = (activeTab === 'ai-agent' || activeTab === 'mcp') ? '#94A3B8' : '#9CA3AF';
+              }}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
         {/* More dots button with Tab options menu */}
-        <div style={{ position: 'relative' }} ref={tabMenuRef}>
+        <div style={{ position: 'relative', flexShrink: 0 }} ref={tabMenuRef}>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -522,7 +871,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Zap size={14} style={{ color: '#EAB308' }} />
-                <span>Test profile nhanh</span>
+                <span>{t('titlebar.quickProfileTest', 'Test profile nhanh')}</span>
               </button>
 
               {/* Option 2: Tự động hóa */}
@@ -553,7 +902,38 @@ export default function TitleBar({ isLoginScreen = false }) {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Bot size={14} style={{ color: '#D97706' }} />
-                <span>Tự động hóa</span>
+                <span>{t('titlebar.automation', 'Tự động hóa')}</span>
+              </button>
+
+              {/* Option 3: AI Agent Debugger (MCP Studio) */}
+              <button
+                onClick={() => {
+                  setShowTabMenu(false);
+                  setIsAiAgentTabOpen(true);
+                  setActiveTab('ai-agent');
+                  addLog?.('✨ Mở AI Agent Debugger / MCP Studio...', 'success');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#1E293B',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <Sparkles size={14} style={{ color: '#7C3AED' }} />
+                <span>AI Agent Debugger (MCP)</span>
               </button>
 
               {/* Option: Tiện ích mở rộng */}
@@ -583,7 +963,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Puzzle size={14} style={{ color: '#0EA5E9' }} />
-                <span>Tiện ích mở rộng</span>
+                <span>{t('titlebar.extensions', 'Tiện ích mở rộng')}</span>
               </button>
 
               <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '3px 4px' }} />
@@ -651,46 +1031,175 @@ export default function TitleBar({ isLoginScreen = false }) {
       </div>
 
       {/* Center Drag Area */}
-      <div style={{ flex: 1, height: '100%' }} />
+      <div style={{ flex: 1, height: '100%', minWidth: '12px' }} />
 
       {/* Right section: Exact Match with user screenshot */}
       <div style={{ display: 'flex', alignItems: 'center', height: '100%', WebkitAppRegion: 'no-drag' }}>
-        {/* Pill Upgrade Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setActiveUpgradeModal(true);
-          }}
-          style={{
-            WebkitAppRegion: 'no-drag',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            backgroundColor: '#FFFFFF',
-            color: '#7C3AED',
-            border: '1px solid #C084FC',
-            padding: '2px 10px',
-            borderRadius: '14px',
-            fontSize: '11px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            marginRight: '6px',
-            height: '24px',
-            boxShadow: '0 1px 2px rgba(124, 58, 237, 0.08)',
-            transition: 'all 0.15s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#FAF5FF';
-            e.currentTarget.style.borderColor = '#A855F7';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#FFFFFF';
-            e.currentTarget.style.borderColor = '#C084FC';
-          }}
-        >
-          <Rocket size={12} />
-          <span>Upgrade</span>
-        </button>
+        {/* Dynamic Plan / Upgrade Pill Button */}
+        {(() => {
+          const planId = String(currentUser?.packageId || currentPlan || currentWorkspace?.plan_id || 'plan_free').toLowerCase();
+          const planName = currentUser?.packageName || currentPlan || currentWorkspace?.plan_name || 'Free Starter';
+          const isFree = planId.includes('free') || planName.toLowerCase().includes('free') || planId === 'plan_free';
+          const isPro = planId.includes('pro') || planName.toLowerCase().includes('pro');
+          const isEnterprise = planId.includes('enterprise') || planId.includes('scale') || planName.toLowerCase().includes('enterprise');
+
+          if (isFree) {
+            // Gói Free: Nút Upgrade tím như bình thường
+            return (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveUpgradeModal(true);
+                }}
+                title="Gói Free Starter • Bấm để nâng cấp"
+                style={{
+                  WebkitAppRegion: 'no-drag',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#7C3AED',
+                  border: '1px solid #C084FC',
+                  padding: '2px 10px',
+                  borderRadius: '14px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  marginRight: '6px',
+                  height: '24px',
+                  boxShadow: '0 1px 2px rgba(124, 58, 237, 0.08)',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FAF5FF';
+                  e.currentTarget.style.borderColor = '#A855F7';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FFFFFF';
+                  e.currentTarget.style.borderColor = '#C084FC';
+                }}
+              >
+                <Rocket size={12} />
+                <span>Upgrade</span>
+              </button>
+            );
+          }
+
+          if (isPro) {
+            // Gói Pro / Team Pro: Huy hiệu Pro Gradient tím vương miện
+            return (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveUpgradeModal(true);
+                }}
+                title={`Gói cước: ${planName} • Bấm để quản lý hoặc gia hạn`}
+                style={{
+                  WebkitAppRegion: 'no-drag',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)',
+                  color: '#FFFFFF',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  padding: '2px 10px',
+                  borderRadius: '14px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  marginRight: '6px',
+                  height: '24px',
+                  boxShadow: '0 2px 5px rgba(124, 58, 237, 0.25)',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 3px 8px rgba(124, 58, 237, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(124, 58, 237, 0.25)';
+                }}
+              >
+                <Crown size={12} fill="#FDE047" color="#FDE047" />
+                <span>{planName.includes('Pro') ? planName : 'Pro'}</span>
+              </button>
+            );
+          }
+
+          if (isEnterprise) {
+            // Gói Enterprise: Huy hiệu Vàng kim hổ phách hoàng gia
+            return (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveUpgradeModal(true);
+                }}
+                title={`Gói cước: ${planName} • Doanh nghiệp`}
+                style={{
+                  WebkitAppRegion: 'no-drag',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+                  color: '#FFFFFF',
+                  border: '1px solid rgba(251, 191, 36, 0.4)',
+                  padding: '2px 10px',
+                  borderRadius: '14px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  marginRight: '6px',
+                  height: '24px',
+                  boxShadow: '0 2px 5px rgba(217, 119, 6, 0.25)',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 3px 8px rgba(217, 119, 6, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(217, 119, 6, 0.25)';
+                }}
+              >
+                <Crown size={12} fill="#FEF08A" color="#FEF08A" />
+                <span>Enterprise</span>
+              </button>
+            );
+          }
+
+          // Các gói trả phí tùy chỉnh khác
+          return (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveUpgradeModal(true);
+              }}
+              title={`Gói cước: ${planName}`}
+              style={{
+                WebkitAppRegion: 'no-drag',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: '#EFF6FF',
+                color: '#2563EB',
+                border: '1px solid #93C5FD',
+                padding: '2px 10px',
+                borderRadius: '14px',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginRight: '6px',
+                height: '24px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Zap size={12} fill="#2563EB" color="#2563EB" />
+              <span>{planName}</span>
+            </button>
+          );
+        })()}
 
         {/* Action icons */}
         <button
@@ -747,11 +1256,33 @@ export default function TitleBar({ isLoginScreen = false }) {
               setShowAvatarMenu(false);
             }}
             style={{
+              position: 'relative',
               backgroundColor: showNotifications ? '#E2E5EB' : 'transparent',
               color: showNotifications ? '#111827' : '#6B7280'
             }}
           >
             <Bell size={13} />
+            {totalUnreadCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '2px',
+                right: '2px',
+                minWidth: '13px',
+                height: '13px',
+                padding: '0 3px',
+                borderRadius: '7px',
+                backgroundColor: '#EF4444',
+                color: '#FFFFFF',
+                fontSize: '8px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1
+              }}>
+                {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+              </span>
+            )}
           </button>
 
           {showNotifications && (
@@ -761,12 +1292,12 @@ export default function TitleBar({ isLoginScreen = false }) {
                 position: 'absolute',
                 top: '32px',
                 right: '-40px',
-                width: '320px',
+                width: '340px',
                 backgroundColor: '#FFFFFF',
                 borderRadius: '12px',
                 border: '1px solid #E5E7EB',
                 boxShadow: '0 12px 36px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04)',
-                padding: '14px 16px 22px 16px',
+                padding: '14px 16px',
                 zIndex: 1200,
                 cursor: 'default',
                 animation: 'fadeIn 0.15s ease-out'
@@ -778,7 +1309,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 borderBottom: '1px solid #F3F4F6',
-                paddingBottom: '12px'
+                paddingBottom: '10px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <button
@@ -792,10 +1323,26 @@ export default function TitleBar({ isLoginScreen = false }) {
                       color: notificationTab === 'notification' ? '#7C3AED' : '#6B7280',
                       fontSize: '12px',
                       fontWeight: notificationTab === 'notification' ? 700 : 500,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
                     }}
                   >
-                    Notification
+                    <span>{t('titlebar.notification', 'Thông báo')}</span>
+                    {unreadNotificationsCount > 0 && (
+                      <span style={{
+                        backgroundColor: '#7C3AED',
+                        color: '#FFFFFF',
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        padding: '1px 5px',
+                        borderRadius: '10px',
+                        lineHeight: 1.2
+                      }}>
+                        {unreadNotificationsCount}
+                      </span>
+                    )}
                   </button>
                   <button
                     type="button"
@@ -808,102 +1355,259 @@ export default function TitleBar({ isLoginScreen = false }) {
                       color: notificationTab === 'todo' ? '#7C3AED' : '#6B7280',
                       fontSize: '12px',
                       fontWeight: notificationTab === 'todo' ? 700 : 500,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
                     }}
                   >
-                    To do
+                    <span>{t('titlebar.todo', 'Cần làm')}</span>
+                    {unreadTodosCount > 0 && (
+                      <span style={{
+                        backgroundColor: '#F59E0B',
+                        color: '#FFFFFF',
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        padding: '1px 5px',
+                        borderRadius: '10px',
+                        lineHeight: 1.2
+                      }}>
+                        {unreadTodosCount}
+                      </span>
+                    )}
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  className="btn-icon-subtle"
-                  style={{ width: '26px', height: '26px', color: '#6B7280' }}
-                  title="Dọn sạch thông báo"
-                >
-                  <Archive size={15} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button
+                    type="button"
+                    className="btn-icon-subtle"
+                    style={{ width: '26px', height: '26px', color: '#6B7280' }}
+                    title="Làm mới"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fetchNotifications?.();
+                    }}
+                  >
+                    <RotateCw size={13} className={isNotifLoading ? 'animate-spin' : ''} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon-subtle"
+                    style={{ width: '26px', height: '26px', color: '#6B7280' }}
+                    title="Đánh dấu tất cả đã đọc"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markAllAsRead?.(notificationTab);
+                    }}
+                  >
+                    <CheckCheck size={14} />
+                  </button>
+                </div>
               </div>
 
-              {/* Empty state illustration matching screenshot */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: '32px', paddingBottom: '12px' }}>
-                <div style={{ position: 'relative', width: '130px', height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {/* Soft base shadow */}
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '6px',
-                    width: '100px',
-                    height: '22px',
-                    borderRadius: '50%',
-                    backgroundColor: '#F1F5F9'
-                  }} />
+              {/* Body */}
+              {(() => {
+                const activeList = notificationTab === 'notification' ? notificationsOnly : todosOnly;
+                if (activeList.length === 0) {
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: '28px', paddingBottom: '12px' }}>
+                      <div style={{ position: 'relative', width: '130px', height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {/* Soft base shadow */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '6px',
+                          width: '100px',
+                          height: '22px',
+                          borderRadius: '50%',
+                          backgroundColor: '#F1F5F9'
+                        }} />
 
-                  {/* Document sheet */}
+                        {/* Document sheet */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '8px',
+                          width: '74px',
+                          height: '70px',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '5px',
+                          border: '1.5px solid #E2E8F0',
+                          padding: '8px 7px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '5px',
+                          zIndex: 1,
+                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)'
+                        }}>
+                          <div style={{ width: '100%', height: '24px', backgroundColor: '#E2E8F0', borderRadius: '3px' }} />
+                          <div style={{ width: '88%', height: '4px', backgroundColor: '#CBD5E1', borderRadius: '2px' }} />
+                          <div style={{ width: '60%', height: '4px', backgroundColor: '#CBD5E1', borderRadius: '2px' }} />
+                        </div>
+
+                        {/* Speech Bubble with shapes */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '0px',
+                          right: '10px',
+                          backgroundColor: '#CBD5E1',
+                          borderRadius: '16px',
+                          borderBottomLeftRadius: '2px',
+                          padding: '3px 7px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          zIndex: 3,
+                          color: '#FFFFFF'
+                        }}>
+                          <span style={{ fontSize: '6px', lineHeight: 1 }}>▲</span>
+                          <span style={{ fontSize: '6px', lineHeight: 1 }}>■</span>
+                          <span style={{ fontSize: '6px', lineHeight: 1 }}>●</span>
+                        </div>
+
+                        {/* Tray container */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '12px',
+                          width: '98px',
+                          height: '44px',
+                          backgroundColor: '#CBD5E1',
+                          borderRadius: '8px',
+                          zIndex: 2,
+                          clipPath: 'polygon(0% 28%, 18% 28%, 26% 62%, 74% 62%, 82% 28%, 100% 28%, 100% 100%, 0% 100%)'
+                        }}>
+                          <div style={{ width: '100%', height: '100%', backgroundColor: '#DDE3EA' }} />
+                        </div>
+                      </div>
+
+                      <span style={{
+                        marginTop: '16px',
+                        fontSize: '12px',
+                        color: '#6B7280',
+                        fontWeight: 400,
+                        textAlign: 'center'
+                      }}>
+                        {t('titlebar.allNotificationsViewed', 'Bạn đã xem hết toàn bộ thông báo.')}
+                      </span>
+                    </div>
+                  );
+                }
+
+                return (
                   <div style={{
-                    position: 'absolute',
-                    top: '8px',
-                    width: '74px',
-                    height: '70px',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '5px',
-                    border: '1.5px solid #E2E8F0',
-                    padding: '8px 7px',
+                    maxHeight: '340px',
+                    overflowY: 'auto',
+                    margin: '8px -10px -8px -10px',
+                    padding: '4px 6px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '5px',
-                    zIndex: 1,
-                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)'
+                    gap: '4px'
                   }}>
-                    <div style={{ width: '100%', height: '24px', backgroundColor: '#E2E8F0', borderRadius: '3px' }} />
-                    <div style={{ width: '88%', height: '4px', backgroundColor: '#CBD5E1', borderRadius: '2px' }} />
-                    <div style={{ width: '60%', height: '4px', backgroundColor: '#CBD5E1', borderRadius: '2px' }} />
-                  </div>
+                    {activeList.map((item) => {
+                      const isUnread = !item.isRead;
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => markAsRead?.(item.id)}
+                          style={{
+                            padding: '8px 10px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.15s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '3px'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#F3F4F6';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                              {isUnread && (
+                                <span style={{
+                                  width: '6px',
+                                  height: '6px',
+                                  borderRadius: '50%',
+                                  backgroundColor: '#3B82F6',
+                                  flexShrink: 0
+                                }} />
+                              )}
+                              <span style={{
+                                fontSize: '12px',
+                                fontWeight: isUnread ? 600 : 400,
+                                color: isUnread ? '#111827' : '#4B5563',
+                                lineHeight: 1.3,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {item.title}
+                              </span>
+                            </div>
+                            <span style={{
+                              fontSize: '10px',
+                              color: '#94A3B8',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0
+                            }}>
+                              {formatRelativeTime(item.created_at)}
+                            </span>
+                          </div>
 
-                  {/* Speech Bubble with shapes */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '0px',
-                    right: '10px',
-                    backgroundColor: '#CBD5E1',
-                    borderRadius: '16px',
-                    borderBottomLeftRadius: '2px',
-                    padding: '3px 7px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '3px',
-                    zIndex: 3,
-                    color: '#FFFFFF'
-                  }}>
-                    <span style={{ fontSize: '6px', lineHeight: 1 }}>▲</span>
-                    <span style={{ fontSize: '6px', lineHeight: 1 }}>■</span>
-                    <span style={{ fontSize: '6px', lineHeight: 1 }}>●</span>
-                  </div>
+                          <p style={{
+                            margin: 0,
+                            fontSize: '11px',
+                            color: '#64748B',
+                            lineHeight: 1.4,
+                            wordBreak: 'break-word'
+                          }}>
+                            {item.message}
+                          </p>
 
-                  {/* Tray container */}
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '12px',
-                    width: '98px',
-                    height: '44px',
-                    backgroundColor: '#CBD5E1',
-                    borderRadius: '8px',
-                    zIndex: 2,
-                    clipPath: 'polygon(0% 28%, 18% 28%, 26% 62%, 74% 62%, 82% 28%, 100% 28%, 100% 100%, 0% 100%)'
-                  }}>
-                    <div style={{ width: '100%', height: '100%', backgroundColor: '#DDE3EA' }} />
-                  </div>
-                </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                            {item.expires_at ? (
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                fontSize: '10px',
+                                color: '#94A3B8'
+                              }}>
+                                <Clock size={10} />
+                                <span>Hạn: {new Date(item.expires_at).toLocaleDateString('vi-VN')}</span>
+                              </span>
+                            ) : <span />}
 
-                <span style={{
-                  marginTop: '16px',
-                  fontSize: '12px',
-                  color: '#6B7280',
-                  fontWeight: 400,
-                  textAlign: 'center'
-                }}>
-                  You have viewed all notifications.
-                </span>
-              </div>
+                            {item.action_url && (
+                              <a
+                                href={item.action_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px',
+                                  fontSize: '11px',
+                                  color: '#3B82F6',
+                                  textDecoration: 'none',
+                                  fontWeight: 500
+                                }}
+                              >
+                                <span>{item.action_text || 'Xem chi tiết'}</span>
+                                <ExternalLink size={10} />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -932,14 +1636,25 @@ export default function TitleBar({ isLoginScreen = false }) {
               transition: 'all 0.15s ease'
             }}
           >
-            <svg width="26" height="26" viewBox="0 0 40 40" fill="none" style={{ display: 'block' }}>
-              <circle cx="20" cy="20" r="19" fill="#0A192F" stroke="#2563EB" strokeWidth="2" />
-              <circle cx="20" cy="18" r="11" fill="#F8FAFC" />
-              <path d="M13 18C13 14.1 16.1 11 20 11C23.9 11 27 14.1 27 18C27 21.9 23.9 24 20 24C16.1 24 13 21.9 13 18Z" fill="#0F172A" />
-              <path d="M15 17C15.5 14.5 17.5 12.8 20 12.8" stroke="#38BDF8" strokeWidth="1.8" strokeLinecap="round" />
-              <circle cx="24" cy="20" r="1.5" fill="#F59E0B" />
-              <path d="M10.5 34C11.5 28.5 15.5 26.5 20 26.5C24.5 26.5 28.5 28.5 29.5 34" fill="#E2E8F0" />
-            </svg>
+            {currentUser?.avatar ? (
+              <img src={currentUser.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  backgroundColor: '#3B82F6',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 600
+                }}
+              >
+                {(currentUser?.full_name || currentUser?.name || currentUser?.username || currentUser?.email || 'U')[0].toUpperCase()}
+              </div>
+            )}
           </div>
 
           {showAvatarMenu && (
@@ -969,65 +1684,29 @@ export default function TitleBar({ isLoginScreen = false }) {
                   width: '34px',
                   height: '34px',
                   borderRadius: '50%',
-                  overflow: 'hidden',
-                  flexShrink: 0,
+                  backgroundColor: '#3B82F6',
+                  color: '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  flexShrink: 0
                 }}>
-                  <svg width="34" height="34" viewBox="0 0 40 40" fill="none" style={{ display: 'block' }}>
-                    <circle cx="20" cy="20" r="19" fill="#0A192F" stroke="#2563EB" strokeWidth="2" />
-                    <circle cx="20" cy="18" r="11" fill="#F8FAFC" />
-                    <path d="M13 18C13 14.1 16.1 11 20 11C23.9 11 27 14.1 27 18C27 21.9 23.9 24 20 24C16.1 24 13 21.9 13 18Z" fill="#0F172A" />
-                    <path d="M15 17C15.5 14.5 17.5 12.8 20 12.8" stroke="#38BDF8" strokeWidth="1.8" strokeLinecap="round" />
-                    <circle cx="24" cy="20" r="1.5" fill="#F59E0B" />
-                    <path d="M10.5 34C11.5 28.5 15.5 26.5 20 26.5C24.5 26.5 28.5 28.5 29.5 34" fill="#E2E8F0" />
-                  </svg>
+                  {(currentUser?.full_name || currentUser?.name || currentUser?.username || currentUser?.email || 'U')[0].toUpperCase()}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    14. võ văn Khải 11A12
+                    {currentUser?.full_name || currentUser?.name || currentUser?.username || 'Người dùng'}
                   </span>
                   <span style={{ fontSize: '11px', color: '#6B7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    vkhai2603@gmail.com
+                    {currentUser?.email || currentUser?.username || ''}
                   </span>
                 </div>
               </div>
 
               <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '0 0 8px 0' }} />
 
-              {/* Workspace / Team row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px 4px 8px 4px' }}>
-                <div style={{ width: '24px', height: '24px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
-                    <defs>
-                      <linearGradient id="apidogLeft" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#EC4899" />
-                        <stop offset="100%" stopColor="#9333EA" />
-                      </linearGradient>
-                      <linearGradient id="apidogRight" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#3B82F6" />
-                        <stop offset="100%" stopColor="#06B6D4" />
-                      </linearGradient>
-                      <linearGradient id="apidogBase" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#F43F5E" />
-                        <stop offset="100%" stopColor="#F59E0B" />
-                      </linearGradient>
-                    </defs>
-                    <path d="M12 3.5L3.8 19" stroke="url(#apidogLeft)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 3.5L20.2 19" stroke="url(#apidogRight)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M7 17.5H17" stroke="url(#apidogBase)" strokeWidth="3.2" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
-                    KiMiDev
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#6B7280' }}>
-                    Free plan
-                  </span>
-                </div>
-              </div>
 
               {/* Switch account item with hover flyout */}
               <div
@@ -1039,6 +1718,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                   window.__switchAccountTimeout = setTimeout(() => {
                     setIsSwitchHoveredInTitleBar(false);
                     setIsAddingAccInTitleBar(false);
+                    setAddAccountErrorTitleBar('');
                   }, 250);
                 }}
                 style={{
@@ -1061,7 +1741,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ArrowLeftRight size={14} style={{ color: '#64748B' }} />
-                    <span style={{ fontSize: '13px', fontWeight: 500, color: '#1F2937' }}>Switch account</span>
+                    <span style={{ fontSize: '13px', fontWeight: 500, color: '#1F2937' }}>{t('titlebar.switchAccount', 'Switch account')}</span>
                   </div>
                   <span style={{ color: '#94A3B8', fontSize: '13px', fontWeight: 600 }}>›</span>
                 </div>
@@ -1077,6 +1757,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                       window.__switchAccountTimeout = setTimeout(() => {
                         setIsSwitchHoveredInTitleBar(false);
                         setIsAddingAccInTitleBar(false);
+                        setAddAccountErrorTitleBar('');
                       }, 250);
                     }}
                     style={{
@@ -1110,15 +1791,31 @@ export default function TitleBar({ isLoginScreen = false }) {
                     {/* Accounts list */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '240px', overflowY: 'auto' }}>
                       {savedAccounts.map(acc => {
-                        const isActive = acc.email.toLowerCase() === (currentUser?.email || savedAccounts[0]?.email || '').toLowerCase();
+                        const activeUserEmail = (currentUser?.email || currentUser?.username || '').toLowerCase();
+                        const isActive = (acc.email && acc.email.toLowerCase() === activeUserEmail) || (acc.username && acc.username.toLowerCase() === activeUserEmail);
                         const isHovered = hoveredAccIdInTitleBar === acc.id;
 
                         return (
                           <div
                             key={acc.id}
                             onClick={() => {
-                              login({ email: acc.email, name: acc.name });
-                              if (showToast) showToast(`Đã chuyển sang tài khoản: ${acc.email}`, 'success');
+                              if (isActive) {
+                                setShowAvatarMenu(false);
+                                return;
+                              }
+                              switchToAccount(acc);
+                              login({
+                                ...acc,
+                                name: acc.name || acc.username || acc.email?.split('@')[0],
+                                email: acc.email,
+                                token: acc.token,
+                                workspace: acc.workspace,
+                                user: acc
+                              });
+                              setActiveTab('profiles');
+                              setShowWorkspacePopover(false);
+                              setActivePopoverWsId(null);
+                              if (showToast) showToast(t('toasts.accountSwitched', `Đã chuyển sang tài khoản: ${acc.name || acc.email || acc.username}`, { email: acc.email || acc.username }), 'success');
                               setShowAvatarMenu(false);
                               setIsSwitchHoveredInTitleBar(false);
                             }}
@@ -1146,26 +1843,40 @@ export default function TitleBar({ isLoginScreen = false }) {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  fontSize: '12px',
+                                  fontSize: '11px',
                                   fontWeight: 600,
                                   flexShrink: 0
                                 }}
                               >
-                                {acc.initial || acc.email[0].toUpperCase()}
+                                {acc.initial || (acc.name || acc.username || acc.email || 'U')[0].toUpperCase()}
                               </div>
-                              <span
-                                style={{
-                                  fontSize: '13px',
-                                  color: '#1E293B',
-                                  fontWeight: isActive ? 600 : 400,
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis'
-                                }}
-                                title={acc.email}
-                              >
-                                {acc.email}
-                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+                                <span
+                                  style={{
+                                    fontSize: '12.5px',
+                                    color: '#1E293B',
+                                    fontWeight: isActive ? 600 : 500,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                  }}
+                                >
+                                  {acc.name || acc.username || acc.email}
+                                </span>
+                                {acc.email && acc.name && acc.name !== acc.email && (
+                                  <span
+                                    style={{
+                                      fontSize: '11px',
+                                      color: '#64748B',
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis'
+                                    }}
+                                  >
+                                    {acc.email}
+                                  </span>
+                                )}
+                              </div>
                             </div>
 
                             {!isActive && isHovered && savedAccounts.length > 1 && (
@@ -1173,9 +1884,8 @@ export default function TitleBar({ isLoginScreen = false }) {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const updated = savedAccounts.filter(a => a.id !== acc.id);
+                                  const updated = removeSavedAccount(acc.id);
                                   setSavedAccounts(updated);
-                                  localStorage.setItem('antidetect_saved_accounts_v1', JSON.stringify(updated));
                                 }}
                                 title="Xóa tài khoản"
                                 style={{
@@ -1199,93 +1909,37 @@ export default function TitleBar({ isLoginScreen = false }) {
                       })}
                     </div>
 
-                    {/* + Add account row */}
+                    {/* + Add account row -> Directly opens standard Login screen */}
                     <div style={{ borderTop: '1px solid #F1F5F9', marginTop: '4px', paddingTop: '4px' }}>
-                      {isAddingAccInTitleBar ? (
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            const clean = newEmailTitleBar.trim().toLowerCase();
-                            if (!clean || !clean.includes('@')) {
-                              alert('Vui lòng nhập email hợp lệ!');
-                              return;
-                            }
-                            const newAcc = {
-                              id: 'acc-' + Date.now(),
-                              email: clean,
-                              name: clean.split('@')[0],
-                              initial: clean[0].toUpperCase(),
-                              color: '#3B82F6'
-                            };
-                            const updated = [...savedAccounts, newAcc];
-                            setSavedAccounts(updated);
-                            localStorage.setItem('antidetect_saved_accounts_v1', JSON.stringify(updated));
-                            setNewEmailTitleBar('');
-                            setIsAddingAccInTitleBar(false);
-                            login({ email: newAcc.email, name: newAcc.name });
-                            if (showToast) showToast(`Đã chuyển sang tài khoản: ${newAcc.email}`, 'success');
-                            setShowAvatarMenu(false);
-                          }}
-                          style={{ display: 'flex', gap: '4px', padding: '4px' }}
-                        >
-                          <input
-                            type="email"
-                            placeholder="email@example.com"
-                            value={newEmailTitleBar}
-                            onChange={(e) => setNewEmailTitleBar(e.target.value)}
-                            autoFocus
-                            style={{
-                              flex: 1,
-                              fontSize: '12px',
-                              padding: '4px 8px',
-                              border: '1px solid #CBD5E1',
-                              borderRadius: '4px',
-                              outline: 'none'
-                            }}
-                          />
-                          <button
-                            type="submit"
-                            style={{
-                              padding: '4px 8px',
-                              backgroundColor: '#3B82F6',
-                              color: '#FFFFFF',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Thêm
-                          </button>
-                        </form>
-                      ) : (
-                        <div
-                          onClick={() => setIsAddingAccInTitleBar(true)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '7px 10px',
-                            borderRadius: '6px',
-                            color: '#475569',
-                            fontSize: '13px',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.1s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#F8FAFC';
-                            e.currentTarget.style.color = '#0F172A';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                            e.currentTarget.style.color = '#475569';
-                          }}
-                        >
-                          <Plus size={14} style={{ color: '#64748B' }} />
-                          <span>Add account</span>
-                        </div>
-                      )}
+                      <div
+                        onClick={() => {
+                          setShowAvatarMenu(false);
+                          setIsSwitchHoveredInTitleBar(false);
+                          openLoginForNewAccount?.();
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '7px 10px',
+                          borderRadius: '6px',
+                          color: '#475569',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.1s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#F8FAFC';
+                          e.currentTarget.style.color = '#0F172A';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = '#475569';
+                        }}
+                      >
+                        <Plus size={14} style={{ color: '#64748B' }} />
+                        <span>{t('titlebar.addAccount', 'Thêm tài khoản...')}</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1318,7 +1972,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   <User size={14} style={{ color: '#6B7280' }} />
-                  <span>Account Settings</span>
+                  <span>{t('settings.tabs.account', 'Account Settings')}</span>
                 </button>
 
                 <button
@@ -1346,7 +2000,36 @@ export default function TitleBar({ isLoginScreen = false }) {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   <Share2 size={14} style={{ color: '#6B7280' }} />
-                  <span>My Connections</span>
+                  <span>{t('settings.tabs.connections', 'My Connections')}</span>
+                </button>
+
+                {/* Language & Region button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAvatarMenu(false);
+                    setActiveSettingsModal('language');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '7px 8px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#374151',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'background-color 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <Languages size={14} style={{ color: '#6B7280' }} />
+                  <span>{t('settings.tabs.language', 'Language & Region')}</span>
                 </button>
 
                 <button
@@ -1374,7 +2057,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   <Sparkles size={14} style={{ color: '#F59E0B' }} />
-                  <span>Billing &amp; resource usage</span>
+                  <span>{t('titlebar.billing', 'Billing & resource usage')}</span>
                 </button>
 
                 <button
@@ -1402,7 +2085,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   <History size={14} style={{ color: '#6B7280' }} />
-                  <span>Audit logs</span>
+                  <span>{t('titlebar.auditLogs', 'Audit logs')}</span>
                 </button>
               </div>
 
@@ -1414,7 +2097,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                 onClick={() => {
                   setShowAvatarMenu(false);
                   logout?.();
-                  if (showToast) showToast('Bạn đã đăng xuất khỏi tài khoản.', 'info');
+                  if (showToast) showToast(t('auth.loggedOut', 'Bạn đã đăng xuất khỏi tài khoản.'), 'info');
                 }}
                 style={{
                   display: 'flex',
@@ -1429,7 +2112,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                   cursor: 'pointer',
                   textAlign: 'left',
                   width: '100%',
-                  transition: 'background-color 0.15s ease, color 0.15s ease'
+                  transition: 'background-color 0.15s ease'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#FEF2F2';
@@ -1441,7 +2124,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                 }}
               >
                 <LogOut size={14} style={{ color: 'inherit' }} />
-                <span>Log out</span>
+                <span>{t('titlebar.logout', 'Log out')}</span>
               </button>
             </div>
           )}
@@ -1478,6 +2161,19 @@ export default function TitleBar({ isLoginScreen = false }) {
           style={{ color: isPinned ? 'var(--apidog-purple)' : '#6B7280' }}
         >
           <Pin size={12} style={{ transform: isPinned ? 'rotate(45deg)' : 'none' }} />
+        </button>
+
+        <button
+          onClick={() => {
+            if (window.electronAPI?.switchToMiniDock) {
+              window.electronAPI.switchToMiniDock();
+            }
+          }}
+          className="btn-window-control"
+          title="Thu nhỏ thành thanh Dock nổi (Mini Floating Bar)"
+          style={{ color: '#6B7280' }}
+        >
+          <PanelRight size={13} />
         </button>
 
         <button

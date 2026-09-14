@@ -133,7 +133,7 @@ export default function ProfileActionMenu({
       <div
         onClick={() => {
           onClose?.();
-          const member = prompt(`Gán hồ sơ "${profile.name}" cho thành viên:`, profile.operator || 'Admin');
+          const member = prompt(`Gán hồ sơ "${profile.name}" cho thành viên:`, profile.operator || 'Thành viên');
           if (member) {
             saveProfile({ ...profile, operator: member.trim() });
             addLog?.(`Đã gán hồ sơ "${profile.name}" cho "${member}"`, 'info');

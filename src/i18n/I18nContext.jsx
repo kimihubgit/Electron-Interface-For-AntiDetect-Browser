@@ -38,11 +38,32 @@ export function I18nProvider({ children }) {
   const fallbackDictionary = dictionaries['en'];
 
   /**
-   * Translate key with dot notation (e.g. 'auth.welcome') and optional interpolation
+   * Translate key with dot notation (e.g. 'auth.welcome') and optional interpolation.
+   * Supports:
+   *   t('key')
+   *   t('key', { count: 5 })
+   *   t('key', 'Default fallback text')
+   *   t('key', 'Default fallback text {count}', { count: 5 })
    */
   const t = useCallback(
-    (keyPath, params = {}) => {
+    (keyPath, arg2 = {}, arg3 = {}) => {
       if (!keyPath) return '';
+
+      let fallbackText = '';
+      let params = {};
+
+      if (typeof arg2 === 'string') {
+        fallbackText = arg2;
+        if (arg3 && typeof arg3 === 'object') {
+          params = arg3;
+        }
+      } else if (arg2 && typeof arg2 === 'object') {
+        params = arg2;
+        if (typeof arg3 === 'string') {
+          fallbackText = arg3;
+        }
+      }
+
       const keys = keyPath.split('.');
 
       // Try active dictionary
@@ -53,14 +74,18 @@ export function I18nProvider({ children }) {
         value = keys.reduce((acc, part) => (acc && acc[part] !== undefined ? acc[part] : null), fallbackDictionary);
       }
 
-      // If still missing, return keyPath as fallback
+      // If still missing, return fallbackText if provided, otherwise keyPath
       if (value === null || value === undefined) {
-        return keyPath;
+        value = fallbackText || keyPath;
       }
 
-      if (typeof value === 'string' && Object.keys(params).length > 0) {
+      // Replace interpolation parameters: support both {param} and {{param}}
+      if (typeof value === 'string' && params && typeof params === 'object' && Object.keys(params).length > 0) {
         return Object.entries(params).reduce((str, [k, v]) => {
-          return str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+          const val = v !== undefined && v !== null ? String(v) : '';
+          return str
+            .replaceAll(`{{${k}}}`, val)
+            .replaceAll(`{${k}}`, val);
         }, value);
       }
 

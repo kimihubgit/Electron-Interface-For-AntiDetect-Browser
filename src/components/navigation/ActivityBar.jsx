@@ -3,7 +3,6 @@ import {
   Globe,
   Shield,
   FolderTree,
-  History,
   Settings,
   Users,
   Sparkles,
@@ -19,8 +18,10 @@ import {
   Activity
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
+import { useTranslation } from '../../i18n/I18nContext';
 
 export default function ActivityBar() {
+  const { t } = useTranslation();
   const {
     activeTab,
     setActiveTab,
@@ -34,18 +35,18 @@ export default function ActivityBar() {
   } = useBrowser();
 
   const primaryItems = [
-    { id: 'profiles', label: 'Hồ sơ', icon: Globe },
-    { id: 'proxies', label: 'Proxy', icon: Shield },
-    { id: 'groups', label: 'Nhóm', icon: FolderTree },
-    { id: 'extensions', label: 'Tiện ích', icon: Puzzle },
-    { id: 'scripts', label: 'Kịch bản', icon: FileCode },
-    { id: 'history', label: 'Lịch sử', icon: History },
+    { id: 'profiles', label: t('nav.profiles', 'Profiles'), icon: Globe },
+    { id: 'proxies', label: t('nav.proxies', 'Proxy'), icon: Shield },
+    { id: 'groups', label: t('nav.groups', 'Groups'), icon: FolderTree },
+    { id: 'ai-agent', label: t('nav.aiAgent', 'AI Agent'), icon: Sparkles },
+    { id: 'extensions', label: t('nav.extensions', 'Extensions'), icon: Puzzle },
+    { id: 'scripts', label: t('nav.scripts', 'Scripts'), icon: FileCode },
   ];
 
   const bottomItems = [
-    { id: 'team', label: 'Thành viên', icon: Users },
-    { id: 'backup', label: 'Sao lưu', icon: CloudUpload },
-    { id: 'settings', label: 'Cài đặt', icon: Settings },
+    { id: 'team', label: t('nav.team', 'Team'), icon: Users },
+    { id: 'backup', label: t('nav.backup', 'Backup'), icon: CloudUpload },
+    { id: 'settings', label: t('nav.settings', 'Settings'), icon: Settings },
   ];
 
   return (

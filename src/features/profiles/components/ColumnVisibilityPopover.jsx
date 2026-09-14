@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GripVertical, Check } from 'lucide-react';
+import { useTranslation } from '../../../i18n/I18nContext';
 
 export const ALL_COLUMNS = [
   { id: 'description', label: 'Description', defaultVisible: true, minWidth: '150px', flex: '1.2fr' },
@@ -59,6 +60,7 @@ export default function ColumnVisibilityPopover({
   columns,
   onSaveColumns
 }) {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const popoverRef = useRef(null);
@@ -128,8 +130,8 @@ export default function ColumnVisibilityPopover({
       ref={popoverRef}
       style={{
         position: 'absolute',
-        top: 'calc(100% + 4px)',
-        right: '12px',
+        top: 'calc(100% + 6px)',
+        right: '0px',
         width: '210px',
         backgroundColor: '#FFFFFF',
         borderRadius: '8px',
@@ -154,7 +156,7 @@ export default function ColumnVisibilityPopover({
         }}
       >
         <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#1E293B' }}>
-          Columns
+          {t('profiles.columnsModalTitle', 'Columns')}
         </span>
         <button
           type="button"
@@ -172,7 +174,7 @@ export default function ColumnVisibilityPopover({
           onMouseEnter={(e) => (e.currentTarget.style.color = '#0F172A')}
           onMouseLeave={(e) => (e.currentTarget.style.color = '#64748B')}
         >
-          Reset
+          {t('profiles.resetColumns', 'Reset')}
         </button>
       </div>
 
@@ -224,7 +226,7 @@ export default function ColumnVisibilityPopover({
                   alignItems: 'center',
                   cursor: 'grab'
                 }}
-                title="Kéo để đổi thứ tự cột"
+                title={t('profiles.dragToReorder', 'Kéo để đổi thứ tự cột')}
                 onMouseDown={(e) => e.stopPropagation()}
               >
                 <GripVertical size={13} />
@@ -259,7 +261,7 @@ export default function ColumnVisibilityPopover({
                   fontWeight: col.visible ? 500 : 400
                 }}
               >
-                {col.label}
+                {t(`profiles.col_${col.id}`, col.label)}
               </span>
             </div>
           );
@@ -300,7 +302,7 @@ export default function ColumnVisibilityPopover({
             e.currentTarget.style.borderColor = '#E2E8F0';
           }}
         >
-          Cancel
+          {t('common.cancel', 'Cancel')}
         </button>
 
         <button
@@ -321,7 +323,7 @@ export default function ColumnVisibilityPopover({
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1D4ED8')}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2563EB')}
         >
-          Save
+          {t('common.save', 'Save')}
         </button>
       </div>
     </div>

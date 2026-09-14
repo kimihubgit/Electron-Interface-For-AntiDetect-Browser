@@ -1,67 +1,45 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeftRight, LogOut, Plus, X, User, Share2 } from 'lucide-react';
+import { ArrowLeftRight, LogOut, Plus, X, User, Share2, Languages, Check, Loader2 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
+import { useTranslation } from '../../i18n/I18nContext';
+import {
+  getSavedAccounts,
+  saveAccountSession,
+  removeSavedAccount,
+  switchToAccount,
+  loginWithApi,
+  getCurrentUserApi
+} from '../../services/authService';
 
-export const INITIAL_ACCOUNTS = [
-  { id: 'acc-1', email: 'secondmail@example.com', name: 'secondmail', initial: 'S', color: '#3B82F6' },
-  { id: 'acc-2', email: 'mymail@example.com', name: 'mymail', initial: 'M', color: '#3B82F6' },
-  { id: 'acc-3', email: 'thirdmail@example.com', name: 'thirdmail', initial: 'T', color: '#94A3B8' }
-];
-
-const STORAGE_KEY = 'antidetect_saved_accounts_v1';
+export const INITIAL_ACCOUNTS = [];
 
 export default function AccountSwitchMenu({
   onClose,
   flyoutDirection = 'left', // 'left' | 'right'
   style = {}
 }) {
-  const { currentUser, login, logout, showToast, setActiveSettingsModal } = useBrowser();
+  const { t } = useTranslation();
+  const { currentUser, login, logout, openLoginForNewAccount, showToast, setActiveSettingsModal } = useBrowser();
   const [isSwitchHovered, setIsSwitchHovered] = useState(false);
   const [hoveredAccountId, setHoveredAccountId] = useState(null);
-  const [isAddingAccount, setIsAddingAccount] = useState(false);
-  const [newEmailInput, setNewEmailInput] = useState('');
   const switchHoverTimeoutRef = useRef(null);
 
-  // Load saved accounts from localStorage or fallback
-  const [accounts, setAccounts] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return INITIAL_ACCOUNTS;
-  });
+  // Load saved accounts from localStorage (pure authenticated sessions)
+  const [accounts, setAccounts] = useState(() => getSavedAccounts());
 
-  // Ensure current logged-in user is in the accounts list if exists
+  // Ensure current logged-in user is saved into the accounts list
   useEffect(() => {
-    if (currentUser?.email) {
-      setAccounts(prev => {
-        const exists = prev.some(a => a.email.toLowerCase() === currentUser.email.toLowerCase());
-        if (!exists) {
-          const initial = (currentUser.name || currentUser.email)[0].toUpperCase();
-          const updated = [
-            {
-              id: 'acc-' + Date.now(),
-              email: currentUser.email,
-              name: currentUser.name || currentUser.email.split('@')[0],
-              initial,
-              color: '#3B82F6'
-            },
-            ...prev
-          ];
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-          return updated;
-        }
-        return prev;
+    if (currentUser?.email || currentUser?.username) {
+      const updated = saveAccountSession({
+        user: currentUser,
+        token: currentUser.token,
+        workspace: currentUser.workspace
       });
+      setAccounts(updated);
     }
   }, [currentUser]);
 
-  const activeEmail = (currentUser?.email || accounts[0]?.email || 'secondmail@example.com').toLowerCase();
+  const activeEmail = (currentUser?.email || currentUser?.username || '').toLowerCase();
 
   const handleSwitchMouseEnter = () => {
     if (switchHoverTimeoutRef.current) clearTimeout(switchHoverTimeoutRef.current);
@@ -71,59 +49,63 @@ export default function AccountSwitchMenu({
   const handleSwitchMouseLeave = () => {
     switchHoverTimeoutRef.current = setTimeout(() => {
       setIsSwitchHovered(false);
-      setIsAddingAccount(false);
     }, 250);
   };
 
   const handleSelectAccount = (acc) => {
+    if (acc.email?.toLowerCase() === activeEmail || acc.username?.toLowerCase() === activeEmail) {
+      onClose?.();
+      return;
+    }
+
+    switchToAccount(acc);
+
     login({
+      ...acc,
+      name: acc.name || acc.username || acc.email?.split('@')[0],
       email: acc.email,
-      name: acc.name || acc.email.split('@')[0]
+      token: acc.token,
+      workspace: acc.workspace,
+      user: acc
     });
+
     if (showToast) {
-      showToast(`Đã chuyển sang tài khoản: ${acc.email}`, 'success');
+      showToast(t('toasts.accountSwitched', `Đã chuyển sang tài khoản: ${acc.name || acc.email || acc.username}`, { email: acc.email || acc.username }), 'success');
     }
     onClose?.();
+
+    // Verify session with server in background
+    if (acc.token) {
+      getCurrentUserApi(acc.token).then((res) => {
+        if (res.success && res.user) {
+          saveAccountSession({ user: res.user, token: acc.token, workspace: res.workspace });
+        }
+      }).catch(() => { });
+    }
   };
 
   const handleDeleteAccount = (e, accId) => {
     e.stopPropagation();
-    const updated = accounts.filter(a => a.id !== accId);
+    const updated = removeSavedAccount(accId);
     setAccounts(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
-
-  const handleAddAccountSubmit = (e) => {
-    e?.preventDefault();
-    const clean = newEmailInput.trim().toLowerCase();
-    if (!clean || !clean.includes('@')) {
-      alert('Vui lòng nhập địa chỉ email hợp lệ!');
-      return;
+    if (showToast) {
+      showToast('Đã xóa tài khoản khỏi danh sách ghi nhớ', 'info');
     }
-
-    const initial = clean[0].toUpperCase();
-    const newAcc = {
-      id: 'acc-' + Date.now(),
-      email: clean,
-      name: clean.split('@')[0],
-      initial,
-      color: '#3B82F6'
-    };
-
-    const updated = [...accounts, newAcc];
-    setAccounts(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setNewEmailInput('');
-    setIsAddingAccount(false);
-
-    // Immediately switch to the new account
-    handleSelectAccount(newAcc);
+    // If the deleted account was the currently active one
+    const isCurrent = accounts.find(a => a.id === accId)?.email?.toLowerCase() === activeEmail;
+    if (isCurrent) {
+      if (updated.length > 0) {
+        handleSelectAccount(updated[0]);
+      } else {
+        handleLogoutClick();
+      }
+    }
   };
 
   const handleLogoutClick = () => {
     logout?.();
     if (showToast) {
-      showToast('Đã đăng xuất khỏi tài khoản.', 'info');
+      showToast(t('toasts.loggedOut', 'Đã đăng xuất khỏi tài khoản.'), 'info');
     }
     onClose?.();
   };
@@ -177,7 +159,7 @@ export default function AccountSwitchMenu({
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <ArrowLeftRight size={14} style={{ color: '#64748B' }} />
-              <span>Switch account</span>
+              <span>{t('titlebar.switchAccount', 'Switch account')}</span>
             </div>
             <span style={{ color: '#94A3B8', fontSize: '13px', fontWeight: 600 }}>›</span>
           </div>
@@ -222,7 +204,7 @@ export default function AccountSwitchMenu({
               {/* Account list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '240px', overflowY: 'auto' }}>
                 {accounts.map(acc => {
-                  const isActive = acc.email.toLowerCase() === activeEmail;
+                  const isActive = (acc.email && acc.email.toLowerCase() === activeEmail) || (acc.username && acc.username.toLowerCase() === activeEmail);
                   const isHovered = hoveredAccountId === acc.id;
 
                   return (
@@ -254,136 +236,110 @@ export default function AccountSwitchMenu({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '12px',
+                            fontSize: '11px',
                             fontWeight: 600,
                             flexShrink: 0
                           }}
                         >
-                          {acc.initial || acc.email[0].toUpperCase()}
+                          {acc.initial || (acc.name || acc.username || acc.email || 'U')[0].toUpperCase()}
                         </div>
 
-                        {/* Email text */}
-                        <span
-                          style={{
-                            fontSize: '13px',
-                            color: '#1E293B',
-                            fontWeight: isActive ? 600 : 400,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}
-                          title={acc.email}
-                        >
-                          {acc.email}
-                        </span>
+                        {/* Name & Email text */}
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+                          <span
+                            style={{
+                              fontSize: '12.5px',
+                              color: '#1E293B',
+                              fontWeight: isActive ? 600 : 500,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {acc.name || acc.username || acc.email}
+                          </span>
+                          {acc.email && acc.name && acc.name !== acc.email && (
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                color: '#64748B',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              {acc.email}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Delete '×' button on hover for non-active accounts */}
-                      {!isActive && isHovered && accounts.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteAccount(e, acc.id)}
-                          title="Xóa tài khoản khỏi danh sách"
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            color: '#94A3B8',
-                            cursor: 'pointer',
-                            padding: '2px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '4px',
-                            transition: 'color 0.1s ease'
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = '#94A3B8')}
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                        {/* Active Indicator Checkmark */}
+                        {isActive && (
+                          <Check size={14} style={{ color: '#3B82F6' }} />
+                        )}
+
+                        {/* Delete '×' button on hover for non-active accounts */}
+                        {!isActive && isHovered && accounts.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteAccount(e, acc.id)}
+                            title="Xóa tài khoản khỏi danh sách"
+                            style={{
+                              border: 'none',
+                              background: 'transparent',
+                              color: '#94A3B8',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: '4px',
+                              transition: 'color 0.1s ease'
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = '#94A3B8')}
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* + Add account row */}
+              {/* + Add account row -> Directly opens standard Login screen */}
               <div style={{ borderTop: '1px solid #F1F5F9', marginTop: '4px', paddingTop: '4px' }}>
-                {isAddingAccount ? (
-                  <form onSubmit={handleAddAccountSubmit} style={{ display: 'flex', gap: '4px', padding: '4px' }}>
-                    <input
-                      type="email"
-                      placeholder="email@example.com"
-                      value={newEmailInput}
-                      onChange={(e) => setNewEmailInput(e.target.value)}
-                      autoFocus
-                      style={{
-                        flex: 1,
-                        fontSize: '12px',
-                        padding: '4px 8px',
-                        border: '1px solid #CBD5E1',
-                        borderRadius: '4px',
-                        outline: 'none'
-                      }}
-                    />
-                    <button
-                      type="submit"
-                      style={{
-                        padding: '4px 8px',
-                        backgroundColor: '#3B82F6',
-                        color: '#FFFFFF',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Thêm
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingAccount(false)}
-                      style={{
-                        padding: '4px 6px',
-                        backgroundColor: '#F1F5F9',
-                        color: '#64748B',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Hủy
-                    </button>
-                  </form>
-                ) : (
-                  <div
-                    onClick={() => setIsAddingAccount(true)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '7px 10px',
-                      borderRadius: '6px',
-                      color: '#475569',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.1s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#F8FAFC';
-                      e.currentTarget.style.color = '#0F172A';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = '#475569';
-                    }}
-                  >
-                    <Plus size={14} style={{ color: '#64748B' }} />
-                    <span>Add account</span>
-                  </div>
-                )}
+                <div
+                  onClick={() => {
+                    onClose?.();
+                    openLoginForNewAccount?.();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '7px 10px',
+                    borderRadius: '6px',
+                    color: '#475569',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.1s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#F8FAFC';
+                    e.currentTarget.style.color = '#0F172A';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#475569';
+                  }}
+                >
+                  <Plus size={14} style={{ color: '#64748B' }} />
+                  <span>{t('titlebar.addAccount', 'Thêm tài khoản...')}</span>
+                </div>
               </div>
             </div>
           )}
@@ -417,7 +373,7 @@ export default function AccountSwitchMenu({
           }}
         >
           <User size={14} style={{ color: '#64748B' }} />
-          <span>Account Settings</span>
+          <span>{t('settings.tabs.account', 'Account Settings')}</span>
         </div>
 
         {/* Item 3: My Connections */}
@@ -448,7 +404,38 @@ export default function AccountSwitchMenu({
           }}
         >
           <Share2 size={14} style={{ color: '#64748B' }} />
-          <span>My Connections</span>
+          <span>{t('settings.tabs.connections', 'My Connections')}</span>
+        </div>
+
+        {/* Item 3.5: Language & Region */}
+        <div
+          onClick={() => {
+            setActiveSettingsModal?.('language');
+            onClose?.();
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 10px',
+            borderRadius: '6px',
+            color: '#334155',
+            fontSize: '13px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'all 0.12s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#F1F5F9';
+            e.currentTarget.style.color = '#0F172A';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#334155';
+          }}
+        >
+          <Languages size={14} style={{ color: '#64748B' }} />
+          <span>{t('settings.tabs.language', 'Language & Region')}</span>
         </div>
 
         <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '2px 0' }} />
@@ -478,7 +465,7 @@ export default function AccountSwitchMenu({
           }}
         >
           <LogOut size={14} style={{ color: 'inherit' }} />
-          <span>Log out</span>
+          <span>{t('titlebar.logout', 'Log out')}</span>
         </div>
       </div>
     </div>

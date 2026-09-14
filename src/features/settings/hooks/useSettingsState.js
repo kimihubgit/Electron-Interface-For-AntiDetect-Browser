@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useBrowser } from '../../../store/BrowserContext';
+import { useTranslation } from '../../../i18n/I18nContext';
 
 export function useSettingsState() {
+  const { t } = useTranslation();
   const {
     activeSettingsSection = 'general',
     setActiveSettingsSection,
@@ -131,9 +133,9 @@ export function useSettingsState() {
     localStorage.setItem('cfg_chromium_path', chromiumPath);
     localStorage.setItem('cfg_encrypt_local_storage', encryptLocalStorage);
 
-    addLog('Cấu hình cài đặt hệ thống đã được lưu thành công', 'success');
+    addLog(t('toasts.savedSystemSettings', 'Đã lưu cấu hình cài đặt hệ thống thành công!'), 'success');
     if (showToast) {
-      showToast('Đã lưu cấu hình cài đặt hệ thống thành công!', 'success');
+      showToast(t('toasts.savedSystemSettings', 'Đã lưu cấu hình cài đặt hệ thống thành công!'), 'success');
     }
   };
 

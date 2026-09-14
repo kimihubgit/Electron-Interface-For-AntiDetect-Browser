@@ -772,7 +772,7 @@ export default function AutomationPage() {
       backgroundColor: '#FFFFFF',
       overflow: 'hidden',
       userSelect: 'none',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      fontFamily: 'inherit'
     }}>
       <style>{`
         @keyframes pulseLineAnim {
@@ -884,8 +884,8 @@ export default function AutomationPage() {
             padding: '4px 8px',
             cursor: 'pointer'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#111827'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#6B7280'}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#111827'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#6B7280'}
           >
             <FileText size={14} />
             <span>Input</span>
@@ -1144,7 +1144,7 @@ export default function AutomationPage() {
                 const blocks = BLOCK_CATALOG.filter(b => b.category === catName).filter(b => {
                   if (!blockSearchQuery.trim()) return true;
                   return b.title.toLowerCase().includes(blockSearchQuery.toLowerCase()) ||
-                         b.desc.toLowerCase().includes(blockSearchQuery.toLowerCase());
+                    b.desc.toLowerCase().includes(blockSearchQuery.toLowerCase());
                 });
 
                 if (blocks.length === 0) return null;
@@ -1377,15 +1377,15 @@ export default function AutomationPage() {
                   border: isSelected
                     ? '2px solid #2563EB'
                     : isRunning
-                    ? '2px solid #F59E0B'
-                    : isDone
-                    ? '1.5px solid #10B981'
-                    : '1.5px solid #E2E8F0',
+                      ? '2px solid #F59E0B'
+                      : isDone
+                        ? '1.5px solid #10B981'
+                        : '1.5px solid #E2E8F0',
                   boxShadow: isSelected
                     ? '0 10px 25px -4px rgba(37, 99, 235, 0.25)'
                     : isRunning
-                    ? '0 0 20px rgba(245, 158, 11, 0.35)'
-                    : '0 4px 14px rgba(0, 0, 0, 0.05)',
+                      ? '0 0 20px rgba(245, 158, 11, 0.35)'
+                      : '0 4px 14px rgba(0, 0, 0, 0.05)',
                   padding: `${12 * zoomLevel}px ${14 * zoomLevel}px`,
                   cursor: isLocked ? 'default' : 'grab',
                   zIndex: isSelected ? 10 : 5,

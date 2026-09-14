@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, Square, Trash2, ChevronDown, Zap, LayoutGrid, Folder } from 'lucide-react';
+import { useTranslation } from '../../../i18n/I18nContext';
 
 /**
  * Floating bottom batch actions bar for selected profiles
@@ -15,6 +16,8 @@ export default function ProfileBatchBar({
   onBatchStop,
   onBatchDelete
 }) {
+  const { t } = useTranslation();
+
   if (selectedCount === 0) return null;
 
   return (
@@ -31,7 +34,7 @@ export default function ProfileBatchBar({
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <span style={{ fontSize: '13px', fontWeight: 600 }}>
-          Đã chọn <span style={{ color: '#A78BFA' }}>{selectedCount}</span> hồ sơ
+          {t('profiles.batchSelected', 'Đã chọn {count} hồ sơ', { count: selectedCount })}
         </span>
         <button
           onClick={onClearSelection}
@@ -44,7 +47,7 @@ export default function ProfileBatchBar({
             textDecoration: 'underline'
           }}
         >
-          Bỏ chọn
+          {t('profiles.clearSelection', 'Bỏ chọn')}
         </button>
       </div>
 
@@ -74,7 +77,7 @@ export default function ProfileBatchBar({
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16A34A'}
           >
             <Play size={12} style={{ fill: '#FFFFFF' }} />
-            <span>Chạy các mục đã chọn</span>
+            <span>{t('profiles.batchRunSelected', 'Chạy các mục đã chọn')}</span>
             <ChevronDown size={13} style={{ transform: isPlayDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }} />
           </button>
 
@@ -124,8 +127,8 @@ export default function ProfileBatchBar({
                   <Zap size={15} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>Play nhanh</div>
-                  <div style={{ fontSize: '11px', color: '#64748B', marginTop: '1px' }}>Chạy đồng thời các hồ sơ đã chọn</div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>{t('profiles.batchQuickPlay', 'Play nhanh')}</div>
+                  <div style={{ fontSize: '11px', color: '#64748B', marginTop: '1px' }}>{t('profiles.batchQuickPlayDesc', 'Chạy đồng thời các hồ sơ đã chọn')}</div>
                 </div>
               </div>
 
@@ -159,8 +162,8 @@ export default function ProfileBatchBar({
                   <LayoutGrid size={15} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>Play + Sắp Xếp</div>
-                  <div style={{ fontSize: '11px', color: '#64748B', marginTop: '1px' }}>Chạy & tự động chia lưới cửa sổ trên màn hình</div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>{t('profiles.batchPlayAndArrange', 'Play + Sắp Xếp')}</div>
+                  <div style={{ fontSize: '11px', color: '#64748B', marginTop: '1px' }}>{t('profiles.batchPlayAndArrangeDesc', 'Chạy & tự động chia lưới cửa sổ trên màn hình')}</div>
                 </div>
               </div>
             </div>
@@ -194,7 +197,7 @@ export default function ProfileBatchBar({
           }}
         >
           <Folder size={13} style={{ color: '#A78BFA' }} />
-          <span>Chuyển nhóm</span>
+          <span>{t('profiles.batchMoveGroup', 'Chuyển nhóm')}</span>
         </button>
 
         {/* Batch Stop */}
@@ -215,12 +218,13 @@ export default function ProfileBatchBar({
           }}
         >
           <Square size={12} />
-          <span>Dừng các mục đã chọn</span>
+          <span>{t('profiles.batchStopSelected', 'Dừng các mục đã chọn')}</span>
         </button>
 
         {/* Batch Delete */}
         <button
           onClick={onBatchDelete}
+          title={t('profiles.batchDeleteSelected', 'Xóa các mục đã chọn')}
           style={{
             display: 'flex',
             alignItems: 'center',

@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
-import { Server, ChevronDown } from 'lucide-react';
+import { Server, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 import LoginBackgroundRipples from './components/LoginBackgroundRipples';
 import LoginCard from './components/LoginCard';
 import LoginFooter from './components/LoginFooter';
 import SelectServerModal from '../../components/modals/SelectServerModal';
+import { useTranslation } from '../../i18n/I18nContext';
+import { getSavedAccounts, switchToAccount } from '../../services/authService';
 
 /**
  * Main Login Page replicating the Apidog Welcome screen with Server selector
  */
 export default function LoginPage() {
+  const { t } = useTranslation();
   const { login, useOfflineSpace, setActiveProxyModal, setActiveSettingsModal, showToast } = useBrowser();
+
+  const [savedAccounts] = useState(() => getSavedAccounts());
 
   const [selectedServer, setSelectedServer] = useState(() => {
     return localStorage.getItem('login_selected_server') || 'Auto (Default (1))';
@@ -21,7 +26,7 @@ export default function LoginPage() {
     setSelectedServer(server.name);
     localStorage.setItem('login_selected_server', server.name);
     if (showToast) {
-      showToast(`Đã chuyển sang máy chủ: ${server.name}`, 'success');
+      showToast(t('toasts.serverSwitched', `Đã chuyển sang máy chủ: ${server.name}`, { name: server.name }), 'success');
     }
   };
 
@@ -73,7 +78,7 @@ export default function LoginPage() {
         </span>
       </div>
 
-      {/* ── TOP-RIGHT SERVER QUICK-SELECTOR BADGE ── */}
+      {/* ── TOP-RIGHT SERVER QUICK-SELECTOR BADGE & BACK BUTTON ── */}
       <div
         style={{
           position: 'absolute',
@@ -85,6 +90,50 @@ export default function LoginPage() {
           gap: '8px'
         }}
       >
+        {savedAccounts.length > 0 && (
+          <button
+            onClick={() => {
+              const lastAcc = savedAccounts[0];
+              switchToAccount(lastAcc);
+              login({
+                ...lastAcc,
+                name: lastAcc.name || lastAcc.username || lastAcc.email?.split('@')[0],
+                email: lastAcc.email,
+                token: lastAcc.token,
+                workspace: lastAcc.workspace,
+                user: lastAcc
+              });
+            }}
+            title={`Quay lại ứng dụng với tài khoản: ${savedAccounts[0]?.name || savedAccounts[0]?.email || savedAccounts[0]?.username}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              borderRadius: '20px',
+              padding: '6px 14px',
+              color: '#334155',
+              fontSize: '12.5px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#CBD5E1';
+              e.currentTarget.style.backgroundColor = '#F1F5F9';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#E2E8F0';
+              e.currentTarget.style.backgroundColor = '#F8FAFC';
+            }}
+          >
+            <ArrowLeft size={13} style={{ color: '#475569' }} />
+            <span>Quay lại ứng dụng</span>
+          </button>
+        )}
+
         <button
           onClick={() => setIsServerModalOpen(true)}
           title="Chọn máy chủ (Select server)"
@@ -134,6 +183,7 @@ export default function LoginPage() {
       <LoginCard
         onLogin={login}
         onOfflineSpace={useOfflineSpace}
+        showToast={showToast}
       />
 
       {/* ── BOTTOM FOOTER ── */}

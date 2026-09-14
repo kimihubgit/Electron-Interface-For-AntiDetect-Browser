@@ -16,8 +16,10 @@ import {
   Minimize2
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
+import { useTranslation } from '../../i18n/I18nContext';
 
 export default function TrashModal() {
+  const { t } = useTranslation();
   const { 
     activeTrashModal, 
     setActiveTrashModal, 
@@ -50,7 +52,7 @@ export default function TrashModal() {
   }, [trashProfiles]);
 
   const operators = useMemo(() => {
-    const list = trashProfiles.map(p => p.operator || 'Admin').filter(Boolean);
+    const list = trashProfiles.map(p => p.operator || 'Thành viên').filter(Boolean);
     return ['All', ...new Set(list)];
   }, [trashProfiles]);
 
@@ -63,7 +65,7 @@ export default function TrashModal() {
   const filteredList = useMemo(() => {
     return trashProfiles.filter(p => {
       const cat = p.category || p.group || 'Chung';
-      const op = p.operator || 'Admin';
+      const op = p.operator || 'Thành viên';
       const bv = p.branchVersion || `${p.browser || 'Chrome 128'} / ${p.os || 'Windows'}`;
 
       if (selectedCategory !== 'All' && cat !== selectedCategory) return false;
@@ -156,7 +158,7 @@ export default function TrashModal() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '15px', fontWeight: 600, color: '#1E293B' }}>
-              Trash
+              {t('trash.title', 'Trash')}
             </span>
             <span style={{ 
               fontSize: '11.5px', 
@@ -166,7 +168,7 @@ export default function TrashModal() {
               borderRadius: '10px',
               fontWeight: 500
             }}>
-              {trashProfiles.length} hồ sơ đã xóa
+              {t('trash.deletedCount', { count: trashProfiles.length })}
             </span>
           </div>
 
@@ -486,7 +488,7 @@ export default function TrashModal() {
               transition: 'opacity 0.15s ease'
             }}
           >
-            Reset
+            {t('trash.reset', 'Reset')}
           </button>
 
           {/* Quick Clear All Trash if has items */}
@@ -512,7 +514,7 @@ export default function TrashModal() {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Trash2 size={12} />
-                <span>Dọn sạch thùng rác</span>
+                <span>{t('trash.clearTrash', 'Dọn sạch thùng rác')}</span>
               </button>
             </div>
           )}
@@ -549,12 +551,12 @@ export default function TrashModal() {
             />
           </div>
 
-          <div>Name</div>
-          <div>Category</div>
-          <div>Branch/Version</div>
-          <div>Operator</div>
-          <div>Time Remaining</div>
-          <div style={{ textAlign: 'center' }}>:</div>
+          <div>{t('profiles.name', 'Tên')}</div>
+          <div>{t('trash.category', 'Danh mục')}</div>
+          <div>{t('trash.branchVersion', 'Phiên bản')}</div>
+          <div>{t('trash.operator', 'Người xóa')}</div>
+          <div>{t('trash.colRemainingTime', 'Thời gian còn lại')}</div>
+          <div style={{ textAlign: 'center' }}>{t('common.actions', 'Thao tác')}</div>
         </div>
 
         {/* Table Body / Content Area */}
@@ -614,7 +616,7 @@ export default function TrashModal() {
                 fontWeight: 400,
                 textAlign: 'center'
               }}>
-                There is no contents in the Trash
+                {t('trash.noItems', 'Thùng rác trống. Không có hồ sơ nào bị xóa.')}
               </div>
             </div>
           ) : (
@@ -714,7 +716,7 @@ export default function TrashModal() {
                     {/* Operator Column */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#475569' }}>
                       <User size={12} style={{ color: '#94A3B8' }} />
-                      <span>{item.operator || 'Admin'}</span>
+                      <span>{item.operator || 'Thành viên'}</span>
                     </div>
 
                     {/* Time Remaining Column */}
@@ -727,7 +729,7 @@ export default function TrashModal() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                       <button
                         onClick={() => restoreProfile(item.id)}
-                        title="Khôi phục hồ sơ này"
+                        title={t('trash.restore', 'Khôi phục')}
                         style={{
                           background: 'none',
                           border: 'none',
@@ -753,7 +755,7 @@ export default function TrashModal() {
 
                       <button
                         onClick={() => permanentlyDeleteProfile(item.id)}
-                        title="Xóa vĩnh viễn"
+                        title={t('trash.deletePermanently', 'Xóa vĩnh viễn')}
                         style={{
                           background: 'none',
                           border: 'none',
@@ -797,7 +799,7 @@ export default function TrashModal() {
             animation: 'fadeInModal 0.15s ease'
           }}>
             <div style={{ fontSize: '12.5px', color: '#1E293B', fontWeight: 500 }}>
-              Đã chọn <strong style={{ color: 'var(--apidog-purple)' }}>{selectedIds.length}</strong> hồ sơ
+              {t('profiles.selected', 'Đã chọn')} <strong style={{ color: 'var(--apidog-purple)' }}>{selectedIds.length}</strong>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -822,7 +824,7 @@ export default function TrashModal() {
                 }}
               >
                 <RotateCcw size={13} />
-                <span>Khôi phục các mục đã chọn</span>
+                <span>{t('trash.restoreAll', 'Khôi phục các mục đã chọn')}</span>
               </button>
 
               <button
@@ -847,7 +849,7 @@ export default function TrashModal() {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
               >
                 <Trash2 size={13} />
-                <span>Xóa vĩnh viễn đã chọn</span>
+                <span>{t('trash.deletePermanently', 'Xóa vĩnh viễn đã chọn')}</span>
               </button>
             </div>
           </div>

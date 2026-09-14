@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
-import { useBrowser } from '../../store/BrowserContext';
+import { toastStore } from '../../store/toastStore';
 
 export default function GlobalToast() {
-  const { toasts = [], removeToast } = useBrowser();
+  const [toasts, setToasts] = useState(() => toastStore.getToasts());
+
+  useEffect(() => {
+    return toastStore.subscribe((newToasts) => {
+      setToasts(newToasts);
+    });
+  }, []);
+
+  const handleRemove = (id) => {
+    toastStore.removeToast(id);
+  };
 
   if (!toasts.length) return null;
 
@@ -74,7 +84,7 @@ export default function GlobalToast() {
             </div>
 
             <button
-              onClick={() => removeToast?.(t.id)}
+              onClick={() => handleRemove(t.id)}
               style={{
                 border: 'none',
                 background: 'transparent',

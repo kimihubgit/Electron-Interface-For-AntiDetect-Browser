@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { 
   INITIAL_PROXIES, 
   INITIAL_ROTATING_PROXIES, 
-  INITIAL_DCOM_DEVICES, 
-  INITIAL_PROXY_RULES 
+  INITIAL_DCOM_DEVICES 
 } from '../constants/initialData';
+import { testProxyConnection, testAllProxies } from '../features/profiles/utils/proxyUtils';
 
 /**
  * Hook that owns all proxy-related state & actions:
@@ -13,17 +13,41 @@ import {
  * - Rotating Proxies (API Change IP & Round-Robin)
  * - DCOM 4G/5G Dongles (Airplane Mode Reset & Local Forwarding)
  * - IPv6 Subnet /64 Generator
- * - Auto-Assign & Default Rules
+ * Stabilized with useCallback, useMemo, and concurrency/race-condition guards.
  */
-export function useProxies(addLog) {
-  const [proxies, setProxies] = useLocalStorage('antidetect_proxies', INITIAL_PROXIES);
-  const [rotatingProxies, setRotatingProxies] = useLocalStorage('antidetect_rotating_proxies', INITIAL_ROTATING_PROXIES);
-  const [dcomDevices, setDcomDevices] = useLocalStorage('antidetect_dcom_devices', INITIAL_DCOM_DEVICES);
-  const [proxyRules, setProxyRules] = useLocalStorage('antidetect_proxy_rules', INITIAL_PROXY_RULES);
+const MOCK_PROXY_IDS = new Set(['px-001', 'px-002', 'px-003', 'px-004', 'px-005', 'px-006']);
+
+export function useProxies(addLog, currentUser = null) {
+  const userScopeKey = currentUser
+    ? (currentUser.workspace?.id || currentUser.id || (currentUser.email ? currentUser.email.replace(/[^a-zA-Z0-9]/g, '_') : 'user'))
+    : 'guest';
+  const isRealUser = Boolean(currentUser && !currentUser.isOffline);
+
+  const proxiesKey = isRealUser ? `antidetect_proxies_${userScopeKey}` : 'antidetect_proxies';
+  const rotatingKey = isRealUser ? `antidetect_rotating_proxies_${userScopeKey}` : 'antidetect_rotating_proxies';
+  const dcomKey = isRealUser ? `antidetect_dcom_devices_${userScopeKey}` : 'antidetect_dcom_devices';
+
+  const [rawProxies, setRawProxies] = useLocalStorage(proxiesKey, isRealUser ? [] : INITIAL_PROXIES);
+  const [rotatingProxies, setRotatingProxies] = useLocalStorage(rotatingKey, isRealUser ? [] : INITIAL_ROTATING_PROXIES);
+  const [dcomDevices, setDcomDevices] = useLocalStorage(dcomKey, isRealUser ? [] : INITIAL_DCOM_DEVICES);
   const [generatedIpv6List, setGeneratedIpv6List] = useState([]);
 
+  const proxies = useMemo(() => {
+    if (!Array.isArray(rawProxies)) return [];
+    if (isRealUser) {
+      return rawProxies.filter(p => !MOCK_PROXY_IDS.has(p.id));
+    }
+    return rawProxies;
+  }, [rawProxies, isRealUser]);
+
+  const setProxies = setRawProxies;
+
+  // Race-condition guard: tracks currently checking proxy IDs
+  const activeCheckingRef = useRef(new Set());
+  const isCheckingAllRef = useRef(false);
+
   // 1. Static Proxy actions
-  const addProxy = (proxyData, closeModal) => {
+  const addProxy = useCallback((proxyData, closeModal) => {
     const newPx = {
       ...proxyData,
       id: `px-${Date.now().toString().slice(-4)}`,
@@ -34,22 +58,50 @@ export function useProxies(addLog) {
     setProxies(prev => [newPx, ...prev]);
     addLog?.(`Thêm Proxy mới: ${newPx.type}://${newPx.host}:${newPx.port}`, 'success');
     if (closeModal) closeModal();
-  };
+  }, [addLog, setProxies]);
 
-  const bulkImportProxies = (rawText, defaultType = 'SOCKS5', defaultCountry = 'US') => {
+  const bulkImportProxies = useCallback((rawText, defaultType = 'SOCKS5', defaultCountry = '', defaultIpVersion = 'IPv4') => {
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     const newItems = [];
 
     lines.forEach((line, idx) => {
-      // Handle formats: IP:Port, IP:Port:User:Pass, or User:Pass@IP:Port
       let host = '', port = 1080, user = '', pass = '', type = defaultType;
-      if (line.includes('@')) {
-        const [auth, hostPort] = line.split('@');
+      let cleanLine = line;
+
+      // Detect protocol prefix if present
+      if (/^socks5:\/\//i.test(cleanLine)) {
+        type = 'SOCKS5';
+        cleanLine = cleanLine.replace(/^socks5:\/\//i, '');
+      } else if (/^https:\/\//i.test(cleanLine)) {
+        type = 'HTTPS';
+        cleanLine = cleanLine.replace(/^https:\/\//i, '');
+      } else if (/^http:\/\//i.test(cleanLine)) {
+        type = 'HTTP';
+        cleanLine = cleanLine.replace(/^http:\/\//i, '');
+      }
+
+      // Detect IPv6 bracket notation [2402:...]:1080
+      if (cleanLine.startsWith('[')) {
+        const closeIdx = cleanLine.indexOf(']');
+        if (closeIdx !== -1) {
+          host = cleanLine.substring(1, closeIdx);
+          const rest = cleanLine.substring(closeIdx + 1);
+          if (rest.startsWith(':')) {
+            const parts = rest.substring(1).split(':');
+            port = Number(parts[0]) || 1080;
+            if (parts.length >= 3) {
+              user = parts[1];
+              pass = parts.slice(2).join(':');
+            }
+          }
+        }
+      } else if (cleanLine.includes('@')) {
+        const [auth, hostPort] = cleanLine.split('@');
         const [u, p] = auth.split(':');
         const [h, prt] = hostPort.split(':');
         host = h; port = Number(prt) || 1080; user = u || ''; pass = p || '';
       } else {
-        const parts = line.split(':');
+        const parts = cleanLine.split(':');
         host = parts[0];
         port = Number(parts[1]) || 1080;
         if (parts.length >= 4) {
@@ -66,8 +118,9 @@ export function useProxies(addLog) {
           port,
           user,
           pass,
+          ipVersion: host.includes(':') ? 'IPv6' : defaultIpVersion,
           country: defaultCountry,
-          latency: Math.floor(25 + Math.random() * 65),
+          latency: 0,
           status: 'live',
           usedCount: 0
         });
@@ -76,48 +129,94 @@ export function useProxies(addLog) {
 
     if (newItems.length > 0) {
       setProxies(prev => [...newItems, ...prev]);
-      addLog?.(`Đã nhập thành công ${newItems.length} proxy mới vào kho`, 'success');
+      addLog?.(`Đã nhập thành công ${newItems.length} proxy mới vào kho (hãy bấm 'Kiểm tra' để lấy ping và quốc gia)`, 'success');
       return newItems.length;
     }
     return 0;
-  };
+  }, [addLog, setProxies]);
 
-  const editProxy = (proxyId, updatedData) => {
+  const editProxy = useCallback((proxyId, updatedData) => {
     setProxies(prev => prev.map(p => p.id === proxyId ? { ...p, ...updatedData } : p));
     addLog?.(`Đã cập nhật thông tin Proxy ${updatedData.host || ''}:${updatedData.port || ''}`, 'info');
-  };
+  }, [addLog, setProxies]);
 
-  const deleteProxy = (proxyId) => {
+  const deleteProxy = useCallback((proxyId) => {
     setProxies(prev => prev.filter(p => p.id !== proxyId));
     addLog?.('Đã xóa proxy khỏi danh sách', 'warn');
-  };
+  }, [addLog, setProxies]);
 
-  const deleteMultipleProxies = (ids = []) => {
+  const deleteMultipleProxies = useCallback((ids = []) => {
     if (!ids.length) return;
     setProxies(prev => prev.filter(p => !ids.includes(p.id)));
     addLog?.(`Đã xóa ${ids.length} proxy khỏi danh sách`, 'warn');
-  };
+  }, [addLog, setProxies]);
 
-  const checkProxy = (proxyId) => {
-    const isLive = Math.random() > 0.08;
-    const latency = isLive ? Math.floor(18 + Math.random() * 85) : 0;
-    const status = isLive ? 'live' : 'die';
-    setProxies(prev => prev.map(p => p.id === proxyId ? { ...p, latency, status } : p));
-    addLog?.(`Kiểm tra proxy: ${status === 'live' ? 'Hoạt động tốt' : 'Không kết nối được'} (${latency}ms)`, isLive ? 'success' : 'error');
-    return { status, latency };
-  };
+  const checkProxy = useCallback(async (proxyId) => {
+    // Avoid race conditions if this proxy is already being pinged
+    if (activeCheckingRef.current.has(proxyId)) return;
+    activeCheckingRef.current.add(proxyId);
 
-  const checkAllProxies = () => {
-    addLog?.('Bắt đầu kiểm tra kết nối (Ping) toàn bộ proxy...', 'info');
-    setProxies(prev => prev.map(p => ({
-      ...p,
-      latency: Math.floor(15 + Math.random() * 85),
-      status: Math.random() > 0.08 ? 'live' : 'die'
-    })));
-  };
+    try {
+      let target = null;
+      setProxies(prev => {
+        target = prev.find(p => p.id === proxyId);
+        return prev;
+      });
+      if (!target) return;
+
+      const res = await testProxyConnection(target);
+      const latency = res.latency || 0;
+      const status = res.status === 'live' ? 'live' : 'die';
+      const detectedCountry = res.country || target.country || '';
+
+      setProxies(prev => prev.map(p => p.id === proxyId ? {
+        ...p,
+        latency,
+        status,
+        ...(detectedCountry ? { country: detectedCountry } : {})
+      } : p));
+      addLog?.(`Kiểm tra proxy ${target.host}:${target.port}: ${status === 'live' ? `Live (${latency}ms)${detectedCountry ? ` [${detectedCountry}]` : ''}` : 'Die / Mất kết nối'}`, status === 'live' ? 'success' : 'error');
+      return { status, latency, country: detectedCountry, message: res.message };
+    } finally {
+      activeCheckingRef.current.delete(proxyId);
+    }
+  }, [addLog, setProxies]);
+
+  const checkAllProxies = useCallback(async () => {
+    if (isCheckingAllRef.current) return;
+    isCheckingAllRef.current = true;
+
+    try {
+      addLog?.('Bắt đầu kiểm tra kết nối (Ping) toàn bộ proxy...', 'info');
+      let currentProxies = [];
+      setProxies(prev => {
+        currentProxies = prev;
+        return prev;
+      });
+
+      const results = await testAllProxies(currentProxies);
+      const resMap = new Map(results.map(r => [r.id, r]));
+
+      setProxies(prev => prev.map(p => {
+        const r = resMap.get(p.id);
+        if (!r) return p;
+        const detectedCountry = r.country || p.country || '';
+        return {
+          ...p,
+          latency: r.latency || 0,
+          status: r.status === 'live' ? 'live' : 'die',
+          ...(detectedCountry ? { country: detectedCountry } : {})
+        };
+      }));
+
+      addLog?.(`Đã hoàn thành kiểm tra kết nối toàn bộ ${currentProxies.length} proxy`, 'success');
+    } finally {
+      isCheckingAllRef.current = false;
+    }
+  }, [addLog, setProxies]);
 
   // 2. Rotating Proxy actions
-  const addRotatingProxy = (config) => {
+  const addRotatingProxy = useCallback((config) => {
     const newRot = {
       ...config,
       id: `rot-${Date.now().toString().slice(-4)}`,
@@ -129,14 +228,14 @@ export function useProxies(addLog) {
     };
     setRotatingProxies(prev => [newRot, ...prev]);
     addLog?.(`Đã thêm cấu hình Xoay Proxy: ${config.name}`, 'success');
-  };
+  }, [addLog, setRotatingProxies]);
 
-  const deleteRotatingProxy = (id) => {
+  const deleteRotatingProxy = useCallback((id) => {
     setRotatingProxies(prev => prev.filter(r => r.id !== id));
     addLog?.('Đã xóa cấu hình xoay proxy', 'warn');
-  };
+  }, [addLog, setRotatingProxies]);
 
-  const triggerRotateProxy = (id) => {
+  const triggerRotateProxy = useCallback((id) => {
     const randomIp = `${Math.floor(14 + Math.random() * 180)}.${Math.floor(50 + Math.random() * 150)}.${Math.floor(10 + Math.random() * 200)}.${Math.floor(2 + Math.random() * 250)}`;
     setRotatingProxies(prev => prev.map(r => {
       if (r.id === id) {
@@ -150,10 +249,10 @@ export function useProxies(addLog) {
       return r;
     }));
     addLog?.(`Đã kích hoạt đổi IP thành công! IP mới: ${randomIp}`, 'success');
-  };
+  }, [addLog, setRotatingProxies]);
 
   // 3. DCOM 4G/5G actions
-  const addDcomDevice = (device) => {
+  const addDcomDevice = useCallback((device) => {
     const newDcom = {
       ...device,
       id: `dcom-${Date.now().toString().slice(-4)}`,
@@ -164,14 +263,14 @@ export function useProxies(addLog) {
     };
     setDcomDevices(prev => [...prev, newDcom]);
     addLog?.(`Đã thêm thiết bị DCOM mới: ${device.name}`, 'success');
-  };
+  }, [addLog, setDcomDevices]);
 
-  const deleteDcomDevice = (id) => {
+  const deleteDcomDevice = useCallback((id) => {
     setDcomDevices(prev => prev.filter(d => d.id !== id));
     addLog?.('Đã ngắt kết nối thiết bị DCOM', 'warn');
-  };
+  }, [addLog, setDcomDevices]);
 
-  const triggerDcomRotate = (id) => {
+  const triggerDcomRotate = useCallback((id) => {
     const newWan = `171.${Math.floor(200 + Math.random() * 55)}.${Math.floor(10 + Math.random() * 100)}.${Math.floor(10 + Math.random() * 200)}`;
     setDcomDevices(prev => prev.map(d => {
       if (d.id === id) {
@@ -185,10 +284,10 @@ export function useProxies(addLog) {
       return d;
     }));
     addLog?.(`DCOM reset chế độ máy bay thành công! Nhận IP mạng mới: ${newWan}`, 'success');
-  };
+  }, [addLog, setDcomDevices]);
 
   // 4. IPv6 Generator actions
-  const generateIpv6Batch = ({ prefix = '2402:800:6000:a1b2::/64', count = 50, startPort = 20000, userPrefix = 'ipv6_user', customPass = 'secure_pass' }) => {
+  const generateIpv6Batch = useCallback(({ prefix = '2402:800:6000:a1b2::/64', count = 50, startPort = 20000, userPrefix = 'ipv6_user', customPass = 'secure_pass' }) => {
     const list = [];
     const basePrefix = prefix.replace('/64', '').replace('/48', '').replace(/::$/, '');
     for (let i = 0; i < count; i++) {
@@ -213,26 +312,22 @@ export function useProxies(addLog) {
     setGeneratedIpv6List(list);
     addLog?.(`Sinh thành công ${list.length} Proxy IPv6 từ dải subnet ${prefix}`, 'success');
     return list;
-  };
+  }, [addLog]);
 
-  const addGeneratedIpv6ToPool = () => {
-    if (generatedIpv6List.length === 0) return;
-    setProxies(prev => [...generatedIpv6List.map(p => ({ ...p, usedCount: 0 })), ...prev]);
-    addLog?.(`Đã nhập toàn bộ ${generatedIpv6List.length} Proxy IPv6 vào kho Proxy tĩnh`, 'success');
-  };
+  const addGeneratedIpv6ToPool = useCallback(() => {
+    setGeneratedIpv6List(currentList => {
+      if (currentList.length === 0) return currentList;
+      setProxies(prev => [...currentList.map(p => ({ ...p, usedCount: 0 })), ...prev]);
+      addLog?.(`Đã nhập toàn bộ ${currentList.length} Proxy IPv6 vào kho Proxy tĩnh`, 'success');
+      return currentList;
+    });
+  }, [addLog, setProxies]);
 
-  // 5. Proxy Rules
-  const updateProxyRules = (newRules) => {
-    setProxyRules(prev => ({ ...(prev || INITIAL_PROXY_RULES), ...newRules }));
-    addLog?.('Đã cập nhật quy tắc cấu hình Proxy & An toàn mạng', 'info');
-  };
+  const safeProxies = isRealUser ? (Array.isArray(proxies) ? proxies : []) : (Array.isArray(proxies) && proxies.length > 0 ? proxies : INITIAL_PROXIES);
+  const safeRotatingProxies = isRealUser ? (Array.isArray(rotatingProxies) ? rotatingProxies : []) : (Array.isArray(rotatingProxies) && rotatingProxies.length > 0 ? rotatingProxies : INITIAL_ROTATING_PROXIES);
+  const safeDcomDevices = isRealUser ? (Array.isArray(dcomDevices) ? dcomDevices : []) : (Array.isArray(dcomDevices) && dcomDevices.length > 0 ? dcomDevices : INITIAL_DCOM_DEVICES);
 
-  const safeProxies = Array.isArray(proxies) && proxies.length > 0 ? proxies : INITIAL_PROXIES;
-  const safeRotatingProxies = Array.isArray(rotatingProxies) && rotatingProxies.length > 0 ? rotatingProxies : INITIAL_ROTATING_PROXIES;
-  const safeDcomDevices = Array.isArray(dcomDevices) && dcomDevices.length > 0 ? dcomDevices : INITIAL_DCOM_DEVICES;
-  const safeProxyRules = (proxyRules && typeof proxyRules === 'object' && Object.keys(proxyRules).length > 0) ? proxyRules : INITIAL_PROXY_RULES;
-
-  return {
+  return useMemo(() => ({
     proxies: safeProxies,
     addProxy,
     bulkImportProxies,
@@ -249,11 +344,29 @@ export function useProxies(addLog) {
     addDcomDevice,
     deleteDcomDevice,
     triggerDcomRotate,
-    proxyRules: safeProxyRules,
-    updateProxyRules,
     generatedIpv6List: Array.isArray(generatedIpv6List) ? generatedIpv6List : [],
     setGeneratedIpv6List,
     generateIpv6Batch,
     addGeneratedIpv6ToPool
-  };
+  }), [
+    safeProxies,
+    safeRotatingProxies,
+    safeDcomDevices,
+    generatedIpv6List,
+    addProxy,
+    bulkImportProxies,
+    editProxy,
+    deleteProxy,
+    deleteMultipleProxies,
+    checkProxy,
+    checkAllProxies,
+    addRotatingProxy,
+    deleteRotatingProxy,
+    triggerRotateProxy,
+    addDcomDevice,
+    deleteDcomDevice,
+    triggerDcomRotate,
+    generateIpv6Batch,
+    addGeneratedIpv6ToPool
+  ]);
 }

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Shield,
-  Cookie,
+  History,
   Trash2,
   HelpCircle,
   ChevronRight,
@@ -16,8 +16,10 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
+import { useTranslation } from '../../i18n/I18nContext';
 
 export default function BottomStatusBar() {
+  const { t } = useTranslation();
   const {
     profiles,
     trashProfiles = [],
@@ -25,43 +27,35 @@ export default function BottomStatusBar() {
     toggleSidebar,
     setActiveTrashModal,
     activeTab,
-    setActiveTab
+    setActiveTab,
+    checkUpdate,
+    isUpdateChecking
   } = useBrowser();
   const runningCount = profiles.filter(p => p.status === 'running').length;
 
   const [showHelpMenu, setShowHelpMenu] = useState(false);
   const helpMenuRef = useRef(null);
-  const [updateState, setUpdateState] = useState('idle'); // 'idle' | 'checking' | 'open'
-  const updateRef = useRef(null);
 
-  // Close Help Menu and Update popup on click outside
+  // Close Help Menu on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (helpMenuRef.current && !helpMenuRef.current.contains(e.target)) {
         setShowHelpMenu(false);
       }
-      if (updateRef.current && !updateRef.current.contains(e.target)) {
-        setUpdateState('idle');
-      }
     };
 
-    if (showHelpMenu || updateState === 'open') {
+    if (showHelpMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showHelpMenu, updateState]);
+  }, [showHelpMenu]);
 
   const handleCheckUpdate = () => {
-    if (updateState === 'open') {
-      setUpdateState('idle');
-      return;
+    if (checkUpdate) {
+      checkUpdate(false);
     }
-    setUpdateState('checking');
-    setTimeout(() => {
-      setUpdateState('open');
-    }, 700);
   };
 
   return (
@@ -100,12 +94,12 @@ export default function BottomStatusBar() {
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         >
           {isSidebarCollapsed ? <PanelLeftOpen size={13} /> : <PanelLeftClose size={13} />}
-          <span>{isSidebarCollapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}</span>
+          <span>{isSidebarCollapsed ? t('footer.expandSidebar', "Mở rộng thanh bên") : t('footer.collapseSidebar', "Thu gọn thanh bên")}</span>
         </button>
 
         {runningCount > 0 && (
           <span style={{ color: 'var(--apidog-purple)', fontWeight: 600 }}>
-            ● {runningCount} Profile đang khởi chạy
+            {t('footer.profilesRunning', { count: runningCount })}
           </span>
         )}
       </div>
@@ -135,16 +129,33 @@ export default function BottomStatusBar() {
           title="Mở hệ thống bắt gói mạng & phân luồng Proxy (Traffic Router)"
         >
           <Shield size={12} style={{ color: activeTab === 'proxy-requests' ? '#7C3AED' : 'var(--apidog-purple)' }} />
-          <span>Proxy request ▾</span>
+          <span>{t('footer.proxyRequest', 'Proxy request')} ▾</span>
         </span>
 
         <span 
-          style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '2px 6px', borderRadius: '4px' }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          onClick={() => alert('Quản lý Cookies hệ thống')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            cursor: 'pointer',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            backgroundColor: activeTab === 'history' ? '#EDE9FE' : 'transparent',
+            color: activeTab === 'history' ? '#7C3AED' : 'inherit',
+            fontWeight: activeTab === 'history' ? 700 : 500,
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            if (activeTab !== 'history') e.currentTarget.style.backgroundColor = '#E5E7EB';
+          }}
+          onMouseLeave={(e) => {
+            if (activeTab !== 'history') e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+          onClick={() => setActiveTab('history')}
+          title="Mở Lịch sử phiên chạy"
         >
-          <Cookie size={12} /> Cookies
+          <History size={12} style={{ color: activeTab === 'history' ? '#7C3AED' : 'inherit' }} />
+          <span>{t('footer.history', 'Lịch sử')}</span>
         </span>
 
         <span 
@@ -162,7 +173,7 @@ export default function BottomStatusBar() {
           onClick={() => setActiveTrashModal(true)}
           title="Mở Thùng rác (Quản lý hồ sơ đã xóa)"
         >
-          <Trash2 size={12} /> Trash
+          <Trash2 size={12} /> {t('footer.trash', 'Trash')}
           {trashProfiles.length > 0 && (
             <span style={{
               fontSize: '10px',
@@ -201,7 +212,7 @@ export default function BottomStatusBar() {
             }}
           >
             <HelpCircle size={12} />
-            <span>Help & support</span>
+            <span>{t('footer.helpAndSupport', 'Help & support')}</span>
           </button>
 
           {/* Floating Menu upward */}
@@ -250,7 +261,7 @@ export default function BottomStatusBar() {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <BookOpen size={14} style={{ color: '#475569' }} />
-                <span>Help & documentation</span>
+                <span>{t('footer.helpDocs', 'Help & documentation')}</span>
               </div>
 
               {/* Item 2: Keyboard Shortcuts */}
@@ -275,7 +286,7 @@ export default function BottomStatusBar() {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Keyboard size={14} style={{ color: '#475569' }} />
-                <span>Keyboard Shortcuts</span>
+                <span>{t('footer.keyboardShortcuts', 'Keyboard Shortcuts')}</span>
               </div>
 
               {/* Item 3: What's New? */}
@@ -300,7 +311,7 @@ export default function BottomStatusBar() {
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <ArrowUpCircle size={14} style={{ color: '#475569' }} />
-                <span>What's New?</span>
+                <span>{t('footer.whatsNew', "What's New?")}</span>
               </div>
 
               {/* Divider */}
@@ -336,10 +347,11 @@ export default function BottomStatusBar() {
         </div>
 
         {/* CHECK UPDATE VERSION BUTTON (Icon with arrow pointing up) */}
-        <div ref={updateRef} style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }}>
           <button
             onClick={handleCheckUpdate}
-            title="Kiểm tra bản cập nhật phiên bản"
+            disabled={isUpdateChecking}
+            title={isUpdateChecking ? 'Đang kiểm tra cập nhật...' : t('footer.checkForUpdates', 'Kiểm tra bản cập nhật phiên bản')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -347,65 +359,27 @@ export default function BottomStatusBar() {
               width: '22px',
               height: '22px',
               border: 'none',
-              background: updateState === 'open' ? '#E2E8F0' : 'transparent',
-              color: updateState === 'checking' ? '#6366F1' : '#475569',
+              background: 'transparent',
+              color: isUpdateChecking ? '#2563EB' : '#475569',
               borderRadius: '4px',
-              cursor: 'pointer',
+              cursor: isUpdateChecking ? 'wait' : 'pointer',
               transition: 'all 0.15s ease'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+            onMouseEnter={(e) => {
+              if (!isUpdateChecking) e.currentTarget.style.backgroundColor = '#E5E7EB';
+            }}
             onMouseLeave={(e) => {
-              if (updateState !== 'open') e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
             {/* Arrow pointing up icon */}
             <ArrowUpCircle 
               size={13} 
               style={{ 
-                animation: updateState === 'checking' ? 'spin 0.7s linear infinite' : 'none' 
+                animation: isUpdateChecking ? 'spin 0.7s linear infinite' : 'none' 
               }} 
             />
           </button>
-
-          {/* Update Status Popup */}
-          {updateState === 'open' && (
-            <div style={{
-              position: 'absolute',
-              bottom: 'calc(100% + 6px)',
-              right: 0,
-              backgroundColor: '#FFFFFF',
-              borderRadius: '8px',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12)',
-              padding: '12px 14px',
-              minWidth: '220px',
-              zIndex: 1000,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>
-                  Kiểm tra cập nhật
-                </span>
-                <button 
-                  onClick={() => setUpdateState('idle')}
-                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#16A34A', fontSize: '12px', fontWeight: 600 }}>
-                <CheckCircle2 size={14} />
-                <span>Phiên bản v2.4.0 mới nhất</span>
-              </div>
-
-              <div style={{ fontSize: '11px', color: '#64748B', lineHeight: 1.4 }}>
-                Hệ thống Antidetect Browser Core đã được đồng bộ phiên bản mới nhất từ máy chủ.
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </footer>

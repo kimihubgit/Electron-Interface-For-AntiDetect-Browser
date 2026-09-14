@@ -47,12 +47,11 @@ export function useProfileFilters(profiles = [], selectedGroup = 'All', customGr
     return result;
   }, [profiles, searchTerm, selectedGroup, statusFilter, osFilter, sortBy]);
 
-  // Distinct list of all available groups
+  // Distinct list of all available groups (only real custom groups + existing profile groups + 'Chung')
   const allGroups = useMemo(() => {
     const fromCustom = customGroups.map(g => g.name).filter(Boolean);
-    const defaults = ['Chung', 'Facebook Ads', 'TikTok', 'Crypto', 'E-Commerce'];
     const fromProfiles = profiles.map(p => p.group).filter(Boolean);
-    return Array.from(new Set(['Chung', ...fromCustom, ...defaults, ...fromProfiles]));
+    return Array.from(new Set(['Chung', ...fromCustom, ...fromProfiles]));
   }, [profiles, customGroups]);
 
   return {

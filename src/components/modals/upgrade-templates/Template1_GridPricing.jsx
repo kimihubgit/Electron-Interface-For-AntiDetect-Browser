@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Check,
@@ -15,6 +15,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useBrowser } from '../../../store/BrowserContext';
+import { getPlansApi, getStoredPlans } from '../../../services/planService';
 
 export default function Template1_GridPricing() {
   const { activeUpgradeModal, setActiveUpgradeModal, currentPlan, setCurrentPlan, addLog } = useBrowser();
@@ -24,83 +25,34 @@ export default function Template1_GridPricing() {
   const [licenseKeyInput, setLicenseKeyInput] = useState('');
   const [copiedField, setCopiedField] = useState(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const [apiPlans, setApiPlans] = useState(() => getStoredPlans());
+
+  useEffect(() => {
+    getPlansApi().then(res => {
+      if (res.success && res.data && res.data.length > 0) {
+        setApiPlans(res.data);
+      }
+    });
+  }, []);
 
   if (!activeUpgradeModal) return null;
 
-  const plans = [
-    {
-      id: 'monthly',
-      title: 'Thuê theo tháng',
-      badge: 'PHỔ BIẾN',
-      badgeType: 'popular',
-      price: '$9',
-      unit: '/tháng/key',
-      priceVnd: '225.000 VNĐ',
-      devices: '1 thiết bị cho mỗi key',
-      popular: true,
-      features: [
-        'Không giới hạn profile',
-        'Hỗ trợ proxy',
-        'API & automation',
-        'Cập nhật phần mềm'
-      ],
-      btnVariant: 'primary'
-    },
-    {
-      id: 'starter',
-      title: 'Starter',
-      badge: 'VĨNH VIỄN',
-      badgeType: 'lifetime',
-      price: '$99',
-      unit: ' một lần',
-      priceVnd: '2.450.000 VNĐ',
-      devices: 'Bao gồm 1 thiết bị',
-      popular: false,
-      features: [
-        'Không giới hạn profile',
-        'Hỗ trợ proxy',
-        'API & automation',
-        'Cập nhật phần mềm'
-      ],
-      btnVariant: 'outline'
-    },
-    {
-      id: 'team-3',
-      title: 'Team-3',
-      badge: 'VĨNH VIỄN',
-      badgeType: 'lifetime',
-      price: '$199',
-      unit: ' một lần',
-      priceVnd: '4.950.000 VNĐ',
-      devices: 'Bao gồm 3 thiết bị',
-      popular: false,
-      features: [
-        'Không giới hạn profile',
-        'Hỗ trợ proxy',
-        'API & automation',
-        'Cập nhật phần mềm'
-      ],
-      btnVariant: 'outline'
-    },
-    {
-      id: 'team-5',
-      title: 'Team-5',
-      badge: 'VĨNH VIỄN',
-      badgeType: 'lifetime',
-      price: '$299',
-      unit: ' một lần',
-      priceVnd: '7.450.000 VNĐ',
-      devices: 'Bao gồm 5 thiết bị',
-      popular: false,
-      features: [
-        'Không giới hạn profile',
-        'Hỗ trợ proxy',
-        'API & automation',
-        'Cập nhật phần mềm'
-      ],
-      btnVariant: 'outline'
-    }
-  ];
+  const plans = apiPlans.map(p => {
+    const isFree = p.price_month === 0;
+    return {
+      id: p.id,
+      title: p.name,
+      badge: p.is_popular ? 'PHỔ BIẾN' : (isFree ? 'MIỄN PHÍ' : 'KHUYÊN DÙNG'),
+      badgeType: p.is_popular ? 'popular' : 'lifetime',
+      price: isFree ? '$0' : `$${p.price_month}`,
+      unit: isFree ? ' vĩnh viễn' : '/tháng',
+      priceVnd: isFree ? '0 VNĐ' : `${(p.price_month * 25000).toLocaleString('vi-VN')} VNĐ`,
+      devices: `${p.max_profiles} Hồ sơ • ${p.max_seats} Thành viên`,
+      popular: Boolean(p.is_popular),
+      features: p.features || [],
+      btnVariant: p.is_popular ? 'primary' : 'outline'
+    };
+  });
 
   const handleCopy = (text, field) => {
     if (navigator.clipboard) {
