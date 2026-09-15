@@ -382,3 +382,106 @@ export async function deleteAccountApi({ password, reason = '' } = {}, tokenOver
     message: res.message || (res.ok ? 'Account deleted successfully' : 'Xóa tài khoản thất bại')
   };
 }
+
+export const GOOGLE_CLIENT_ID = '28853121257-evs1v3hsfvncphqu4om24h4j9lai2p7r.apps.googleusercontent.com';
+
+/**
+ * 10. Get Google Auth URL (GET /api/v1/auth/google/url)
+ */
+export async function getGoogleAuthUrlApi() {
+  const res = await apiClient.get('/api/v1/auth/google/url');
+  if (res.ok && res.data?.url) {
+    return { success: true, url: res.data.url };
+  }
+  const serverUrl = getApiServerUrl();
+  const redirectUri = encodeURIComponent(`${serverUrl}/api/v1/auth/google/callback`);
+  const fallbackUrl = `https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=${GOOGLE_CLIENT_ID}&prompt=consent&redirect_uri=${redirectUri}&response_type=code&scope=openid+email+profile&state=antidetect_desktop`;
+  return { success: true, url: fallbackUrl };
+}
+
+/**
+ * 11. Google Login / Registration (POST /api/v1/auth/google)
+ * Accepts id_token, access_token, or authorization code from Google SDK / popup
+ */
+export async function loginWithGoogleApi({ id_token, code, access_token } = {}) {
+  const hwid = getOrCreateHwid();
+  const deviceName = getDeviceName();
+
+  const tokenValue = id_token || access_token || code;
+  if (!tokenValue) {
+    return {
+      success: false,
+      message: 'Không tìm thấy Google token hoặc authorization code'
+    };
+  }
+
+  const payload = {
+    id_token: tokenValue,
+    ...(code ? { code } : {}),
+    hwid,
+    device_name: deviceName
+  };
+
+  const res = await apiClient.post('/api/v1/auth/google', payload);
+  if (!res.ok) {
+    return {
+      success: false,
+      message: res.message || res.error?.message || 'Đăng nhập Google thất bại'
+    };
+  }
+
+  const payloadData = res.data || {};
+  const token = payloadData.token;
+  if (!token) {
+    return {
+      success: false,
+      message: 'Không nhận được access token từ máy chủ'
+    };
+  }
+
+  let user = payloadData.user || null;
+  let workspace = payloadData.workspace || null;
+
+  // If user info is not embedded in the login response, fetch it via /api/v1/auth/me
+  if (!user || !user.email) {
+    try {
+      const meRes = await getAuthMeApi(token);
+      if (meRes.success && meRes.user) {
+        user = meRes.user;
+        workspace = meRes.workspace || workspace;
+      }
+    } catch {}
+  }
+
+  if (!user) {
+    user = {
+      id: `google_${Date.now()}`,
+      name: 'Google User',
+      email: 'user@gmail.com',
+      provider: 'google'
+    };
+  }
+
+  setAuthSession({
+    token,
+    user,
+    workspace,
+    expires_at: payloadData.expires_at || ''
+  });
+
+  saveAccountSession({
+    user,
+    token,
+    workspace,
+    expires_at: payloadData.expires_at || ''
+  });
+
+  return {
+    success: true,
+    message: res.message || 'Đăng nhập Google thành công',
+    token,
+    user,
+    workspace
+  };
+}
+

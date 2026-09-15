@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Eye, EyeOff, X, QrCode, RefreshCw, ChevronDown, Search, Check, ArrowLeft, Mail } from 'lucide-react';
 import { useTranslation } from '../../../i18n/I18nContext';
-import { loginWithApi, registerWithApi, sendResetPasswordLinkApi, getStoredUser } from '../../../services/authService';
+import {
+  loginWithApi,
+  registerWithApi,
+  sendResetPasswordLinkApi,
+  getStoredUser,
+  loginWithGoogleApi,
+  getGoogleAuthUrlApi,
+  GOOGLE_CLIENT_ID
+} from '../../../services/authService';
 import { COUNTRY_CODES } from '../constants/countryCodes';
 
 /**
@@ -271,16 +279,124 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
     }
   };
 
-  // Social login handlers
+  const [isGoogleLoggingIn, setIsGoogleLoggingIn] = useState(false);
+
+  // Real Google OAuth & Login handler
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoggingIn(true);
+    setErrorMsg('');
+    try {
+      // 1. Fetch Google Auth URL from backend
+      const urlRes = await getGoogleAuthUrlApi();
+      const authUrl = urlRes.url;
+
+      // 2. Electron Desktop Environment: open dedicated auth window
+      if (typeof window !== 'undefined' && window.electronAPI?.openGoogleAuthWindow) {
+        const result = await window.electronAPI.openGoogleAuthWindow(authUrl);
+        if (!result.success) {
+          if (result.error && !result.error.includes('đóng') && !result.error.includes('closed')) {
+            setErrorMsg(`Đăng nhập Google thất bại: ${result.error}`);
+          }
+          setIsGoogleLoggingIn(false);
+          return;
+        }
+
+        const loginRes = await loginWithGoogleApi({
+          code: result.code,
+          id_token: result.token || result.code
+        });
+
+        if (loginRes.success) {
+          if (showToast) showToast('Đăng nhập bằng Google thành công!', 'success');
+          onLogin?.(loginRes.user, loginRes.token, loginRes.workspace);
+        } else {
+          setErrorMsg(loginRes.message || 'Xác thực tài khoản Google thất bại');
+        }
+        setIsGoogleLoggingIn(false);
+        return;
+      }
+
+      // 3. Web Environment: Google Identity Services (GIS SDK)
+      if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
+        const client = window.google.accounts.oauth2.initCodeClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'openid email profile',
+          ux_mode: 'popup',
+          callback: async (response) => {
+            if (response.code) {
+              const loginRes = await loginWithGoogleApi({ code: response.code });
+              if (loginRes.success) {
+                if (showToast) showToast('Đăng nhập bằng Google thành công!', 'success');
+                onLogin?.(loginRes.user, loginRes.token, loginRes.workspace);
+              } else {
+                setErrorMsg(loginRes.message || 'Xác thực tài khoản Google thất bại');
+              }
+            } else if (response.error) {
+              setErrorMsg(`Lỗi Google OAuth: ${response.error}`);
+            }
+            setIsGoogleLoggingIn(false);
+          }
+        });
+        client.requestCode();
+        return;
+      }
+
+      // 4. Web Fallback: Popup window
+      const popup = window.open(authUrl, 'google_oauth_popup', 'width=520,height=680');
+      if (!popup) {
+        window.location.href = authUrl;
+        return;
+      }
+
+      const timer = setInterval(async () => {
+        try {
+          if (!popup || popup.closed) {
+            clearInterval(timer);
+            setIsGoogleLoggingIn(false);
+            return;
+          }
+          const loc = popup.location?.href;
+          if (loc && (loc.includes('/callback') || loc.includes('code='))) {
+            clearInterval(timer);
+            const parsed = new URL(loc);
+            const code = parsed.searchParams.get('code');
+            popup.close();
+            if (code) {
+              const loginRes = await loginWithGoogleApi({ code });
+              if (loginRes.success) {
+                if (showToast) showToast('Đăng nhập bằng Google thành công!', 'success');
+                onLogin?.(loginRes.user, loginRes.token, loginRes.workspace);
+              } else {
+                setErrorMsg(loginRes.message || 'Xác thực tài khoản Google thất bại');
+              }
+            }
+            setIsGoogleLoggingIn(false);
+          }
+        } catch {
+          // Cross-origin before redirect - keep polling
+        }
+      }, 500);
+
+    } catch (err) {
+      console.error('Google login error:', err);
+      setErrorMsg(`Lỗi đăng nhập Google: ${err.message}`);
+      setIsGoogleLoggingIn(false);
+    }
+  };
+
+  // Other social login handlers
   const handleSocialLogin = (provider) => {
+    if (provider === 'google') {
+      handleGoogleLogin();
+      return;
+    }
     const providerNames = {
-      google: 'Google',
       telegram: 'Telegram',
       github: 'GitHub',
       discord: 'Discord'
     };
     const name = providerNames[provider] || provider;
-    const msg = `Tính năng đăng nhập bằng ${name} đang được phát triển. Vui lòng đăng nhập bằng Mật khẩu.`;
+    const msg = `Tính năng đăng nhập bằng ${name} đang được phát triển. Vui lòng đăng nhập bằng Google hoặc Mật khẩu.`;
     if (showToast) {
       showToast(msg, 'info');
     }
@@ -1762,14 +1878,15 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
                   {/* 1. Google */}
                   <div
-                    onClick={() => handleSocialLogin('google', 'Google User', 'developer.google@gmail.com')}
-                    title="Đăng nhập với Google"
+                    onClick={isGoogleLoggingIn ? undefined : handleGoogleLogin}
+                    title={isGoogleLoggingIn ? "Đang kết nối Google..." : "Đăng nhập với Google"}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       gap: '5px',
-                      cursor: 'pointer'
+                      cursor: isGoogleLoggingIn ? 'wait' : 'pointer',
+                      opacity: isGoogleLoggingIn ? 0.7 : 1
                     }}
                   >
                     <div
@@ -1786,20 +1903,26 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                        e.currentTarget.style.boxShadow = '0 3px 8px rgba(0,0,0,0.12)';
+                        if (!isGoogleLoggingIn) {
+                          e.currentTarget.style.transform = 'scale(1.1)';
+                          e.currentTarget.style.boxShadow = '0 3px 8px rgba(0,0,0,0.12)';
+                        }
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'scale(1)';
                         e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
                       }}
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z" />
-                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.16 0 9.97 0 12s.45 3.84 1.24 5.42l4.04-3.15z" />
-                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
-                      </svg>
+                      {isGoogleLoggingIn ? (
+                        <RefreshCw size={17} className="animate-spin" style={{ color: '#4285F4' }} />
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z" />
+                          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.16 0 9.97 0 12s.45 3.84 1.24 5.42l4.04-3.15z" />
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                        </svg>
+                      )}
                     </div>
                     <span style={{ fontSize: '11px', color: '#61666D' }}>Google</span>
                   </div>

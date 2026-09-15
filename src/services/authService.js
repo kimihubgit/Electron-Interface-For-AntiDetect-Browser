@@ -40,5 +40,8 @@ export {
   sendResetPasswordLinkApi,
   sendResetCodeApi,
   resetPasswordApi,
-  deleteAccountApi
+  deleteAccountApi,
+  loginWithGoogleApi,
+  getGoogleAuthUrlApi,
+  GOOGLE_CLIENT_ID
 } from './api/authApi';
