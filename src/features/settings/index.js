@@ -1,8 +1,8 @@
+export { default } from './SettingsPage';
 export { default as ToggleSwitch } from './components/ToggleSwitch';
-export { default as GeneralSettingsSection } from './components/GeneralSettingsSection';
-export { default as BrowserSessionsSection } from './components/BrowserSessionsSection';
-export { default as ConcurrencySettingsSection } from './components/ConcurrencySettingsSection';
-export { default as ContentSettingsSection } from './components/ContentSettingsSection';
-export { default as DisplaySettingsSection } from './components/DisplaySettingsSection';
-export { default as CoreSecuritySection } from './components/CoreSecuritySection';
-export { useSettingsState } from './hooks/useSettingsState';
+export { default as SettingSwitchItem } from './components/SettingSwitchItem';
+export { default as BrowserSettingsSection } from './sections/BrowserSettingsSection';
+export { default as GeneralSettingsSection } from './sections/GeneralSettingsSection';
+export { default as FingerprintSettingsSection } from './sections/FingerprintSettingsSection';
+export { default as NetworkSettingsSection } from './sections/NetworkSettingsSection';
+export { default as CookieSettingsSection } from './sections/CookieSettingsSection';
