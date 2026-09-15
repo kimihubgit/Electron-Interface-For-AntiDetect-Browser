@@ -132,11 +132,15 @@ export function useAppState() {
     } else if (userData.workspace?.plan_id) {
       setCurrentPlan(userData.workspace.plan_id === 'plan_free' ? 'Gói Miễn Phí (Starter Free)' : userData.workspace.plan_id);
     }
+    setIsSwitchingAccount(false);
+    setPreviousAccount(null);
     setIsAuthenticated(true);
     addLog(`Đăng nhập thành công với tài khoản: ${user.email}`, 'success');
   }, [addLog]);
 
   const useOfflineSpace = useCallback(() => {
+    setIsSwitchingAccount(false);
+    setPreviousAccount(null);
     setCurrentUser({ name: 'Offline Space', email: 'offline@local', isOffline: true });
     setIsAuthenticated(true);
     addLog('Đang sử dụng phiên bản Không Gian Offline (Offline Space)', 'info');
@@ -180,6 +184,9 @@ export function useAppState() {
     }
   }, [showToast]);
 
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
+  const [previousAccount, setPreviousAccount] = useState(null);
+
   const logout = useCallback(async () => {
     const token = getAuthToken();
     try {
@@ -189,6 +196,8 @@ export function useAppState() {
     } catch (err) {
       console.warn('Logout API error:', err);
     } finally {
+      setIsSwitchingAccount(false);
+      setPreviousAccount(null);
       clearAuthSession();
       setCurrentUser(null);
       setIsAuthenticated(false);
@@ -197,13 +206,32 @@ export function useAppState() {
   }, [addLog]);
 
   const openLoginForNewAccount = useCallback(() => {
-    // Keep saved accounts in localStorage intact so no accounts are lost
-    // Switch to standard Login screen to log in or register a new account
-    clearAuthSession();
-    setCurrentUser(null);
+    // Switch / Add Account is NOT logout:
+    // Preserves saved accounts and existing session cache!
+    if (currentUser) {
+      setPreviousAccount(currentUser);
+    }
+    setIsSwitchingAccount(true);
     setIsAuthenticated(false);
-    addLog('Chuyển về màn hình đăng nhập để thêm tài khoản mới', 'info');
-  }, [addLog]);
+    addLog('Chuyển về màn hình đăng nhập để chuyển đổi hoặc thêm tài khoản mới', 'info');
+  }, [currentUser, addLog]);
+
+  const cancelSwitchAccount = useCallback(() => {
+    if (previousAccount) {
+      setCurrentUser(previousAccount);
+      setIsAuthenticated(true);
+      setIsSwitchingAccount(false);
+      setPreviousAccount(null);
+      addLog('Đã quay lại tài khoản đang hoạt động', 'info');
+    } else {
+      const stored = getStoredUser();
+      if (stored) {
+        setCurrentUser(stored);
+        setIsAuthenticated(true);
+        setIsSwitchingAccount(false);
+      }
+    }
+  }, [previousAccount, addLog]);
 
   const deleteAccount = useCallback(async ({ password, reason = '' } = {}) => {
     const token = getAuthToken();
@@ -247,9 +275,13 @@ export function useAppState() {
     toasts: [], showToast, removeToast,
     isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar,
     isReloading, setIsReloading, reloadApp, reloadKey,
+    isSwitchingAccount, previousAccount, cancelSwitchAccount,
   }), [
     isAuthenticated,
     currentUser,
+    isSwitchingAccount,
+    previousAccount,
+    cancelSwitchAccount,
     activeTab,
     activeProxySubTab,
     selectedGroup,

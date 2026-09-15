@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Server, ChevronDown } from 'lucide-react';
+import { Server, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 import LoginBackgroundRipples from './components/LoginBackgroundRipples';
 import LoginCard from './components/LoginCard';
@@ -12,7 +12,16 @@ import { useTranslation } from '../../i18n/I18nContext';
  */
 export default function LoginPage() {
   const { t } = useTranslation();
-  const { login, useOfflineSpace, setActiveProxyModal, setActiveSettingsModal, showToast } = useBrowser();
+  const {
+    login,
+    useOfflineSpace,
+    setActiveProxyModal,
+    setActiveSettingsModal,
+    showToast,
+    isSwitchingAccount,
+    previousAccount,
+    cancelSwitchAccount
+  } = useBrowser();
 
   const [selectedServer, setSelectedServer] = useState(() => {
     return localStorage.getItem('login_selected_server') || 'Auto (Default (1))';
@@ -87,6 +96,40 @@ export default function LoginPage() {
           gap: '8px'
         }}
       >
+        {/* Chỉ hiển thị nút "Quay lại ứng dụng" khi đang ở chế độ Switch/Add Account, KHÔNG hiển thị khi Logout */}
+        {isSwitchingAccount && previousAccount && (
+          <button
+            onClick={cancelSwitchAccount}
+            title={`Quay lại ứng dụng với tài khoản: ${previousAccount?.name || previousAccount?.email || previousAccount?.username}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              borderRadius: '20px',
+              padding: '6px 14px',
+              color: '#334155',
+              fontSize: '12.5px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#CBD5E1';
+              e.currentTarget.style.backgroundColor = '#F1F5F9';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#E2E8F0';
+              e.currentTarget.style.backgroundColor = '#F8FAFC';
+            }}
+          >
+            <ArrowLeft size={13} style={{ color: '#475569' }} />
+            <span>Quay lại ứng dụng</span>
+          </button>
+        )}
+
         <button
           onClick={() => setIsServerModalOpen(true)}
           title="Chọn máy chủ (Select server)"

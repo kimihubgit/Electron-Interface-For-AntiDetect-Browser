@@ -51,13 +51,11 @@ export function setAuthSession({ token, user, workspace, expires_at }) {
 }
 
 export function clearAuthSession() {
-  // 1. Remove core authentication tokens and user state
+  // 1. Remove active session tokens and user state
   localStorage.removeItem('auth_token');
   localStorage.removeItem('auth_user');
   localStorage.removeItem('auth_workspace');
   localStorage.removeItem('auth_expires_at');
-  localStorage.removeItem('antidetect_saved_accounts_v2');
-  localStorage.removeItem('antidetect_saved_accounts_v1');
   localStorage.removeItem('conn_github');
   localStorage.removeItem('conn_google');
 
