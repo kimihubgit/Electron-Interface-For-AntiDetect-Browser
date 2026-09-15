@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Square, Edit3, Trash2, MoreVertical } from 'lucide-react';
+import { Play, Square, Edit3, Trash2, MoreVertical, RotateCw } from 'lucide-react';
 import ProfileActionMenu from './ProfileActionMenu';
 import { getCountryFlag } from '../utils/profileUtils';
 
@@ -13,6 +13,7 @@ export default function ProfileGrid({
   activeMenuId,
   setActiveMenuId,
   toggleLaunchProfile,
+  startingProfileIds = [],
   setActiveProfileModal,
   deleteProfile,
   saveProfile,
@@ -29,6 +30,7 @@ export default function ProfileGrid({
       {filteredProfiles.map(p => {
         const isRunning = p.status === 'running';
         const isSelected = selectedProfiles.includes(p.id);
+        const isStarting = startingProfileIds.includes(String(p.id));
 
         return (
           <div
@@ -151,7 +153,30 @@ export default function ProfileGrid({
               paddingTop: '10px',
               borderTop: '1px solid #F1F5F9'
             }}>
-              {isRunning ? (
+              {isStarting ? (
+                <button
+                  disabled
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '7px 0',
+                    borderRadius: '6px',
+                    border: '1px solid #BFDBFE',
+                    backgroundColor: '#EFF6FF',
+                    color: '#2563EB',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'wait',
+                    pointerEvents: 'none'
+                  }}
+                >
+                  <RotateCw size={12} className="spin" />
+                  <span>{isRunning ? 'Đang tắt...' : 'Đang mở...'}</span>
+                </button>
+              ) : isRunning ? (
                 <button
                   onClick={() => toggleLaunchProfile(p.id)}
                   style={{

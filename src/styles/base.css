@@ -56,6 +56,7 @@ body {
   }
 }
 
+.spin,
 .spin-anim {
   animation: spin 0.85s linear infinite;
 }

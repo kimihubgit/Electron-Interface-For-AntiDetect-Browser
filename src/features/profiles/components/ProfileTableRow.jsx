@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Play, Square, Edit3, MoreVertical, Trash2 } from 'lucide-react';
+import { Play, Square, Edit3, MoreVertical, Trash2, RotateCw } from 'lucide-react';
 import ProfileActionMenu from './ProfileActionMenu';
 
 /**
@@ -11,6 +11,7 @@ function ProfileTableRowComponent({
   index,
   isSelected,
   isRunning,
+  isStarting = false,
   isMenuOpen,
   gridTemplate,
   visibleColumns,
@@ -110,31 +111,43 @@ function ProfileTableRowComponent({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <button
           onClick={() => toggleLaunchProfile(p.id)}
-          title={isRunning ? "Dừng hồ sơ" : "Khởi chạy hồ sơ"}
+          disabled={isStarting}
+          title={isStarting ? (isRunning ? "Đang tắt hồ sơ..." : "Đang khởi chạy hồ sơ...") : (isRunning ? "Dừng hồ sơ" : "Khởi chạy hồ sơ")}
           style={{
             width: '28px',
             height: '28px',
             borderRadius: '6px',
-            border: isRunning ? '1px solid #FECACA' : '1px solid #BBF7D0',
-            backgroundColor: isRunning ? '#FEF2F2' : '#F0FDF4',
-            color: isRunning ? '#DC2626' : '#15803D',
+            border: isStarting 
+              ? '1px solid #BFDBFE' 
+              : (isRunning ? '1px solid #FECACA' : '1px solid #BBF7D0'),
+            backgroundColor: isStarting 
+              ? '#EFF6FF' 
+              : (isRunning ? '#FEF2F2' : '#F0FDF4'),
+            color: isStarting 
+              ? '#2563EB' 
+              : (isRunning ? '#DC2626' : '#15803D'),
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: 'pointer',
+            cursor: isStarting ? 'wait' : 'pointer',
+            pointerEvents: isStarting ? 'none' : 'auto',
             transition: 'all 0.15s ease',
             padding: 0
           }}
           onMouseEnter={(e) => {
+            if (isStarting) return;
             e.currentTarget.style.backgroundColor = isRunning ? '#FEE2E2' : '#DCFCE7';
             e.currentTarget.style.transform = 'scale(1.08)';
           }}
           onMouseLeave={(e) => {
+            if (isStarting) return;
             e.currentTarget.style.backgroundColor = isRunning ? '#FEF2F2' : '#F0FDF4';
             e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          {isRunning ? (
+          {isStarting ? (
+            <RotateCw size={12} className="spin" style={{ color: '#2563EB' }} />
+          ) : isRunning ? (
             <Square size={11} style={{ fill: '#DC2626' }} />
           ) : (
             <Play size={11} style={{ fill: '#15803D', marginLeft: '1px' }} />
@@ -261,6 +274,7 @@ export const ProfileTableRow = memo(ProfileTableRowComponent, (prev, next) => {
     prev.index === next.index &&
     prev.isSelected === next.isSelected &&
     prev.isRunning === next.isRunning &&
+    prev.isStarting === next.isStarting &&
     prev.isMenuOpen === next.isMenuOpen &&
     prev.gridTemplate === next.gridTemplate &&
     prev.visibleColumns === next.visibleColumns

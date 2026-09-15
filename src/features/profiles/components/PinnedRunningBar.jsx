@@ -1,5 +1,5 @@
 import React from 'react';
-import { Square, Pin, Layers, ChevronDown } from 'lucide-react';
+import { Square, Pin, Layers, ChevronDown, RotateCw } from 'lucide-react';
 
 /**
  * Sticky pinned running profiles banner displaying stacking visuals & hover dropdown list
@@ -9,6 +9,7 @@ export default function PinnedRunningBar({
   isPinnedHovered,
   setIsPinnedHovered,
   toggleLaunchProfile,
+  startingProfileIds = [],
   batchStopProfiles
 }) {
   if (!runningProfiles || runningProfiles.length === 0) return null;
@@ -467,39 +468,63 @@ export default function PinnedRunningBar({
                   </span>
 
                   {/* Prominent STOP button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleLaunchProfile(p.id);
-                    }}
-                    title="Ngưng chạy hồ sơ này"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      height: '30px',
-                      padding: '0 12px',
-                      borderRadius: '6px',
-                      border: '1px solid #FECACA',
-                      backgroundColor: '#FEF2F2',
-                      color: '#DC2626',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEE2E2';
-                      e.currentTarget.style.borderColor = '#F87171';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#FEF2F2';
-                      e.currentTarget.style.borderColor = '#FECACA';
-                    }}
-                  >
-                    <Square size={12} fill="currentColor" />
-                    <span>Ngưng chạy</span>
-                  </button>
+                  {startingProfileIds.includes(String(p.id)) ? (
+                    <button
+                      disabled
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        height: '30px',
+                        padding: '0 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #BFDBFE',
+                        backgroundColor: '#EFF6FF',
+                        color: '#2563EB',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'wait',
+                        pointerEvents: 'none'
+                      }}
+                    >
+                      <RotateCw size={12} className="spin" />
+                      <span>Đang xử lý...</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLaunchProfile(p.id);
+                      }}
+                      title="Ngưng chạy hồ sơ này"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        height: '30px',
+                        padding: '0 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #FECACA',
+                        backgroundColor: '#FEF2F2',
+                        color: '#DC2626',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FEE2E2';
+                        e.currentTarget.style.borderColor = '#F87171';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FEF2F2';
+                        e.currentTarget.style.borderColor = '#FECACA';
+                      }}
+                    >
+                      <Square size={12} fill="currentColor" />
+                      <span>Ngưng chạy</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

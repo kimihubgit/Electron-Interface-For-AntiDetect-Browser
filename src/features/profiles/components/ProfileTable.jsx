@@ -22,6 +22,7 @@ export default function ProfileTable({
   activeMenuId,
   setActiveMenuId,
   toggleLaunchProfile,
+  startingProfileIds = [],
   setActiveProfileModal,
   deleteProfile,
   saveProfile,
@@ -401,6 +402,7 @@ export default function ProfileTable({
           isPinnedHovered={isPinnedHovered}
           setIsPinnedHovered={setIsPinnedHovered}
           toggleLaunchProfile={toggleLaunchProfile}
+          startingProfileIds={startingProfileIds}
           batchStopProfiles={batchStopProfiles}
         />
 
@@ -408,6 +410,7 @@ export default function ProfileTable({
         {filteredProfiles.map((p, index) => {
           const isRunning = p.status === 'running';
           const isSelected = selectedProfiles.includes(p.id);
+          const isStarting = startingProfileIds.includes(String(p.id));
 
           return (
             <ProfileTableRow
@@ -416,6 +419,7 @@ export default function ProfileTable({
               index={index}
               isSelected={isSelected}
               isRunning={isRunning}
+              isStarting={isStarting}
               isMenuOpen={activeMenuId === p.id}
               gridTemplate={gridTemplate}
               visibleColumns={visibleColumns}

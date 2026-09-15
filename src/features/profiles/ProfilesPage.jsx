@@ -23,6 +23,7 @@ export default function ProfilesPage() {
     profiles = [],
     isLoadingProfiles,
     toggleLaunchProfile,
+    startingProfileIds = [],
     saveProfile,
     deleteProfile,
     cloneProfile,
@@ -294,6 +295,7 @@ export default function ProfilesPage() {
             activeMenuId={activeMenuId}
             setActiveMenuId={setActiveMenuId}
             toggleLaunchProfile={toggleLaunchProfile}
+            startingProfileIds={startingProfileIds}
             setActiveProfileModal={setActiveProfileModal}
             deleteProfile={deleteProfile}
             saveProfile={saveProfile}
@@ -312,6 +314,7 @@ export default function ProfilesPage() {
             activeMenuId={activeMenuId}
             setActiveMenuId={setActiveMenuId}
             toggleLaunchProfile={toggleLaunchProfile}
+            startingProfileIds={startingProfileIds}
             setActiveProfileModal={setActiveProfileModal}
             deleteProfile={deleteProfile}
             saveProfile={saveProfile}

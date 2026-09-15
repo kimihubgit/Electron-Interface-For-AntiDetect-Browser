@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { INITIAL_PROFILES, INITIAL_TRASH_PROFILES, INITIAL_GROUPS } from '../constants/initialData';
 import {
@@ -110,6 +110,8 @@ export function useProfiles(addLog, addHistoryRecord, currentUser = null, curren
   const [trashProfiles, setTrashProfiles] = useLocalStorage(trashKey, isRealUser ? [] : INITIAL_TRASH_PROFILES);
   const [customGroups, setCustomGroups] = useLocalStorage(groupsKey, isRealUser ? [] : INITIAL_GROUPS);
   const [isLoadingProfiles, setIsLoadingProfiles] = useState(false);
+  const [startingProfileIds, setStartingProfileIds] = useState([]);
+  const inFlightLaunchesRef = useRef(new Set());
 
   // Filter out any mock residual profiles for authenticated users
   const profiles = useMemo(() => {
@@ -317,16 +319,29 @@ export function useProfiles(addLog, addHistoryRecord, currentUser = null, curren
   }, [addLog, setCustomGroups, setProfiles]);
 
   const toggleLaunchProfile = useCallback(async (profileId) => {
-    const target = profiles.find(p => p.id === profileId);
+    if (!profileId) return;
+    const pIdStr = String(profileId);
+
+    // Guard against rapid duplicate clicks or race-conditions
+    if (inFlightLaunchesRef.current.has(pIdStr)) {
+      console.warn(`[Profiles] Hồ sơ ${pIdStr} đang trong quá trình chuyển đổi. Bỏ qua click trùng lặp.`);
+      return;
+    }
+
+    const target = profiles.find(p => String(p.id) === pIdStr);
     if (!target) return;
 
-    if (target.status === 'running') {
-      if (window.electronAPI?.stopBrowser) {
-        window.electronAPI.stopBrowser(profileId).catch(() => {});
-      }
-      if (isRealUser) {
-        unlockProfileApi(profileId).catch(() => {});
-      }
+    inFlightLaunchesRef.current.add(pIdStr);
+    setStartingProfileIds(prev => Array.from(new Set([...prev, pIdStr])));
+
+    try {
+      if (target.status === 'running') {
+        if (window.electronAPI?.stopBrowser) {
+          window.electronAPI.stopBrowser(profileId).catch(() => {});
+        }
+        if (isRealUser) {
+          unlockProfileApi(profileId).catch(() => {});
+        }
       setProfiles(prev => prev.map(p => p.id === profileId ? { ...p, status: 'idle' } : p));
       addLog?.(`Đã tắt tiến trình hồ sơ: "${target.name}"`, 'warn');
       if (addHistoryRecord) {
@@ -471,7 +486,11 @@ export function useProfiles(addLog, addHistoryRecord, currentUser = null, curren
         });
       }
     }
-  }, [profiles, isRealUser, addLog, addHistoryRecord, setProfiles]);
+  } finally {
+    inFlightLaunchesRef.current.delete(pIdStr);
+    setStartingProfileIds(prev => prev.filter(id => id !== pIdStr));
+  }
+}, [profiles, isRealUser, addLog, addHistoryRecord, setProfiles]);
 
   const saveProfile = useCallback(async (profileData, closeModal) => {
     if (profileData.id) {
@@ -795,9 +814,9 @@ export function useProfiles(addLog, addHistoryRecord, currentUser = null, curren
 
   const batchLaunchProfiles = useCallback(async (ids = []) => {
     if (!ids || ids.length === 0) return;
-    const targets = profiles.filter(p => ids.includes(p.id) && p.status !== 'running');
+    const targets = profiles.filter(p => ids.includes(p.id) && p.status !== 'running' && !inFlightLaunchesRef.current.has(String(p.id)));
     if (targets.length === 0) {
-      addLog?.('Tất cả các hồ sơ đã chọn đều đang chạy!', 'info');
+      addLog?.('Tất cả các hồ sơ đã chọn đều đang chạy hoặc đang được khởi động!', 'info');
       return;
     }
 
@@ -958,13 +977,15 @@ export function useProfiles(addLog, addHistoryRecord, currentUser = null, curren
     addGroup,
     editGroup,
     deleteGroup,
-    isLoadingProfiles
+    isLoadingProfiles,
+    startingProfileIds
   }), [
     profiles,
     trashProfiles,
     customGroups,
     setCustomGroups,
     isLoadingProfiles,
+    startingProfileIds,
     toggleLaunchProfile,
     saveProfile,
     batchCreateProfiles,
