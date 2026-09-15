@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Info
 } from 'lucide-react';
+import { useModalShortcuts } from '../../../hooks/useModalShortcuts';
 
 export default function ProxyBulkModal({
   isOpen,
@@ -21,6 +22,7 @@ export default function ProxyBulkModal({
   showToast
 }) {
   const bulkFileInputRef = useRef(null);
+  useModalShortcuts(isOpen, onClose);
 
   const bulkLineCount = useMemo(() => {
     return bulkText.split('\n').map((l) => l.trim()).filter(Boolean).length;

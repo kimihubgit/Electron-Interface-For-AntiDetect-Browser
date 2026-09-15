@@ -16,6 +16,7 @@ import {
   Zap
 } from 'lucide-react';
 import { COUNTRY_OPTIONS, parseProxyFlexible } from '../utils/proxyConstants';
+import { useModalShortcuts } from '../../../hooks/useModalShortcuts';
 
 export default function ProxySingleModal({
   modalMode,
@@ -34,6 +35,7 @@ export default function ProxySingleModal({
   showToast
 }) {
   const singleFileInputRef = useRef(null);
+  useModalShortcuts(!!modalMode, onClose);
 
   if (!modalMode) return null;
 

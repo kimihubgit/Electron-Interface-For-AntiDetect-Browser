@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Pencil, X, AlertTriangle, Check, FolderTree } from 'lucide-react';
 import { useTranslation } from '../../../i18n/I18nContext';
 import { PRESET_COLORS } from '../data/groupConstants';
+import { useModalShortcuts } from '../../../hooks/useModalShortcuts';
 
 export default function GroupFormModal({
   activeGroupModal,
@@ -9,6 +10,7 @@ export default function GroupFormModal({
   onSubmit
 }) {
   const { t } = useTranslation();
+  useModalShortcuts(!!activeGroupModal, onClose);
   const [formData, setFormData] = useState({
     name: '',
     desc: '',

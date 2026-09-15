@@ -1,5 +1,6 @@
 import React from 'react';
 import { Zap } from 'lucide-react';
+import { useModalShortcuts } from '../../../hooks/useModalShortcuts';
 
 export default function AddRuleModal({
   isOpen,
@@ -12,6 +13,8 @@ export default function AddRuleModal({
   setNewNotes,
   onSubmit
 }) {
+  useModalShortcuts(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (

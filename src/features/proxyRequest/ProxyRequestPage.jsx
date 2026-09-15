@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Activity, Sliders } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 import { INITIAL_RULES, INITIAL_REQUESTS } from './data/defaultRules';
@@ -178,17 +178,19 @@ export default function ProxyRequestPage() {
     }
   };
 
-  // Filter requests
-  const filteredRequests = requests.filter((req) => {
-    if (selectedProfileFilter !== 'All' && req.profile !== selectedProfileFilter) return false;
-    if (selectedRouteFilter !== 'All' && req.route !== selectedRouteFilter) return false;
-    if (selectedTypeFilter !== 'All' && req.type !== selectedTypeFilter) return false;
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      return req.url.toLowerCase().includes(term) || req.domain.toLowerCase().includes(term) || req.profile.toLowerCase().includes(term);
-    }
-    return true;
-  });
+  // Filter requests (useMemo to prevent recalculating on every re-render)
+  const filteredRequests = useMemo(() => {
+    return requests.filter((req) => {
+      if (selectedProfileFilter !== 'All' && req.profile !== selectedProfileFilter) return false;
+      if (selectedRouteFilter !== 'All' && req.route !== selectedRouteFilter) return false;
+      if (selectedTypeFilter !== 'All' && req.type !== selectedTypeFilter) return false;
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        return req.url.toLowerCase().includes(term) || req.domain.toLowerCase().includes(term) || req.profile.toLowerCase().includes(term);
+      }
+      return true;
+    });
+  }, [requests, selectedProfileFilter, selectedRouteFilter, selectedTypeFilter, searchTerm]);
 
   // Calculate percentage savings
   const totalTrafficMb = savedGb * 1024 + usedProxyMb + blockedMb;

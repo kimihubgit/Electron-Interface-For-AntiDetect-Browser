@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, X, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
+import SearchInput from '../../../components/common/SearchInput';
 
 export default function ProxyFilterBar({
   searchTerm,
@@ -28,43 +29,20 @@ export default function ProxyFilterBar({
     >
       {/* Left: Search input & Protocol Filter */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '280px' }}>
-        {/* Search input */}
-        <div
+        {/* Search input with collocated state & debounce */}
+        <SearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Tìm theo Host, Port, Quốc gia..."
+          delay={200}
           style={{
-            display: 'flex',
-            alignItems: 'center',
             backgroundColor: '#F8FAFC',
             borderRadius: '6px',
-            border: '1px solid #CBD5E1',
-            padding: '0 8px',
+            borderColor: '#CBD5E1',
             height: '28px',
             width: '240px'
           }}
-        >
-          <Search size={13} style={{ color: '#94A3B8', marginRight: '6px', flexShrink: 0 }} />
-          <input
-            type="text"
-            placeholder="Tìm theo Host, Port, Quốc gia..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              border: 'none',
-              outline: 'none',
-              fontSize: '12px',
-              width: '100%',
-              backgroundColor: 'transparent',
-              color: '#1E293B'
-            }}
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
+        />
 
         {/* Protocol Filter */}
         <select

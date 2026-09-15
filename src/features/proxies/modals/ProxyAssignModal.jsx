@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { useModalShortcuts } from '../../../hooks/useModalShortcuts';
 
 export default function ProxyAssignModal({
   proxy,
@@ -9,6 +10,8 @@ export default function ProxyAssignModal({
   setSelectedTargetProfileId,
   onAssign
 }) {
+  useModalShortcuts(!!proxy, onClose);
+
   if (!proxy) return null;
 
   return (

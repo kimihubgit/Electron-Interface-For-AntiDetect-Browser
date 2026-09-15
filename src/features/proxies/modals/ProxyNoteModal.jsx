@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, FileText } from 'lucide-react';
+import { useModalShortcuts } from '../../../hooks/useModalShortcuts';
 
 export default function ProxyNoteModal({
   proxy,
@@ -8,6 +9,8 @@ export default function ProxyNoteModal({
   setNoteInputText,
   onSave
 }) {
+  useModalShortcuts(!!proxy, onClose);
+
   if (!proxy) return null;
 
   return (

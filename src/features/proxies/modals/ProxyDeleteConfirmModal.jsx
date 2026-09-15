@@ -1,11 +1,14 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
+import { useModalShortcuts } from '../../../hooks/useModalShortcuts';
 
 export default function ProxyDeleteConfirmModal({
   deleteConfirm,
   onClose,
   onConfirm
 }) {
+  useModalShortcuts(!!deleteConfirm, onClose);
+
   if (!deleteConfirm) return null;
 
   return (

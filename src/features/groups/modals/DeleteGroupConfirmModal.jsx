@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import { useTranslation } from '../../../i18n/I18nContext';
+import { useModalShortcuts } from '../../../hooks/useModalShortcuts';
 
 export default function DeleteGroupConfirmModal({
   group,
@@ -9,6 +10,7 @@ export default function DeleteGroupConfirmModal({
   onConfirm
 }) {
   const { t } = useTranslation();
+  useModalShortcuts(!!group, onClose);
 
   if (!group) return null;
 

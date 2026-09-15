@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, Activity, Ban } from 'lucide-react';
+import { Activity, Ban } from 'lucide-react';
+import SearchInput from '../../../components/common/SearchInput';
 
 export default function ProxyStreamTable({
   filteredRequests,
@@ -26,33 +27,20 @@ export default function ProxyStreamTable({
           gap: '10px'
         }}
       >
-        {/* Search Bar */}
-        <div
+        {/* Search Bar with collocated state & debounce */}
+        <SearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Lọc theo URL, Host, Profile..."
+          delay={200}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
             backgroundColor: '#F9FAFB',
             border: '1px solid #E5E7EB',
             borderRadius: '8px',
-            padding: '6px 12px',
+            height: '34px',
             width: '320px'
           }}
-        >
-          <Search size={14} color="#9CA3AF" />
-          <input
-            type="text"
-            placeholder="Lọc theo URL, Host, Profile..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '12.5px', width: '100%', color: '#111827' }}
-          />
-          {searchTerm && (
-            <button onClick={() => setSearchTerm('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#9CA3AF', padding: 0 }}>
-              ✕
-            </button>
-          )}
-        </div>
+        />
 
         {/* Filter Pills */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
