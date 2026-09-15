@@ -4,37 +4,14 @@ import {
   User, 
   Share2, 
   Key, 
-  Bell, 
   Palette, 
   Languages, 
-  Settings as SettingsIcon, 
   Keyboard, 
-  Award, 
-  Shield, 
-  Boxes, 
-  AppWindow, 
-  Lock, 
-  Zap, 
   Info, 
   LogOut,
   Check,
   Globe,
-  Upload,
-  Bookmark,
-  Smartphone,
-  Video,
-  Monitor,
-  HardDrive,
-  Trash2,
-  Plus,
-  Server,
-  Layers,
-  FileText,
-  CheckCircle2,
   AlertTriangle,
-  ExternalLink,
-  ShieldCheck,
-  Filter,
   Eye,
   EyeOff,
   Loader2
@@ -122,17 +99,10 @@ export default function SettingsModal() {
   const [userEmail, setUserEmail] = useState(() => {
     return currentUser?.email || '';
   });
-  const [userBio, setUserBio] = useState('-');
-  const [userRole, setUserRole] = useState(() => {
-    return currentUser?.workspace?.role || 'Thành viên';
-  });
-  const [devMode, setDevMode] = useState('Please select the development mode.');
-
   useEffect(() => {
     if (currentUser) {
       setUserName(currentUser.full_name || currentUser.name || currentUser.username || 'Người dùng');
       setUserEmail(currentUser.email || '');
-      setUserRole(currentUser.workspace?.role || 'Thành viên');
     }
   }, [currentUser]);
 
@@ -244,19 +214,12 @@ export default function SettingsModal() {
     { id: 'account', label: t('settings.tabs.account', 'My Account'), icon: User },
     { id: 'connections', label: t('settings.tabs.connections', 'My Connections'), icon: Share2 },
     { id: 'tokens', label: t('settings.tabs.tokens', 'Personal Access Tokens'), icon: Key },
-    { id: 'notifications', label: t('settings.tabs.notifications', 'Notifications'), icon: Bell },
   ];
 
   const preferencesNavItems = [
     { id: 'appearance', label: t('settings.tabs.appearance', 'Appearance'), icon: Palette },
     { id: 'language', label: t('settings.tabs.language', 'Language & Region'), icon: Languages },
     { id: 'shortcuts', label: t('settings.tabs.shortcuts', 'Shortcuts'), icon: Keyboard },
-    { id: 'certificates', label: t('settings.tabs.certificates', 'Certificates'), icon: Award },
-    { id: 'proxy', label: t('settings.tabs.proxy', 'Proxy'), icon: Shield },
-    { id: 'extensions', label: t('settings.tabs.extensions', 'Extensions'), icon: Boxes },
-    { id: 'external', label: t('settings.tabs.external', 'External Programs'), icon: AppWindow },
-    { id: 'security', label: t('settings.tabs.security', 'Security'), icon: Lock },
-    { id: 'performance', label: t('settings.tabs.performance', 'Performance Optimization'), icon: Zap },
     { id: 'about', label: t('settings.tabs.about', 'About'), icon: Info },
   ];
 
@@ -471,17 +434,9 @@ export default function SettingsModal() {
                 account: t('settings.tabs.account', 'My Account'),
                 connections: t('settings.tabs.connections', 'My Connections'),
                 tokens: t('settings.tabs.tokens', 'Personal Access Tokens'),
-                referrals: t('settings.tabs.referrals', 'Referrals and Credits'),
-                notifications: t('settings.tabs.notifications', 'Notifications'),
                 appearance: t('settings.tabs.appearance', 'Appearance'),
                 language: t('settings.tabs.language', 'Language & Region'),
                 shortcuts: t('settings.tabs.shortcuts', 'Shortcuts'),
-                certificates: t('settings.tabs.certificates', 'Certificates'),
-                proxy: t('settings.tabs.proxy', 'Proxy'),
-                extensions: t('settings.tabs.extensions', 'Extensions'),
-                external: t('settings.tabs.external', 'External Programs'),
-                security: t('settings.tabs.security', 'Security'),
-                performance: t('settings.tabs.performance', 'Performance Optimization'),
                 about: t('settings.tabs.about', 'About')
               }[activeNav] || t('settings.title', 'Settings')}
             </h2>
@@ -657,8 +612,7 @@ export default function SettingsModal() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '12px 20px',
-                    borderBottom: '1px solid var(--apidog-border-light)'
+                    padding: '12px 20px'
                   }}>
                     <span style={{ width: '140px', fontSize: '13px', color: 'var(--apidog-text-main)', fontWeight: 500 }}>
                       Email
@@ -694,120 +648,10 @@ export default function SettingsModal() {
                       {editingField === 'email' ? 'Save' : 'Edit'}
                     </button>
                   </div>
-
-                  {/* Row 5: Bio */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 20px'
-                  }}>
-                    <span style={{ width: '140px', fontSize: '13px', color: 'var(--apidog-text-main)', fontWeight: 500 }}>
-                      Bio
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      {editingField === 'bio' ? (
-                        <input
-                          type="text"
-                          value={userBio}
-                          onChange={(e) => setUserBio(e.target.value)}
-                          onBlur={() => setEditingField(null)}
-                          autoFocus
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            border: '1px solid var(--apidog-purple)',
-                            backgroundColor: 'var(--apidog-card-bg)',
-                            color: 'var(--apidog-text-main)',
-                            fontSize: '13px',
-                            outline: 'none',
-                            width: '240px'
-                          }}
-                        />
-                      ) : (
-                        <span style={{ fontSize: '13px', color: 'var(--apidog-text-muted)' }}>{userBio}</span>
-                      )}
-                    </div>
-                    <button
-                      className="btn btn-secondary"
-                      style={{ fontSize: '12px', padding: '4px 14px', borderRadius: '6px' }}
-                      onClick={() => setEditingField(editingField === 'bio' ? null : 'bio')}
-                    >
-                      {editingField === 'bio' ? 'Save' : 'Edit'}
-                    </button>
-                  </div>
                 </div>
               </div>
 
-              {/* Section 2: Improved user experience */}
-              <div>
-                <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--apidog-text-main)', margin: '0 0 2px 0' }}>
-                  Improved user experience
-                </h3>
-                <span style={{ fontSize: '12px', color: 'var(--apidog-text-muted)', display: 'block', marginBottom: '12px' }}>
-                  It helps to provide you with better product experience
-                </span>
-
-                <div style={{
-                  border: '1px solid var(--apidog-border)',
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--apidog-card-bg)',
-                  overflow: 'hidden'
-                }}>
-                  {/* Row: Role */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 20px',
-                    borderBottom: '1px solid var(--apidog-border-light)'
-                  }}>
-                    <span style={{ width: '140px', fontSize: '13px', color: 'var(--apidog-text-main)', fontWeight: 500 }}>
-                      Role
-                    </span>
-                    <div style={{ flex: 1, fontSize: '13px', color: 'var(--apidog-text-main)' }}>
-                      {userRole}
-                    </div>
-                    <button
-                      className="btn btn-secondary"
-                      style={{ fontSize: '12px', padding: '4px 14px', borderRadius: '6px' }}
-                      onClick={() => {
-                        const newRole = prompt('Nhập vai trò của bạn:', userRole);
-                        if (newRole) setUserRole(newRole);
-                      }}
-                    >
-                      Edit
-                    </button>
-                  </div>
-
-                  {/* Row: Development Mode */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 20px'
-                  }}>
-                    <span style={{ width: '140px', fontSize: '13px', color: 'var(--apidog-text-main)', fontWeight: 500 }}>
-                      Development Mode
-                    </span>
-                    <div style={{ flex: 1, fontSize: '13px', color: 'var(--apidog-text-muted)' }}>
-                      {devMode}
-                    </div>
-                    <button
-                      className="btn btn-secondary"
-                      style={{ fontSize: '12px', padding: '4px 14px', borderRadius: '6px' }}
-                      onClick={() => {
-                        const mode = prompt('Chọn chế độ phát triển (API-First, Code-First...):', devMode);
-                        if (mode) setDevMode(mode);
-                      }}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 3: Danger Zone */}
+              {/* Section 2: Danger Zone */}
               <div>
                 <h3 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--apidog-text-dim)', marginBottom: '8px' }}>
                   Danger Zone
@@ -1369,25 +1213,7 @@ export default function SettingsModal() {
             </div>
           )}
 
-          {/* 3. PROXY SETTINGS */}
-          {activeNav === 'proxy' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
-                Proxy Settings
-              </h2>
-              <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <span style={{ fontSize: '13px', color: '#374151' }}>
-                  Cấu hình proxy mặc định khi khởi tạo profile mới:
-                </span>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn btn-primary" style={{ fontSize: '12px' }}>SOCKS5 Default</button>
-                  <button className="btn btn-secondary" style={{ fontSize: '12px' }}>HTTP Direct</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 5. ABOUT */}
+          {/* ABOUT */}
           {activeNav === 'about' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
@@ -1408,7 +1234,7 @@ export default function SettingsModal() {
           )}
 
           {/* Fallback for other tabs */}
-          {!['account', 'connections', 'appearance', 'language', 'proxy', 'about'].includes(activeNav) && (
+          {!['account', 'connections', 'tokens', 'appearance', 'language', 'shortcuts', 'about'].includes(activeNav) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0, textTransform: 'capitalize' }}>
                 {activeNav}
