@@ -58,8 +58,9 @@ export async function testProxyConnection(proxy) {
     }
   }
 
-  // 3. Môi trường Browser Dev: giả lập đo ping
-  await new Promise(r => setTimeout(r, 400));
+  // 3. Môi trường Browser Dev: giả lập đo ping với độ trễ ngẫu nhiên thực tế
+  const devDelay = Math.floor(120 + Math.random() * 320);
+  await new Promise(r => setTimeout(r, devDelay));
   const isLive = Math.random() > 0.08;
   const latency = isLive ? Math.floor(18 + Math.random() * 75) : 0;
   const devCountries = ['VN', 'US', 'SG', 'JP', 'DE', 'GB'];

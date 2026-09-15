@@ -42,6 +42,13 @@ export function useProxies(addLog, currentUser = null) {
 
   const setProxies = setRawProxies;
 
+  const safeProxies = useMemo(() => {
+    return isRealUser ? (Array.isArray(proxies) ? proxies : []) : (Array.isArray(proxies) && proxies.length > 0 ? proxies : INITIAL_PROXIES);
+  }, [isRealUser, proxies]);
+
+  const proxiesRef = useRef(safeProxies);
+  proxiesRef.current = safeProxies;
+
   // Race-condition guard: tracks currently checking proxy IDs
   const activeCheckingRef = useRef(new Set());
   const isCheckingAllRef = useRef(false);
@@ -159,59 +166,88 @@ export function useProxies(addLog, currentUser = null) {
     activeCheckingRef.current.add(proxyId);
 
     try {
-      let target = null;
-      setProxies(prev => {
-        target = prev.find(p => p.id === proxyId);
-        return prev;
-      });
+      const allCurrent = proxiesRef.current || [];
+      const target = allCurrent.find(p => p.id === proxyId);
       if (!target) return;
 
       const res = await testProxyConnection(target);
-      const latency = res.latency || 0;
-      const status = res.status === 'live' ? 'live' : 'die';
-      const detectedCountry = res.country || target.country || '';
+      const latency = res?.latency || 0;
+      const status = res?.status === 'live' ? 'live' : 'die';
+      const detectedCountry = res?.country || target.country || '';
 
-      setProxies(prev => prev.map(p => p.id === proxyId ? {
+      // Update this proxy immediately in state
+      setProxies(prev => (prev || []).map(p => p.id === proxyId ? {
         ...p,
         latency,
         status,
         ...(detectedCountry ? { country: detectedCountry } : {})
       } : p));
       addLog?.(`Kiểm tra proxy ${target.host}:${target.port}: ${status === 'live' ? `Live (${latency}ms)${detectedCountry ? ` [${detectedCountry}]` : ''}` : 'Die / Mất kết nối'}`, status === 'live' ? 'success' : 'error');
-      return { status, latency, country: detectedCountry, message: res.message };
+      return { status, latency, country: detectedCountry, message: res?.message };
     } finally {
       activeCheckingRef.current.delete(proxyId);
     }
   }, [addLog, setProxies]);
 
-  const checkAllProxies = useCallback(async () => {
+  const checkAllProxies = useCallback(async (targetIds = null, onProgress = null) => {
     if (isCheckingAllRef.current) return;
     isCheckingAllRef.current = true;
 
     try {
-      addLog?.('Bắt đầu kiểm tra kết nối (Ping) toàn bộ proxy...', 'info');
-      let currentProxies = [];
-      setProxies(prev => {
-        currentProxies = prev;
-        return prev;
-      });
+      const allCurrent = proxiesRef.current || [];
+      const proxiesToTest = Array.isArray(targetIds) && targetIds.length > 0
+        ? allCurrent.filter(p => targetIds.includes(p.id))
+        : allCurrent;
 
-      const results = await testAllProxies(currentProxies);
-      const resMap = new Map(results.map(r => [r.id, r]));
+      if (proxiesToTest.length === 0) return;
 
-      setProxies(prev => prev.map(p => {
-        const r = resMap.get(p.id);
-        if (!r) return p;
-        const detectedCountry = r.country || p.country || '';
-        return {
-          ...p,
-          latency: r.latency || 0,
-          status: r.status === 'live' ? 'live' : 'die',
-          ...(detectedCountry ? { country: detectedCountry } : {})
-        };
-      }));
+      addLog?.(`Bắt đầu kiểm tra kết nối (Ping) ${proxiesToTest.length} proxy...`, 'info');
 
-      addLog?.(`Đã hoàn thành kiểm tra kết nối toàn bộ ${currentProxies.length} proxy`, 'success');
+      // Worker pool với 8 luồng song song: proxy nào ping xong thì hiển thị kết quả ngay lập tức
+      const CONCURRENCY_LIMIT = 8;
+      let currentIndex = 0;
+
+      const worker = async () => {
+        while (currentIndex < proxiesToTest.length) {
+          const idx = currentIndex++;
+          const target = proxiesToTest[idx];
+          if (!target || !target.id) continue;
+
+          activeCheckingRef.current.add(target.id);
+          try {
+            const res = await testProxyConnection(target);
+            const latency = res?.latency || 0;
+            const status = res?.status === 'live' ? 'live' : 'die';
+            const detectedCountry = res?.country || target.country || '';
+
+            // CẬP NHẬT NGAY LẬP TỨC CHO TỪNG PROXY MÀ KHÔNG CẦN CHỜ CÁC PROXY KHÁC
+            setProxies(prev => (prev || []).map(p => p.id === target.id ? {
+              ...p,
+              latency,
+              status,
+              ...(detectedCountry ? { country: detectedCountry } : {})
+            } : p));
+
+            // Bắn callback báo hoàn tất cho giao diện lập tức gỡ trạng thái xoay loading của proxy này
+            onProgress?.(target.id, { status, latency, country: detectedCountry });
+          } catch (err) {
+            console.error(`Lỗi ping proxy ${target.id}:`, err);
+            setProxies(prev => (prev || []).map(p => p.id === target.id ? {
+              ...p,
+              status: 'die',
+              latency: 0
+            } : p));
+            onProgress?.(target.id, { status: 'die', latency: 0 });
+          } finally {
+            activeCheckingRef.current.delete(target.id);
+          }
+        }
+      };
+
+      const workerCount = Math.min(CONCURRENCY_LIMIT, proxiesToTest.length);
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+
+      addLog?.(`Đã hoàn thành kiểm tra kết nối ${proxiesToTest.length} proxy`, 'success');
     } finally {
       isCheckingAllRef.current = false;
     }
@@ -325,7 +361,6 @@ export function useProxies(addLog, currentUser = null) {
     });
   }, [addLog, setProxies]);
 
-  const safeProxies = isRealUser ? (Array.isArray(proxies) ? proxies : []) : (Array.isArray(proxies) && proxies.length > 0 ? proxies : INITIAL_PROXIES);
   const safeRotatingProxies = isRealUser ? (Array.isArray(rotatingProxies) ? rotatingProxies : []) : (Array.isArray(rotatingProxies) && rotatingProxies.length > 0 ? rotatingProxies : INITIAL_ROTATING_PROXIES);
   const safeDcomDevices = isRealUser ? (Array.isArray(dcomDevices) ? dcomDevices : []) : (Array.isArray(dcomDevices) && dcomDevices.length > 0 ? dcomDevices : INITIAL_DCOM_DEVICES);
 

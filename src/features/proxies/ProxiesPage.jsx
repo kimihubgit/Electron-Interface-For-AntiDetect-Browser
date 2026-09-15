@@ -179,11 +179,15 @@ export default function ProxiesPage() {
   };
 
   const handleCheckAll = async () => {
-    setIsCheckingAll(true);
     const allIds = filteredProxies.map((p) => p.id);
+    if (allIds.length === 0) return;
+    setIsCheckingAll(true);
     setTestingProxyIds((prev) => Array.from(new Set([...prev, ...allIds])));
     try {
-      await checkAllProxies();
+      await checkAllProxies(allIds, (finishedId) => {
+        // Proxy nào ping xong thì ngay lập tức gỡ trạng thái loading của proxy đó
+        setTestingProxyIds((prev) => prev.filter((id) => id !== finishedId));
+      });
     } finally {
       setTestingProxyIds([]);
       setIsCheckingAll(false);
@@ -195,15 +199,14 @@ export default function ProxiesPage() {
     const idsToCheck = [...selectedProxyIds];
     setTestingProxyIds((prev) => Array.from(new Set([...prev, ...idsToCheck])));
 
-    await Promise.allSettled(
-      idsToCheck.map(async (id) => {
-        try {
-          await checkProxy(id);
-        } finally {
-          setTestingProxyIds((prev) => prev.filter((item) => item !== id));
-        }
-      })
-    );
+    try {
+      await checkAllProxies(idsToCheck, (finishedId) => {
+        // Proxy nào ping xong thì ngay lập tức gỡ trạng thái loading của proxy đó
+        setTestingProxyIds((prev) => prev.filter((item) => item !== finishedId));
+      });
+    } finally {
+      setTestingProxyIds((prev) => prev.filter((id) => !idsToCheck.includes(id)));
+    }
   };
 
   // Delete Handlers
