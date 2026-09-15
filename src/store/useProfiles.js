@@ -17,8 +17,6 @@ import {
   getLaunchTicketApi
 } from '../services/profileService';
 
-const MOCK_PROFILE_IDS = new Set(['prof-001', 'prof-002', 'prof-003', 'prof-004', 'prof-005', 'prof-006']);
-
 /**
  * Hook that owns all profile-related state & actions (including Trash bin and Custom Groups).
  * All actions are wrapped in useCallback and return value is memoized with useMemo.
@@ -34,76 +32,17 @@ export function useProfiles(addLog, addHistoryRecord, currentUser = null, curren
   const trashKey = `antidetect_trash_profiles_${userScopeKey}`;
   const groupsKey = `antidetect_custom_groups_${userScopeKey}`;
 
-  // Workspace-specific default seed data
+  // Default profiles when store is empty
   const getDefaultProfiles = () => {
     if (isRealUser) return [];
-    if (wsId === 'ws_personal') {
-      try {
-        const legacy = localStorage.getItem('antidetect_profiles');
-        if (legacy) {
-          const parsed = JSON.parse(legacy);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-      return INITIAL_PROFILES.slice(0, 2);
-    }
-    if (wsId === 'ws_agency_fb') {
-      return [
-        {
-          id: 'prof-agency-01',
-          name: 'FB Agency Scale #01 (BM50)',
-          group: 'Facebook Agency',
-          os: 'windows',
-          browser: 'Chrome 128',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-          status: 'idle',
-          proxy: { type: 'SOCKS5', host: '104.28.19.45', port: 1080, user: 'agency_usr', pass: 'agency_pwd', country: 'US', ip: '104.28.19.45', latency: 32, status: 'live' },
-          canvas: 'noise', webgl: 'noise',
-          webglVendor: 'Google Inc. (NVIDIA)',
-          webglRenderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Direct3D11 vs_5_0 ps_5_0)',
-          webrtc: 'altered', resolution: '1920x1080', cores: 16, ram: 32,
-          tags: ['Facebook', 'BM50', 'Agency'],
-          createdAt: '2026-09-05T10:00:00Z'
-        },
-        {
-          id: 'prof-agency-02',
-          name: 'TikTok Ads Agency (US Target)',
-          group: 'TikTok Agency',
-          os: 'windows',
-          browser: 'Chrome 128',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-          status: 'idle',
-          proxy: { type: 'HTTP', host: '172.67.142.12', port: 8080, user: '', pass: '', country: 'US', ip: '172.67.142.12', latency: 40, status: 'live' },
-          canvas: 'noise', webgl: 'noise',
-          webglVendor: 'Google Inc. (Intel)',
-          webglRenderer: 'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0)',
-          webrtc: 'altered', resolution: '1920x1080', cores: 8, ram: 16,
-          tags: ['TikTok', 'Agency'],
-          createdAt: '2026-09-06T12:00:00Z'
-        }
-      ];
-    }
-    if (wsId === 'ws_ecom_global') {
-      return [
-        {
-          id: 'prof-ecom-01',
-          name: 'Amazon Seller Central Global',
-          group: 'Amazon',
-          os: 'windows',
-          browser: 'Chrome 128',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-          status: 'idle',
-          proxy: { type: 'SOCKS5', host: '198.51.100.22', port: 1080, user: '', pass: '', country: 'DE', ip: '198.51.100.22', latency: 55, status: 'live' },
-          canvas: 'noise', webgl: 'noise',
-          webglVendor: 'Google Inc. (NVIDIA)',
-          webglRenderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0)',
-          webrtc: 'altered', resolution: '1920x1080', cores: 8, ram: 16,
-          tags: ['Amazon', 'EU'],
-          createdAt: '2026-09-07T08:00:00Z'
-        }
-      ];
-    }
-    return [];
+    try {
+      const legacy = localStorage.getItem('antidetect_profiles');
+      if (legacy) {
+        const parsed = JSON.parse(legacy);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return INITIAL_PROFILES.slice(0, 2);
   };
 
   const [rawProfiles, setRawProfiles] = useLocalStorage(profilesKey, getDefaultProfiles());
@@ -113,14 +52,10 @@ export function useProfiles(addLog, addHistoryRecord, currentUser = null, curren
   const [startingProfileIds, setStartingProfileIds] = useState([]);
   const inFlightLaunchesRef = useRef(new Set());
 
-  // Filter out any mock residual profiles for authenticated users
   const profiles = useMemo(() => {
     if (!Array.isArray(rawProfiles)) return [];
-    if (isRealUser) {
-      return rawProfiles.filter(p => !MOCK_PROFILE_IDS.has(p.id));
-    }
     return rawProfiles;
-  }, [rawProfiles, isRealUser]);
+  }, [rawProfiles]);
 
   const setProfiles = setRawProfiles;
 
