@@ -44,10 +44,7 @@ export default function ProxyFloatingBar({
   return (
     <div
       style={{
-        position: 'fixed',
-        bottom: 0,
-        left: '260px',
-        right: 0,
+        flexShrink: 0,
         height: '48px',
         backgroundColor: '#0F172A',
         color: '#FFFFFF',
@@ -56,6 +53,7 @@ export default function ProxyFloatingBar({
         justifyContent: 'space-between',
         padding: '0 24px',
         zIndex: 90,
+        borderTop: '1px solid #1E293B',
         boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.2)',
         animation: 'slideUp 0.18s ease-out'
       }}
