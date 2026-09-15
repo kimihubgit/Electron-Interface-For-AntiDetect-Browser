@@ -11,6 +11,7 @@ import MoveGroupModal from './components/MoveGroupModal';
 import DragSelectionBox from './components/DragSelectionBox';
 import EngineDownloadModal from '../../components/modals/EngineDownloadModal';
 import SkeletonLoader from '../../components/common/SkeletonLoader';
+import AppLoadingScreen from '../../components/common/AppLoadingScreen';
 import { useProfileFilters } from './hooks/useProfileFilters';
 import { useProfileDragSelect } from './hooks/useProfileDragSelect';
 
@@ -207,9 +208,7 @@ export default function ProfilesPage() {
         }}
       >
         {isLoadingProfiles ? (
-          <div style={{ padding: '24px 20px', backgroundColor: '#FFFFFF', flex: 1 }}>
-            <SkeletonLoader type="lines" count={4} />
-          </div>
+          <AppLoadingScreen text="Đang tải dữ liệu profiles..." />
         ) : filteredProfiles.length === 0 ? (
           /* Empty Search / No Profiles Result */
           <div style={{

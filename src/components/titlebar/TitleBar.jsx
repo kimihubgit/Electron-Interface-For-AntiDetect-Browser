@@ -34,6 +34,7 @@ import {
   CheckCheck,
   ExternalLink
 } from 'lucide-react';
+import { useApiLoading } from '../../services/core/apiClient';
 
 function formatRelativeTime(dateString) {
   if (!dateString) return '';
@@ -76,6 +77,7 @@ export default function TitleBar({ isLoginScreen = false }) {
     openLoginForNewAccount,
     showToast,
     isReloading,
+    isLoadingProfiles = false,
     reloadApp,
     workspaces = [],
     currentWorkspace = null,
@@ -110,6 +112,8 @@ export default function TitleBar({ isLoginScreen = false }) {
   const [showTabsOverview, setShowTabsOverview] = useState(false);
   const workspaceTabsContainerRef = useRef(null);
   const tabsOverviewRef = useRef(null);
+  const isApiLoading = useApiLoading();
+  const isSpinning = isReloading || isLoadingProfiles || isApiLoading;
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -1204,20 +1208,20 @@ export default function TitleBar({ isLoginScreen = false }) {
         {/* Action icons */}
         <button
           className="btn-icon-titlebar"
-          title="Refresh"
+          title={isSpinning ? "Đang tải dữ liệu..." : "Làm mới (Refresh)"}
           onClick={() => reloadApp(900)}
-          disabled={isReloading}
+          disabled={isSpinning}
           style={{
-            cursor: isReloading ? 'wait' : 'pointer',
-            opacity: isReloading ? 0.7 : 1,
-            backgroundColor: isReloading ? '#EDE9FE' : 'transparent',
-            color: isReloading ? '#7C3AED' : undefined
+            cursor: isSpinning ? 'wait' : 'pointer',
+            opacity: isSpinning ? 0.7 : 1,
+            backgroundColor: isSpinning ? '#EDE9FE' : 'transparent',
+            color: isSpinning ? '#7C3AED' : undefined
           }}
         >
           <RotateCw
             size={13}
             style={{
-              animation: isReloading ? 'spin 0.8s linear infinite' : 'none',
+              animation: isSpinning ? 'spin 0.8s linear infinite' : 'none',
               transformOrigin: 'center'
             }}
           />

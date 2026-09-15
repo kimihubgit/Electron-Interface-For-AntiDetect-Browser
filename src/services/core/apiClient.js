@@ -1,11 +1,36 @@
-/**
- * Unified API Client for Antidetect Browser
- * Automatically injects standard security headers, handles token authentication,
- * and standardizes response / error handling across all backend endpoints.
- */
+import { useState, useEffect } from 'react';
 import { getApiServerUrl } from '../../config/apiConfig';
 import { getMachineGuid } from './deviceService';
 import { getAuthToken } from '../storage/authStorage';
+
+let activeRequests = 0;
+const apiLoadingListeners = new Set();
+
+function notifyApiLoading() {
+  const isLoading = activeRequests > 0;
+  apiLoadingListeners.forEach(fn => {
+    try {
+      fn(isLoading);
+    } catch {}
+  });
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('app-api-loading', { detail: { isLoading, count: activeRequests } }));
+  }
+}
+
+export function subscribeApiLoading(callback) {
+  apiLoadingListeners.add(callback);
+  callback(activeRequests > 0);
+  return () => apiLoadingListeners.delete(callback);
+}
+
+export function useApiLoading() {
+  const [isLoading, setIsLoading] = useState(activeRequests > 0);
+  useEffect(() => {
+    return subscribeApiLoading(setIsLoading);
+  }, []);
+  return isLoading;
+}
 
 export function getActiveWorkspaceId() {
   try {
@@ -86,6 +111,9 @@ export async function apiRequest(path, {
     options.body = typeof body === 'string' ? body : JSON.stringify(body);
   }
 
+  activeRequests++;
+  notifyApiLoading();
+
   try {
     const res = await fetch(fullUrl, options);
     let data;
@@ -133,6 +161,9 @@ export async function apiRequest(path, {
       message: err.message || 'Lỗi kết nối tới máy chủ',
       error: err
     };
+  } finally {
+    activeRequests = Math.max(0, activeRequests - 1);
+    notifyApiLoading();
   }
 }
 

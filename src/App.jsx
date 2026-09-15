@@ -45,7 +45,9 @@ function AppContent() {
     setUpdateModalInfo,
     checkUpdate,
     isReloading,
-    reloadKey
+    reloadKey,
+    isLoadingProfiles,
+    profiles = []
   } = useBrowser();
 
   // Silent check for update on app startup
@@ -128,7 +130,7 @@ function AppContent() {
     }}>
       <TitleBar />
       <OfflineBanner />
-      {isReloading ? (
+      {(isReloading || (isLoadingProfiles && profiles.length === 0)) ? (
         <div style={{
           flex: 1,
           width: '100%',
