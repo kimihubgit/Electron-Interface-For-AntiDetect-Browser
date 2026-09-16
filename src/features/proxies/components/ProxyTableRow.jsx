@@ -229,31 +229,32 @@ export default function ProxyTableRow({
             </div>
           )}
 
-          {/* Location & Outbound IP with Timestamp */}
+          {/* IP on top & Country Code with Ping Latency on bottom */}
           {isTesting ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: '#0284C7', lineHeight: '1.2' }}>
-                Đang kiểm tra...
+                {ipDisplay !== '--' ? ipDisplay : 'Đang kiểm tra...'}
               </div>
               <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: '1.2' }}>
-                <span style={{ fontWeight: 500, color: '#1E293B' }}>{ipDisplay}</span>
+                <span style={{ fontWeight: 500, color: '#334155' }}>{countryCode !== 'WW' ? countryCode : '--'}</span>
                 <span style={{ color: '#CBD5E1' }}>|</span>
-                <span style={{ color: '#0284C7' }}>Ping...</span>
+                <span style={{ color: '#0284C7', fontStyle: 'italic' }}>Đang đo ping...</span>
               </div>
             </div>
           ) : isDie ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: '#DC2626', lineHeight: '1.2' }}>
-                {countryCode !== 'WW' ? locationText : 'Mất kết nối'}
+                {ipDisplay}
               </div>
               <div style={{ fontSize: '12px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: '1.2' }}>
-                <span style={{ fontWeight: 500, color: '#64748B' }}>{ipDisplay}</span>
+                <span style={{ fontWeight: 500, color: '#64748B' }}>{countryCode !== 'WW' ? countryCode : '--'}</span>
                 <span style={{ color: '#CBD5E1' }}>|</span>
-                <span style={{ color: '#EF4444', fontWeight: 500 }}>Mất kết nối</span>
+                <span style={{ color: '#EF4444', fontWeight: 600 }}>Mất kết nối</span>
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {/* Dòng trên: Địa chỉ IP */}
               <div
                 style={{
                   fontSize: '13px',
@@ -263,8 +264,10 @@ export default function ProxyTableRow({
                   lineHeight: '1.2'
                 }}
               >
-                {locationText}
+                {ipDisplay}
               </div>
+
+              {/* Dòng dưới: Mã Quốc Gia | Tốc độ ping (ms) */}
               <div
                 style={{
                   fontSize: '12px',
@@ -275,9 +278,15 @@ export default function ProxyTableRow({
                   lineHeight: '1.2'
                 }}
               >
-                <span style={{ fontWeight: 500, color: '#1E293B' }}>{ipDisplay}</span>
+                <span style={{ fontWeight: 500, color: '#334155' }}>
+                  {countryCode !== 'WW' 
+                    ? (p.city ? `${countryCode} / ${p.city}` : countryCode)
+                    : (p.city || '--')}
+                </span>
                 <span style={{ color: '#CBD5E1' }}>|</span>
-                <span style={{ color: '#64748B' }}>{timeAgoText}</span>
+                <span style={{ color: p.latency != null ? '#059669' : '#94A3B8', fontWeight: 600 }}>
+                  {p.latency != null ? `${p.latency}ms` : (p.status === 'live' ? 'Online' : '--')}
+                </span>
               </div>
             </div>
           )}
