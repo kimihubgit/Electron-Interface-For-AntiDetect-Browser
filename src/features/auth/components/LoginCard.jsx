@@ -8,6 +8,10 @@ import {
   getStoredUser,
   loginWithGoogleApi,
   getGoogleAuthUrlApi,
+  getUserInfoApi,
+  getAuthMeApi,
+  setAuthSession,
+  saveAccountSession,
   GOOGLE_CLIENT_ID
 } from '../../../services/authService';
 import { COUNTRY_CODES } from '../constants/countryCodes';
@@ -282,20 +286,68 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
   // Xử lý hoàn tất đăng nhập Google khi nhận được token hoặc authorization code từ trình duyệt
   const completeGoogleLogin = async (tokenOrCode) => {
     try {
-      let loginRes;
-      if (typeof tokenOrCode === 'object') {
-        loginRes = await loginWithGoogleApi(tokenOrCode);
-      } else if (tokenOrCode.startsWith('eyJ') || tokenOrCode.length > 50) {
-        loginRes = await loginWithGoogleApi({ id_token: tokenOrCode });
+      let token = '';
+      let expiresAt = '';
+      let user = null;
+      let workspace = null;
+
+      if (typeof tokenOrCode === 'string' && (tokenOrCode.startsWith('eyJ') || tokenOrCode.length > 40)) {
+        // Token nhận từ antidetect://oauth-callback?token=... chính là Access Token JWT của Backend
+        token = tokenOrCode;
+      } else if (typeof tokenOrCode === 'object' && tokenOrCode?.token) {
+        token = tokenOrCode.token;
+        user = tokenOrCode.user || null;
+        workspace = tokenOrCode.workspace || null;
+        expiresAt = tokenOrCode.expires_at || '';
       } else {
-        loginRes = await loginWithGoogleApi({ code: tokenOrCode });
+        // Fallback authorization code nếu gửi code
+        const loginRes = await loginWithGoogleApi(typeof tokenOrCode === 'object' ? tokenOrCode : { code: tokenOrCode });
+        if (!loginRes.success) {
+          setErrorMsg(loginRes.message || 'Xác thực tài khoản Google thất bại');
+          return;
+        }
+        token = loginRes.token;
+        expiresAt = loginRes.expires_at || '';
+        user = loginRes.user;
+        workspace = loginRes.workspace;
       }
 
-      if (loginRes.success) {
+      if (token) {
+        // Gọi API lấy thông tin người dùng nếu chưa có
+        if (!user || !user.email) {
+          try {
+            const infoRes = await getUserInfoApi(token);
+            if (infoRes.success && infoRes.user) {
+              user = infoRes.user;
+              workspace = infoRes.workspace || null;
+            } else {
+              const meRes = await getAuthMeApi(token);
+              if (meRes.success && meRes.user) {
+                user = meRes.user;
+                workspace = meRes.workspace || null;
+              }
+            }
+          } catch (e) {
+            console.warn('Could not fetch user info for Google token:', e);
+          }
+        }
+
+        if (!user) {
+          user = {
+            id: `google_${Date.now()}`,
+            name: 'Google User',
+            username: 'google_user',
+            email: 'user@google.com',
+            provider: 'google'
+          };
+        }
+
+        // Lưu phiên đăng nhập vào hệ thống
+        setAuthSession({ token, user, workspace, expires_at: expiresAt });
+        saveAccountSession({ user, token, workspace, expires_at: expiresAt });
+
         if (showToast) showToast('Đăng nhập bằng Google thành công!', 'success');
-        onLogin?.(loginRes.user, loginRes.token, loginRes.workspace);
-      } else {
-        setErrorMsg(loginRes.message || 'Xác thực tài khoản Google thất bại');
+        onLogin?.(user, token, workspace);
       }
     } catch (err) {
       console.error('Google complete login error:', err);
