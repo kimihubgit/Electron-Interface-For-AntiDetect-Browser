@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Eye, EyeOff, X, QrCode, RefreshCw, ChevronDown, Search, Check, ArrowLeft, Mail } from 'lucide-react';
 import { useTranslation } from '../../../i18n/I18nContext';
 import {
@@ -280,9 +280,26 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
   };
 
   const [isGoogleLoggingIn, setIsGoogleLoggingIn] = useState(false);
+  const googleTimeoutRef = useRef(null);
+
+  // Hủy trạng thái chờ đăng nhập Google
+  const cancelGoogleLogin = (showNotice = true) => {
+    if (googleTimeoutRef.current) {
+      clearTimeout(googleTimeoutRef.current);
+      googleTimeoutRef.current = null;
+    }
+    setIsGoogleLoggingIn(false);
+    if (showNotice && showToast) {
+      showToast('Đã hủy trạng thái chờ đăng nhập Google', 'info');
+    }
+  };
 
   // Xử lý hoàn tất đăng nhập Google khi nhận được token hoặc authorization code từ trình duyệt
   const completeGoogleLogin = async (tokenOrCode) => {
+    if (googleTimeoutRef.current) {
+      clearTimeout(googleTimeoutRef.current);
+      googleTimeoutRef.current = null;
+    }
     setIsGoogleLoggingIn(true);
     try {
       let loginRes;
@@ -360,6 +377,7 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
     } catch {}
 
     return () => {
+      if (googleTimeoutRef.current) clearTimeout(googleTimeoutRef.current);
       if (unsubDeepLink) unsubDeepLink();
       if (channel) channel.close();
       window.removeEventListener('storage', handleStorage);
@@ -368,6 +386,12 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
 
   // Mở Google Login TRỰC TIẾP TRÊN TRÌNH DUYỆT NGOÀI (Chrome, Edge, Brave...)
   const handleGoogleLogin = async () => {
+    // Nếu đang trong trạng thái chờ mà người dùng nhấn lại vào Google -> cho phép hủy hoặc mở lại
+    if (isGoogleLoggingIn) {
+      cancelGoogleLogin(true);
+      return;
+    }
+
     setIsGoogleLoggingIn(true);
     setErrorMsg('');
     try {
@@ -385,10 +409,22 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
       if (showToast) {
         showToast('Đang mở trang đăng nhập Google trên trình duyệt...', 'info');
       }
+
+      // 3. Tự động timeout sau 2 phút nếu người dùng đóng tab trình duyệt hoặc không đăng nhập
+      if (googleTimeoutRef.current) clearTimeout(googleTimeoutRef.current);
+      googleTimeoutRef.current = setTimeout(() => {
+        setIsGoogleLoggingIn(false);
+        googleTimeoutRef.current = null;
+        if (showToast) {
+          showToast('Hết thời gian chờ đăng nhập Google. Bạn có thể nhấn lại để thử lại.', 'warning');
+        }
+      }, 120000); // 2 phút tự động hủy
+
     } catch (err) {
       console.error('Google login error:', err);
       setErrorMsg(`Lỗi đăng nhập Google: ${err.message}`);
       setIsGoogleLoggingIn(false);
+      if (googleTimeoutRef.current) clearTimeout(googleTimeoutRef.current);
     }
   };
 
@@ -1886,15 +1922,14 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
                   {/* 1. Google */}
                   <div
-                    onClick={isGoogleLoggingIn ? undefined : handleGoogleLogin}
-                    title={isGoogleLoggingIn ? "Đang kết nối Google..." : "Đăng nhập với Google"}
+                    onClick={handleGoogleLogin}
+                    title={isGoogleLoggingIn ? "Đang chờ đăng nhập trên trình duyệt... (Bấm để hủy)" : "Đăng nhập với Google"}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       gap: '5px',
-                      cursor: isGoogleLoggingIn ? 'wait' : 'pointer',
-                      opacity: isGoogleLoggingIn ? 0.7 : 1
+                      cursor: 'pointer'
                     }}
                   >
                     <div
@@ -1903,26 +1938,24 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
                         height: '38px',
                         borderRadius: '50%',
                         backgroundColor: '#FFFFFF',
-                        border: '1px solid #E3E5E7',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                        border: isGoogleLoggingIn ? '2px solid #2563EB' : '1px solid #E3E5E7',
+                        boxShadow: isGoogleLoggingIn ? '0 0 0 3px rgba(37, 99, 235, 0.2)' : '0 1px 3px rgba(0,0,0,0.06)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+                        transition: 'all 0.15s ease'
                       }}
                       onMouseEnter={(e) => {
-                        if (!isGoogleLoggingIn) {
-                          e.currentTarget.style.transform = 'scale(1.1)';
-                          e.currentTarget.style.boxShadow = '0 3px 8px rgba(0,0,0,0.12)';
-                        }
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                        e.currentTarget.style.boxShadow = '0 3px 8px rgba(0,0,0,0.12)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                        e.currentTarget.style.boxShadow = isGoogleLoggingIn ? '0 0 0 3px rgba(37, 99, 235, 0.2)' : '0 1px 3px rgba(0,0,0,0.06)';
                       }}
                     >
                       {isGoogleLoggingIn ? (
-                        <RefreshCw size={17} className="animate-spin" style={{ color: '#4285F4' }} />
+                        <RefreshCw size={17} className="animate-spin" style={{ color: '#2563EB' }} />
                       ) : (
                         <svg width="18" height="18" viewBox="0 0 24 24">
                           <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
@@ -1932,7 +1965,9 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
                         </svg>
                       )}
                     </div>
-                    <span style={{ fontSize: '11px', color: '#61666D' }}>Google</span>
+                    <span style={{ fontSize: '11px', color: isGoogleLoggingIn ? '#2563EB' : '#61666D', fontWeight: isGoogleLoggingIn ? 600 : 400 }}>
+                      {isGoogleLoggingIn ? 'Đang chờ...' : 'Google'}
+                    </span>
                   </div>
 
                   {/* 2. Telegram */}
@@ -2037,6 +2072,50 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
                     <span style={{ fontSize: '11px', color: '#61666D' }}>Discord</span>
                   </div>
                 </div>
+
+                {/* Thông báo trạng thái đang chờ Google với nút Hủy */}
+                {isGoogleLoggingIn && (
+                  <div style={{
+                    marginTop: '14px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#F0F9FF',
+                    border: '1px solid #BAE6FD',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                      <RefreshCw size={13} className="animate-spin" style={{ color: '#0284C7', flexShrink: 0 }} />
+                      <span style={{ fontSize: '12px', color: '#0369A1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        Đang chờ đăng nhập trên trình duyệt...
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => cancelGoogleLogin(true)}
+                      style={{
+                        padding: '3px 8px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: '#DC2626',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #FECACA',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FEE2E2')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+                    >
+                      Hủy bỏ
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}
