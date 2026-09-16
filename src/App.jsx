@@ -24,6 +24,7 @@ import ScriptsPage from './pages/ScriptsPage';
 import ProxyRequestPage from './pages/ProxyRequestPage';
 import TeamPage from './pages/TeamPage';
 import LoginPage from './features/auth/LoginPage';
+import OAuthCallbackPage from './features/auth/OAuthCallbackPage';
 import AiAgentDebuggerPage from './pages/AiAgentDebuggerPage';
 import ProxyRequestModal from './components/modals/ProxyRequestModal';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -31,6 +32,17 @@ import GlobalToast from './components/common/GlobalToast';
 import OfflineBanner from './components/common/OfflineBanner';
 
 function AppContent() {
+  // Kiểm tra nếu trang đang mở là callback OAuth trên trình duyệt
+  const isOAuthCallback = typeof window !== 'undefined' && (
+    window.location.pathname.includes('/oauth-callback') ||
+    window.location.hash.includes('/oauth-callback') ||
+    (window.location.search.includes('token=') && window.location.search.includes('oauth'))
+  );
+
+  if (isOAuthCallback) {
+    return <OAuthCallbackPage />;
+  }
+
   const {
     isAuthenticated,
     activeTab,

@@ -9,7 +9,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   testProxy: (proxy) => ipcRenderer.invoke('test-proxy', proxy),
   testAllProxies: (proxiesList) => ipcRenderer.invoke('test-all-proxies', proxiesList),
   openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
-  openGoogleAuthWindow: (url) => ipcRenderer.invoke('open-google-auth-window', url),
+  onOAuthDeepLink: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('oauth-deep-link', handler);
+    return () => ipcRenderer.removeListener('oauth-deep-link', handler);
+  },
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   startDownloadUpdate: (url) => ipcRenderer.invoke('start-download-update', url),
   installDownloadedUpdate: () => ipcRenderer.invoke('install-downloaded-update'),

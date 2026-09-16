@@ -281,102 +281,110 @@ export default function LoginCard({ onLogin, onOfflineSpace, showToast }) {
 
   const [isGoogleLoggingIn, setIsGoogleLoggingIn] = useState(false);
 
-  // Real Google OAuth & Login handler
+  // Xử lý hoàn tất đăng nhập Google khi nhận được token hoặc authorization code từ trình duyệt
+  const completeGoogleLogin = async (tokenOrCode) => {
+    setIsGoogleLoggingIn(true);
+    try {
+      let loginRes;
+      if (typeof tokenOrCode === 'object') {
+        loginRes = await loginWithGoogleApi(tokenOrCode);
+      } else if (tokenOrCode.startsWith('eyJ') || tokenOrCode.length > 50) {
+        loginRes = await loginWithGoogleApi({ id_token: tokenOrCode });
+      } else {
+        loginRes = await loginWithGoogleApi({ code: tokenOrCode });
+      }
+
+      if (loginRes.success) {
+        if (showToast) showToast('Đăng nhập bằng Google thành công!', 'success');
+        onLogin?.(loginRes.user, loginRes.token, loginRes.workspace);
+      } else {
+        setErrorMsg(loginRes.message || 'Xác thực tài khoản Google thất bại');
+      }
+    } catch (err) {
+      console.error('Google complete login error:', err);
+      setErrorMsg(`Lỗi đăng nhập Google: ${err.message}`);
+    } finally {
+      setIsGoogleLoggingIn(false);
+    }
+  };
+
+  // Lắng nghe kết quả xác thực trả về từ trình duyệt ngoài
+  useEffect(() => {
+    // 1. Nhận từ Deep Link Electron: antidetect://oauth-callback?token=...
+    let unsubDeepLink;
+    if (typeof window !== 'undefined' && window.electronAPI?.onOAuthDeepLink) {
+      unsubDeepLink = window.electronAPI.onOAuthDeepLink((url) => {
+        try {
+          if (!url) return;
+          const parsed = new URL(url.replace('antidetect://', 'http://localhost/'));
+          const token = parsed.searchParams.get('token') || parsed.searchParams.get('access_token') || parsed.searchParams.get('code');
+          if (token) {
+            completeGoogleLogin(token);
+          }
+        } catch (e) {
+          console.error('Failed to parse OAuth deep link:', e);
+        }
+      });
+    }
+
+    // 2. Nhận từ BroadcastChannel giữa các tab/cửa sổ
+    let channel;
+    try {
+      channel = new BroadcastChannel('antidetect_oauth_channel');
+      channel.onmessage = (event) => {
+        if (event.data?.token) {
+          completeGoogleLogin(event.data.token);
+        }
+      };
+    } catch {}
+
+    // 3. Nhận từ Storage event (khi tab ngoài set localStorage)
+    const handleStorage = (e) => {
+      if (e.key === 'oauth_pending_token' && e.newValue) {
+        const token = e.newValue;
+        try {
+          localStorage.removeItem('oauth_pending_token');
+        } catch {}
+        completeGoogleLogin(token);
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    // 4. Kiểm tra xem có token đang chờ sẵn trong localStorage không
+    try {
+      const pending = localStorage.getItem('oauth_pending_token');
+      if (pending) {
+        localStorage.removeItem('oauth_pending_token');
+        completeGoogleLogin(pending);
+      }
+    } catch {}
+
+    return () => {
+      if (unsubDeepLink) unsubDeepLink();
+      if (channel) channel.close();
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
+  // Mở Google Login TRỰC TIẾP TRÊN TRÌNH DUYỆT NGOÀI (Chrome, Edge, Brave...)
   const handleGoogleLogin = async () => {
     setIsGoogleLoggingIn(true);
     setErrorMsg('');
     try {
-      // 1. Fetch Google Auth URL from backend
+      // 1. Lấy Google Auth URL từ backend
       const urlRes = await getGoogleAuthUrlApi();
       const authUrl = urlRes.url;
 
-      // 2. Electron Desktop Environment: open dedicated auth window
-      if (typeof window !== 'undefined' && window.electronAPI?.openGoogleAuthWindow) {
-        const result = await window.electronAPI.openGoogleAuthWindow(authUrl);
-        if (!result.success) {
-          if (result.error && !result.error.includes('đóng') && !result.error.includes('closed')) {
-            setErrorMsg(`Đăng nhập Google thất bại: ${result.error}`);
-          }
-          setIsGoogleLoggingIn(false);
-          return;
-        }
-
-        const loginRes = await loginWithGoogleApi({
-          code: result.code,
-          id_token: result.token || result.code
-        });
-
-        if (loginRes.success) {
-          if (showToast) showToast('Đăng nhập bằng Google thành công!', 'success');
-          onLogin?.(loginRes.user, loginRes.token, loginRes.workspace);
-        } else {
-          setErrorMsg(loginRes.message || 'Xác thực tài khoản Google thất bại');
-        }
-        setIsGoogleLoggingIn(false);
-        return;
+      // 2. Mở trực tiếp trong trình duyệt mặc định của hệ điều hành
+      if (typeof window !== 'undefined' && window.electronAPI?.openExternalUrl) {
+        await window.electronAPI.openExternalUrl(authUrl);
+      } else {
+        window.open(authUrl, '_blank');
       }
 
-      // 3. Web Environment: Google Identity Services (GIS SDK)
-      if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
-        const client = window.google.accounts.oauth2.initCodeClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'openid email profile',
-          ux_mode: 'popup',
-          callback: async (response) => {
-            if (response.code) {
-              const loginRes = await loginWithGoogleApi({ code: response.code });
-              if (loginRes.success) {
-                if (showToast) showToast('Đăng nhập bằng Google thành công!', 'success');
-                onLogin?.(loginRes.user, loginRes.token, loginRes.workspace);
-              } else {
-                setErrorMsg(loginRes.message || 'Xác thực tài khoản Google thất bại');
-              }
-            } else if (response.error) {
-              setErrorMsg(`Lỗi Google OAuth: ${response.error}`);
-            }
-            setIsGoogleLoggingIn(false);
-          }
-        });
-        client.requestCode();
-        return;
+      if (showToast) {
+        showToast('Đang mở trang đăng nhập Google trên trình duyệt...', 'info');
       }
-
-      // 4. Web Fallback: Popup window
-      const popup = window.open(authUrl, 'google_oauth_popup', 'width=520,height=680');
-      if (!popup) {
-        window.location.href = authUrl;
-        return;
-      }
-
-      const timer = setInterval(async () => {
-        try {
-          if (!popup || popup.closed) {
-            clearInterval(timer);
-            setIsGoogleLoggingIn(false);
-            return;
-          }
-          const loc = popup.location?.href;
-          if (loc && (loc.includes('/callback') || loc.includes('code='))) {
-            clearInterval(timer);
-            const parsed = new URL(loc);
-            const code = parsed.searchParams.get('code');
-            popup.close();
-            if (code) {
-              const loginRes = await loginWithGoogleApi({ code });
-              if (loginRes.success) {
-                if (showToast) showToast('Đăng nhập bằng Google thành công!', 'success');
-                onLogin?.(loginRes.user, loginRes.token, loginRes.workspace);
-              } else {
-                setErrorMsg(loginRes.message || 'Xác thực tài khoản Google thất bại');
-              }
-            }
-            setIsGoogleLoggingIn(false);
-          }
-        } catch {
-          // Cross-origin before redirect - keep polling
-        }
-      }, 500);
-
     } catch (err) {
       console.error('Google login error:', err);
       setErrorMsg(`Lỗi đăng nhập Google: ${err.message}`);
