@@ -99,7 +99,7 @@ export default function ProxyTable({
                   />
                 </th>
                 <th style={{ padding: '12px 14px', width: '280px' }}>Proxy Info</th>
-                <th style={{ padding: '12px 14px', width: '200px' }}>Outbound IP</th>
+                <th style={{ padding: '12px 14px', width: '240px' }}>Outbound IP</th>
                 <th style={{ padding: '12px 14px', width: '90px' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     <span>Notes</span>

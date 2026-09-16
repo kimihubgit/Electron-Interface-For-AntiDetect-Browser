@@ -73,11 +73,11 @@ export const INITIAL_PROFILES = [
  * Seed data for proxy pool.
  */
 export const INITIAL_PROXIES = [
-  { id: 'px-1', type: 'SOCKS5', host: '154.21.32.88', port: 1080, user: 'user_phuc', pass: 'pass_123', country: 'US', latency: 45, status: 'live', usedCount: 1 },
-  { id: 'px-2', type: 'HTTP', host: '113.161.44.12', port: 8080, user: '', pass: '', country: 'VN', latency: 18, status: 'live', usedCount: 1 },
-  { id: 'px-3', type: 'SOCKS5', host: '198.51.100.45', port: 9050, user: 'airdrop_bot', pass: 'secure_key', country: 'SG', latency: 62, status: 'live', usedCount: 1 },
-  { id: 'px-4', type: 'HTTP', host: '51.140.22.90', port: 3128, user: '', pass: '', country: 'GB', latency: 120, status: 'live', usedCount: 1 },
-  { id: 'px-5', type: 'SOCKS5', host: '103.149.28.11', port: 1080, user: 'proxy_test', pass: 'test1234', country: 'JP', latency: 75, status: 'live', usedCount: 0 },
+  { id: 'px-1', type: 'SOCKS5', host: '42.2.2.39', port: 1080, user: '', pass: '', country: 'HK', city: 'Hong Kong', outboundIp: '42.2.2.39', latency: 32, status: 'live', usedCount: 1, lastCheckedText: 'Just now' },
+  { id: 'px-2', type: 'HTTP', host: '79.229.92.218', port: 8080, user: '', pass: '', country: 'DE', city: 'Stuttgart', outboundIp: '79.229.92.218', latency: 18, status: 'live', usedCount: 1, lastCheckedText: 'Just now' },
+  { id: 'px-3', type: 'SOCKS5', host: '126.79.211.212', port: 9050, user: '', pass: '', country: 'JP', city: 'Tokyo', outboundIp: '126.79.211.212', latency: 45, status: 'live', usedCount: 1, lastCheckedText: 'Just now' },
+  { id: 'px-4', type: 'HTTP', host: '93.185.41.14', port: 3128, user: '', pass: '', country: 'AM', city: 'Vanadzor', outboundIp: '93.185.41.14', latency: 68, status: 'live', usedCount: 1, lastCheckedText: 'Just now' },
+  { id: 'px-5', type: 'SOCKS5', host: '37.218.216.43', port: 1080, user: '', pass: '', country: 'US', city: 'Washington', outboundIp: '37.218.216.43', latency: 75, status: 'live', usedCount: 0, lastCheckedText: '2 Days ago' },
 ];
 
 /**

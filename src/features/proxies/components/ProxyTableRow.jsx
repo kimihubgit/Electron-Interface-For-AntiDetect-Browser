@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Globe,
   Copy,
@@ -12,6 +12,31 @@ import {
   Loader2
 } from 'lucide-react';
 import CountryFlag from '../../../components/common/CountryFlag';
+
+const ISO_LOCATIONS = {
+  HK: { name: 'Hong Kong', city: 'Hong Kong' },
+  DE: { name: 'Germany', city: 'Stuttgart' },
+  JP: { name: 'Japan', city: 'Tokyo' },
+  AM: { name: 'Armenia', city: 'Vanadzor' },
+  US: { name: 'United States', city: 'Washington' },
+  VN: { name: 'Vietnam', city: 'Ho Chi Minh' },
+  SG: { name: 'Singapore', city: 'Singapore' },
+  GB: { name: 'United Kingdom', city: 'London' },
+  UK: { name: 'United Kingdom', city: 'London' },
+  FR: { name: 'France', city: 'Paris' },
+  CA: { name: 'Canada', city: 'Toronto' },
+  KR: { name: 'South Korea', city: 'Seoul' },
+  AU: { name: 'Australia', city: 'Sydney' },
+  NL: { name: 'Netherlands', city: 'Amsterdam' },
+  RU: { name: 'Russia', city: 'Moscow' },
+  IN: { name: 'India', city: 'Mumbai' },
+  BR: { name: 'Brazil', city: 'Sao Paulo' },
+  TH: { name: 'Thailand', city: 'Bangkok' },
+  TW: { name: 'Taiwan', city: 'Taipei' },
+  ID: { name: 'Indonesia', city: 'Jakarta' },
+  PH: { name: 'Philippines', city: 'Manila' },
+  MY: { name: 'Malaysia', city: 'Kuala Lumpur' }
+};
 
 export default function ProxyTableRow({
   proxy: p,
@@ -35,6 +60,28 @@ export default function ProxyTableRow({
   const proxyUrl = `${(p.type || 'socks5').toLowerCase()}://${p.host}:${p.port}`;
   const ipTypeDisplay = (p.ipVersion || 'IPV4').toUpperCase();
   const noteContent = p.name || p.notes || '';
+
+  const countryCode = (p.country || 'WW').toUpperCase();
+  const rawCity = p.city || p.region || '';
+  const fallbackCity = ISO_LOCATIONS[countryCode]?.city || ISO_LOCATIONS[countryCode]?.name || '';
+  const cityName = rawCity || fallbackCity || (countryCode !== 'WW' ? countryCode : '');
+  const locationText = countryCode !== 'WW'
+    ? (cityName ? `${countryCode}/${cityName}` : countryCode)
+    : (rawCity || 'Unknown');
+
+  const ipDisplay = p.outboundIp || p.host || '--';
+
+  const timeAgoText = useMemo(() => {
+    if (p.lastCheckedText) return p.lastCheckedText;
+    if (!p.lastChecked) return 'Just now';
+    if (typeof p.lastChecked === 'string') return p.lastChecked;
+    const diffSec = Math.max(0, Math.floor((Date.now() - p.lastChecked) / 1000));
+    if (diffSec < 60) return 'Just now';
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)} mins ago`;
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} hours ago`;
+    const days = Math.floor(diffSec / 86400);
+    return `${days} Day${days > 1 ? 's' : ''} ago`;
+  }, [p.lastChecked, p.lastCheckedText]);
 
   return (
     <tr
@@ -100,121 +147,98 @@ export default function ProxyTableRow({
         </div>
       </td>
 
-      {/* 3. Outbound IP */}
+      {/* 3. Outbound IP - Circular Flag & Location & Outbound IP */}
       <td style={{ padding: '12px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Globe Icon hoặc Spinner khi testing */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Circular Flag (Lá cờ hình tròn to) */}
           <div
             style={{
               position: 'relative',
-              width: '28px',
-              height: '28px',
+              width: '32px',
+              height: '32px',
               borderRadius: '50%',
-              backgroundColor: isTesting ? '#EFF6FF' : isLive ? '#EFF6FF' : isDie ? '#FEF2F2' : '#F1F5F9',
-              color: isTesting ? '#2563EB' : isLive ? '#2563EB' : isDie ? '#EF4444' : '#94A3B8',
-              border: isTesting ? '1px solid #93C5FD' : isLive ? '1px solid #BFDBFE' : isDie ? '1px solid #FECACA' : '1px solid #E2E8F0',
+              overflow: 'hidden',
+              flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0
+              backgroundColor: '#F8FAFC',
+              boxShadow: isDie
+                ? '0 1px 3px rgba(239, 68, 68, 0.2), 0 0 0 1px rgba(239, 68, 68, 0.4)'
+                : '0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.08)'
             }}
           >
             {isTesting ? (
-              <Loader2 size={15} className="spin-anim" style={{ color: '#2563EB' }} />
+              <Loader2 size={16} className="spin-anim" style={{ color: '#0284C7' }} />
             ) : (
-              <>
-                <Globe size={15} />
-                {isDie && (
-                  /* Gạch chéo màu đỏ xuyên qua quả địa cầu */
-                  <div
-                    style={{
-                      position: 'absolute',
-                      width: '18px',
-                      height: '2px',
-                      backgroundColor: '#EF4444',
-                      transform: 'rotate(-45deg)',
-                      borderRadius: '1px'
-                    }}
-                  />
-                )}
-              </>
+              <CountryFlag
+                code={countryCode}
+                width={32}
+                height={32}
+                borderRadius="50%"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                  filter: isDie ? 'grayscale(50%) opacity(0.7)' : 'none'
+                }}
+              />
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {isTesting ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#2563EB' }}>Đang kiểm tra...</span>
-                  <span
-                    style={{
-                      fontSize: '9.5px',
-                      padding: '1px 6px',
-                      borderRadius: '4px',
-                      backgroundColor: '#DBEAFE',
-                      color: '#1D4ED8',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '3px'
-                    }}
-                  >
-                    <Loader2 size={9} className="spin-anim" /> PINGING
-                  </span>
-                </div>
-              ) : isLive ? (
-                <>
-                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>
-                    {p.outboundIp || p.host}
-                  </span>
-                  {p.country && (
-                    <CountryFlag code={p.country} width={15} height={10} />
-                  )}
-                </>
-              ) : isDie ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#DC2626' }}>
-                    Mất kết nối
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '9.5px',
-                      padding: '1px 5px',
-                      borderRadius: '4px',
-                      backgroundColor: '#FEE2E2',
-                      color: '#DC2626',
-                      fontWeight: 700
-                    }}
-                  >
-                    DIE
-                  </span>
-                </div>
-              ) : (
-                <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#64748B' }}>--</span>
-              )}
+
+          {/* Location & Outbound IP with Timestamp */}
+          {isTesting ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#0284C7', lineHeight: '1.2' }}>
+                Đang kiểm tra...
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: '1.2' }}>
+                <span style={{ fontWeight: 500, color: '#1E293B' }}>{ipDisplay}</span>
+                <span style={{ color: '#CBD5E1' }}>|</span>
+                <span style={{ color: '#0284C7' }}>Ping...</span>
+              </div>
             </div>
-            {/* Dòng dưới: Vị trí địa lý và Tốc độ ping (ms) */}
-            <div style={{ fontSize: '11px', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              {isTesting ? (
-                <span style={{ color: '#60A5FA', fontStyle: 'italic' }}>Đang đo tốc độ ping (latency)...</span>
-              ) : isLive ? (
-                <>
-                  <span style={{ color: '#94A3B8' }}>
-                    {p.country ? `${p.country} | ${p.city || p.region || '--'}` : '-- | --'}
-                  </span>
-                  {p.latency != null && (
-                    <>
-                      <span style={{ color: '#CBD5E1' }}>•</span>
-                      <span style={{ color: '#059669', fontWeight: 600 }}>{p.latency}ms</span>
-                    </>
-                  )}
-                </>
-              ) : isDie ? (
-                <span style={{ color: '#EF4444' }}>Không thể kết nối máy chủ</span>
-              ) : (
-                <span style={{ color: '#94A3B8' }}>-- | --</span>
-              )}
+          ) : isDie ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#DC2626', lineHeight: '1.2' }}>
+                {countryCode !== 'WW' ? locationText : 'Mất kết nối'}
+              </div>
+              <div style={{ fontSize: '12px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: '1.2' }}>
+                <span style={{ fontWeight: 500, color: '#64748B' }}>{ipDisplay}</span>
+                <span style={{ color: '#CBD5E1' }}>|</span>
+                <span style={{ color: '#EF4444', fontWeight: 500 }}>Mất kết nối</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#0F172A',
+                  letterSpacing: '-0.1px',
+                  lineHeight: '1.2'
+                }}
+              >
+                {locationText}
+              </div>
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: '#64748B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  lineHeight: '1.2'
+                }}
+              >
+                <span style={{ fontWeight: 500, color: '#1E293B' }}>{ipDisplay}</span>
+                <span style={{ color: '#CBD5E1' }}>|</span>
+                <span style={{ color: '#64748B' }}>{timeAgoText}</span>
+              </div>
+            </div>
+          )}
         </div>
       </td>
 

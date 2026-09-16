@@ -174,13 +174,18 @@ export function useProxies(addLog, currentUser = null) {
       const latency = res?.latency || 0;
       const status = res?.status === 'live' ? 'live' : 'die';
       const detectedCountry = res?.country || target.country || '';
+      const detectedCity = res?.city || target.city || '';
+      const detectedIp = res?.outboundIp || res?.ip || target.outboundIp || target.host;
 
       // Update this proxy immediately in state
       setProxies(prev => (prev || []).map(p => p.id === proxyId ? {
         ...p,
         latency,
         status,
-        ...(detectedCountry ? { country: detectedCountry } : {})
+        ...(detectedCountry ? { country: detectedCountry } : {}),
+        ...(detectedCity ? { city: detectedCity } : {}),
+        ...(detectedIp ? { outboundIp: detectedIp } : {}),
+        lastCheckedText: 'Just now'
       } : p));
       addLog?.(`Kiểm tra proxy ${target.host}:${target.port}: ${status === 'live' ? `Live (${latency}ms)${detectedCountry ? ` [${detectedCountry}]` : ''}` : 'Die / Mất kết nối'}`, status === 'live' ? 'success' : 'error');
       return { status, latency, country: detectedCountry, message: res?.message };
@@ -219,13 +224,18 @@ export function useProxies(addLog, currentUser = null) {
             const latency = res?.latency || 0;
             const status = res?.status === 'live' ? 'live' : 'die';
             const detectedCountry = res?.country || target.country || '';
+            const detectedCity = res?.city || target.city || '';
+            const detectedIp = res?.outboundIp || res?.ip || target.outboundIp || target.host;
 
             // CẬP NHẬT NGAY LẬP TỨC CHO TỪNG PROXY MÀ KHÔNG CẦN CHỜ CÁC PROXY KHÁC
             setProxies(prev => (prev || []).map(p => p.id === target.id ? {
               ...p,
               latency,
               status,
-              ...(detectedCountry ? { country: detectedCountry } : {})
+              ...(detectedCountry ? { country: detectedCountry } : {}),
+              ...(detectedCity ? { city: detectedCity } : {}),
+              ...(detectedIp ? { outboundIp: detectedIp } : {}),
+              lastCheckedText: 'Just now'
             } : p));
 
             // Bắn callback báo hoàn tất cho giao diện lập tức gỡ trạng thái xoay loading của proxy này
