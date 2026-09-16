@@ -12,20 +12,26 @@ for (const path in flagModules) {
   FLAG_MAP[code] = flagModules[path];
 }
 
+// Fallback flag
+export const DEFAULT_FALLBACK_FLAG = FLAG_MAP['XX'] || FLAG_MAP['UN'] || FLAG_MAP['WW'] || Object.values(FLAG_MAP)[0] || '';
+
 // Common aliases
 if (FLAG_MAP['GB'] && !FLAG_MAP['UK']) {
   FLAG_MAP['UK'] = FLAG_MAP['GB'];
 }
-FLAG_MAP['GLOBAL'] = FLAG_MAP['WW'] || Object.values(FLAG_MAP)[0];
+if (!FLAG_MAP['WW']) {
+  FLAG_MAP['WW'] = DEFAULT_FALLBACK_FLAG;
+}
+FLAG_MAP['GLOBAL'] = DEFAULT_FALLBACK_FLAG;
 
 /**
  * Get the SVG asset URL for a given country code (e.g. 'US', 'VN', 'SG').
- * Falls back to 'WW' (Worldwide) or the first available flag.
+ * Falls back to DEFAULT_FALLBACK_FLAG ('XX', 'UN', etc.).
  */
 export function getCountryFlagUrl(code) {
-  if (!code) return FLAG_MAP['WW'] || '';
+  if (!code) return DEFAULT_FALLBACK_FLAG;
   const normalized = String(code).trim().toUpperCase();
-  return FLAG_MAP[normalized] || FLAG_MAP['WW'] || '';
+  return FLAG_MAP[normalized] || DEFAULT_FALLBACK_FLAG;
 }
 
 /**
@@ -41,7 +47,7 @@ export default function CountryFlag({
   title
 }) {
   const flagUrl = getCountryFlagUrl(code);
-  const fallbackUrl = FLAG_MAP['WW'] || '';
+  const fallbackUrl = DEFAULT_FALLBACK_FLAG;
 
   if (!flagUrl) {
     return <span style={{ fontSize: '13px', verticalAlign: 'middle', ...style }}>🌐</span>;
