@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Square, Trash2, ChevronDown, Zap, LayoutGrid, Folder } from 'lucide-react';
+import { Play, Square, Trash2, ChevronDown, Zap, LayoutGrid, Folder, ArrowRightLeft } from 'lucide-react';
 import { useTranslation } from '../../../i18n/I18nContext';
 
 /**
@@ -13,6 +13,7 @@ export default function ProfileBatchBar({
   onPlayQuick,
   onPlayAndArrange,
   onOpenMoveGroup,
+  onOpenTransfer,
   onBatchStop,
   onBatchDelete
 }) {
@@ -198,6 +199,37 @@ export default function ProfileBatchBar({
         >
           <Folder size={13} style={{ color: '#A78BFA' }} />
           <span>{t('profiles.batchMoveGroup', 'Chuyển nhóm')}</span>
+        </button>
+
+        {/* Chuyển hồ sơ (Transfer Profile) Button */}
+        <button
+          onClick={onOpenTransfer}
+          title={t('profiles.batchTransferTooltip', 'Chuyển hồ sơ cho người dùng khác')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 14px',
+            borderRadius: '6px',
+            border: '1px solid #0284C7',
+            backgroundColor: 'rgba(2, 132, 199, 0.18)',
+            color: '#38BDF8',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(2, 132, 199, 0.3)';
+            e.currentTarget.style.borderColor = '#38BDF8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(2, 132, 199, 0.18)';
+            e.currentTarget.style.borderColor = '#0284C7';
+          }}
+        >
+          <ArrowRightLeft size={13} />
+          <span>{t('profiles.batchTransfer', 'Chuyển hồ sơ')}</span>
         </button>
 
         {/* Batch Stop */}

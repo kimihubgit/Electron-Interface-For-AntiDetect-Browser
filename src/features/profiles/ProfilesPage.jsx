@@ -8,6 +8,7 @@ import ProfileTable from './components/ProfileTable';
 import ProfileGrid from './components/ProfileGrid';
 import ProfileBatchBar from './components/ProfileBatchBar';
 import MoveGroupModal from './components/MoveGroupModal';
+import TransferProfileModal from './components/TransferProfileModal';
 import DragSelectionBox from './components/DragSelectionBox';
 import EngineDownloadModal from '../../components/modals/EngineDownloadModal';
 import SkeletonLoader from '../../components/common/SkeletonLoader';
@@ -35,7 +36,8 @@ export default function ProfilesPage() {
     setActiveProfileModal,
     selectedGroup,
     customGroups = [],
-    addLog
+    addLog,
+    showToast
   } = useBrowser();
 
   // Search, filter, sorting, view mode, and stats calculations
@@ -79,9 +81,10 @@ export default function ProfilesPage() {
     setSelectedProfiles
   });
 
-  // Batch actions states (Play options & Move group)
+  // Batch actions states (Play options & Move group & Transfer profiles)
   const [isPlayDropdownOpen, setIsPlayDropdownOpen] = useState(false);
   const [isMoveGroupModalOpen, setIsMoveGroupModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [targetGroup, setTargetGroup] = useState('Chung');
   const [customGroupInput, setCustomGroupInput] = useState('');
 
@@ -160,6 +163,33 @@ export default function ProfilesPage() {
     setCustomGroupInput('');
     addLog?.(`Đã chuyển ${selectedProfiles.length} hồ sơ đã chọn sang nhóm "${chosen}"`, 'success');
   }, [customGroupInput, targetGroup, selectedProfiles, batchMoveGroupProfiles, addLog]);
+
+  const handleConfirmTransfer = useCallback(({ recipient, includeName, includeNotes, deleteAfterTransfer }) => {
+    if (!selectedProfiles.length) return;
+    const count = selectedProfiles.length;
+
+    // Nếu người dùng chọn xóa vĩnh viễn sau khi chuyển
+    if (deleteAfterTransfer) {
+      batchDeleteProfiles(selectedProfiles);
+    }
+
+    const details = [];
+    if (includeName) details.push('Tên hồ sơ');
+    if (includeNotes) details.push('Ghi chú');
+    if (deleteAfterTransfer) details.push('Xóa sau chuyển');
+
+    const detailsText = details.length ? ` (Tùy chọn: ${details.join(', ')})` : '';
+    addLog?.(`Đã chuyển giao ${count} hồ sơ cho "${recipient}"${detailsText}`, 'success');
+
+    if (typeof showToast === 'function') {
+      showToast(`Chuyển giao thành công ${count} hồ sơ cho "${recipient}"!`, 'success');
+    } else {
+      alert(`Chuyển giao thành công ${count} hồ sơ cho "${recipient}"!`);
+    }
+
+    setIsTransferModalOpen(false);
+    setSelectedProfiles([]);
+  }, [selectedProfiles, batchDeleteProfiles, addLog, showToast]);
 
   return (
     <div
@@ -336,6 +366,14 @@ export default function ProfilesPage() {
         onConfirm={handleConfirmMoveGroup}
       />
 
+      {/* ── MODAL: CHUYỂN GIAO HỒ SƠ (TRANSFER PROFILES) ── */}
+      <TransferProfileModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        selectedCount={selectedProfiles.length}
+        onConfirm={handleConfirmTransfer}
+      />
+
       {/* ── FLOATING BATCH ACTIONS BAR ── */}
       <ProfileBatchBar
         selectedCount={selectedProfiles.length}
@@ -348,6 +386,9 @@ export default function ProfilesPage() {
           setTargetGroup('Chung');
           setCustomGroupInput('');
           setIsMoveGroupModalOpen(true);
+        }}
+        onOpenTransfer={() => {
+          setIsTransferModalOpen(true);
         }}
         onBatchStop={() => {
           batchStopProfiles(selectedProfiles);
