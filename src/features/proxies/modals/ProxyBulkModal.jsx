@@ -16,8 +16,6 @@ export default function ProxyBulkModal({
   setBulkIpVersion,
   bulkText,
   setBulkText,
-  bulkAutoCheck,
-  setBulkAutoCheck,
   onSubmit,
   showToast
 }) {
@@ -331,20 +329,6 @@ export default function ProxyBulkModal({
                   resize: 'vertical'
                 }}
               />
-            </div>
-
-            {/* Auto Check Option Checkbox */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="checkbox"
-                id="bulkAutoCheck"
-                checked={bulkAutoCheck}
-                onChange={(e) => setBulkAutoCheck(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />
-              <label htmlFor="bulkAutoCheck" style={{ fontSize: '12px', color: '#334155', cursor: 'pointer', userSelect: 'none' }}>
-                Tự động kiểm tra (Ping & lấy Outbound IP) sau khi nhập thành công
-              </label>
             </div>
           </div>
 

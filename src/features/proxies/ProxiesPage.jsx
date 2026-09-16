@@ -98,7 +98,6 @@ export default function ProxiesPage() {
   const [bulkText, setBulkText] = useState('');
   const [bulkType, setBulkType] = useState('SOCKS5');
   const [bulkIpVersion, setBulkIpVersion] = useState('IPv4');
-  const [bulkAutoCheck, setBulkAutoCheck] = useState(true);
 
   // Rotating & DCOM Modals State
   const [showAddRotatingModal, setShowAddRotatingModal] = useState(false);
@@ -449,11 +448,6 @@ export default function ProxiesPage() {
     setShowBulkModal(false);
     setBulkText('');
     showToast?.(`Đã nhập thành công ${count} proxy vào kho!`);
-    if (bulkAutoCheck && count > 0) {
-      setTimeout(() => {
-        handleCheckAll();
-      }, 200);
-    }
   };
 
   // Assign Proxy
@@ -616,8 +610,6 @@ export default function ProxiesPage() {
         setBulkIpVersion={setBulkIpVersion}
         bulkText={bulkText}
         setBulkText={setBulkText}
-        bulkAutoCheck={bulkAutoCheck}
-        setBulkAutoCheck={setBulkAutoCheck}
         onSubmit={handleBulkSubmit}
         showToast={showToast}
       />

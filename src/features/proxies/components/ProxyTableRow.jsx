@@ -150,27 +150,70 @@ export default function ProxyTableRow({
       {/* 3. Outbound IP - Circular Flag & Location & Outbound IP */}
       <td style={{ padding: '12px 14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Circular Flag (Lá cờ hình tròn to) */}
-          <div
-            style={{
-              position: 'relative',
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              overflow: 'hidden',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#F8FAFC',
-              boxShadow: isDie
-                ? '0 1px 3px rgba(239, 68, 68, 0.2), 0 0 0 1px rgba(239, 68, 68, 0.4)'
-                : '0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.08)'
-            }}
-          >
-            {isTesting ? (
+          {/* Circular Flag / Die Globe / Loader */}
+          {isDie ? (
+            <div
+              style={{
+                position: 'relative',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: '#FEF2F2',
+                color: '#EF4444',
+                border: '1px solid #FECACA',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              <Globe size={18} />
+              {/* Gạch chéo màu đỏ xuyên qua quả địa cầu */}
+              <div
+                style={{
+                  position: 'absolute',
+                  width: '20px',
+                  height: '2px',
+                  backgroundColor: '#EF4444',
+                  transform: 'rotate(-45deg)',
+                  borderRadius: '1px'
+                }}
+              />
+            </div>
+          ) : isTesting ? (
+            <div
+              style={{
+                position: 'relative',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE'
+              }}
+            >
               <Loader2 size={16} className="spin-anim" style={{ color: '#0284C7' }} />
-            ) : (
+            </div>
+          ) : (
+            <div
+              style={{
+                position: 'relative',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#F8FAFC',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.08)'
+              }}
+            >
               <CountryFlag
                 code={countryCode}
                 width={32}
@@ -180,12 +223,11 @@ export default function ProxyTableRow({
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
-                  display: 'block',
-                  filter: isDie ? 'grayscale(50%) opacity(0.7)' : 'none'
+                  display: 'block'
                 }}
               />
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Location & Outbound IP with Timestamp */}
           {isTesting ? (
