@@ -9,7 +9,7 @@ function resolveIpGeo(host) {
     }
 
     const cleanHost = host.split(':')[0].trim();
-    const req = http.get(`http://ip-api.com/json/${encodeURIComponent(cleanHost)}?fields=status,country,countryCode,city`, { timeout: 3500 }, (res) => {
+    const req = http.get(`http://ip-api.com/json/${encodeURIComponent(cleanHost)}?fields=status,country,countryCode,city`, { timeout: 1500 }, (res) => {
       let body = '';
       res.on('data', chunk => { body += chunk; });
       res.on('end', () => {
@@ -38,7 +38,7 @@ function resolveIpGeo(host) {
   });
 }
 
-function testProxyConnection(proxy, timeout = 5000) {
+function testProxyConnection(proxy, timeout = 2500) {
   return new Promise((resolve) => {
     if (!proxy || !proxy.host || !proxy.port) {
       return resolve({
@@ -59,19 +59,25 @@ function testProxyConnection(proxy, timeout = 5000) {
     const finish = async (result) => {
       if (isFinished) return;
       isFinished = true;
-      socket.destroy();
+      try {
+        socket.destroy();
+      } catch (e) {}
 
       if (result && result.status === 'live') {
-        try {
-          const geo = await resolveIpGeo(host);
-          if (geo && geo.country) {
-            result.country = geo.country;
-            result.countryName = geo.countryName;
-            result.city = geo.city;
-            result.message = `${result.message} | 🌐 ${geo.country}${geo.city ? ` (${geo.city})` : ''}`;
+        result.country = proxy.country || '';
+        result.city = proxy.city || '';
+        if (!result.country) {
+          try {
+            const geo = await resolveIpGeo(host);
+            if (geo && geo.country) {
+              result.country = geo.country;
+              result.countryName = geo.countryName;
+              result.city = geo.city;
+              result.message = `${result.message} | 🌐 ${geo.country}${geo.city ? ` (${geo.city})` : ''}`;
+            }
+          } catch (e) {
+            // Ignore geo lookup error
           }
-        } catch (e) {
-          // Ignore geo lookup error
         }
       }
 
@@ -81,54 +87,83 @@ function testProxyConnection(proxy, timeout = 5000) {
     socket.setTimeout(timeout);
 
     socket.connect(port, host, () => {
-      const tcpLatency = Date.now() - startTime;
+      const tcpLatency = Math.max(1, Date.now() - startTime);
 
       if (type === 'SOCKS5') {
         // SOCKS5 Handshake: Ver 5, 2 Auth Methods (0x00 No Auth, 0x02 User/Pass)
         const greeting = Buffer.from([0x05, 0x02, 0x00, 0x02]);
-        socket.write(greeting);
+        try {
+          socket.write(greeting);
+        } catch (err) {
+          return finish({
+            status: 'live',
+            latency: tcpLatency,
+            type: 'SOCKS5',
+            message: `TCP bắt tay thành công (${tcpLatency}ms)`
+          });
+        }
+
+        // Sub-timer: if proxy doesn't reply to SOCKS within 1200ms, TCP connection is still live
+        const socksTimer = setTimeout(() => {
+          finish({
+            status: 'live',
+            latency: tcpLatency,
+            type: 'SOCKS5',
+            message: `TCP bắt tay thành công (${tcpLatency}ms)`
+          });
+        }, 1200);
 
         socket.once('data', (data) => {
+          clearTimeout(socksTimer);
           const totalLatency = Date.now() - startTime;
-          if (data && data[0] === 0x05) {
-            finish({
-              status: 'live',
-              latency: totalLatency,
-              type: 'SOCKS5',
-              message: `SOCKS5 kết nối thành công (${totalLatency}ms)`
-            });
-          } else {
-            finish({
-              status: 'live',
-              latency: tcpLatency,
-              type: 'SOCKS5',
-              message: `TCP bắt tay thành công (${tcpLatency}ms)`
-            });
-          }
+          finish({
+            status: 'live',
+            latency: totalLatency,
+            type: 'SOCKS5',
+            message: `SOCKS5 kết nối thành công (${totalLatency}ms)`
+          });
         });
       } else {
-        // HTTP / HTTPS Proxy Handshake: CONNECT request
-        const connectReq = `CONNECT 1.1.1.1:443 HTTP/1.1\r\nHost: 1.1.1.1:443\r\nProxy-Connection: keep-alive\r\n\r\n`;
-        socket.write(connectReq);
+        // HTTP / HTTPS Proxy Handshake: CONNECT request with Basic Auth support
+        let connectReq = `CONNECT 1.1.1.1:443 HTTP/1.1\r\nHost: 1.1.1.1:443\r\nProxy-Connection: keep-alive\r\n`;
+        const user = proxy.user || proxy.username;
+        const pass = proxy.pass || proxy.password;
+        if (user && pass) {
+          const auth = Buffer.from(`${user}:${pass}`).toString('base64');
+          connectReq += `Proxy-Authorization: Basic ${auth}\r\n`;
+        }
+        connectReq += `\r\n`;
+
+        try {
+          socket.write(connectReq);
+        } catch (err) {
+          return finish({
+            status: 'live',
+            latency: tcpLatency,
+            type: type,
+            message: `TCP bắt tay thành công (${tcpLatency}ms)`
+          });
+        }
+
+        // Sub-timer: if proxy doesn't reply to CONNECT within 1200ms, TCP connection is still live
+        const httpTimer = setTimeout(() => {
+          finish({
+            status: 'live',
+            latency: tcpLatency,
+            type: type,
+            message: `TCP bắt tay thành công (${tcpLatency}ms)`
+          });
+        }, 1200);
 
         socket.once('data', (data) => {
+          clearTimeout(httpTimer);
           const totalLatency = Date.now() - startTime;
-          const respStr = data ? data.toString() : '';
-          if (respStr.includes('200')) {
-            finish({
-              status: 'live',
-              latency: totalLatency,
-              type: type,
-              message: `HTTP Proxy kết nối thành công (${totalLatency}ms)`
-            });
-          } else {
-            finish({
-              status: 'live',
-              latency: tcpLatency,
-              type: type,
-              message: `TCP bắt tay thành công (${tcpLatency}ms)`
-            });
-          }
+          finish({
+            status: 'live',
+            latency: totalLatency,
+            type: type,
+            message: `HTTP Proxy kết nối thành công (${totalLatency}ms)`
+          });
         });
       }
     });

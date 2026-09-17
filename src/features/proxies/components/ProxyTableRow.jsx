@@ -151,7 +151,25 @@ export default function ProxyTableRow({
       <td style={{ padding: '12px 14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {/* Circular Flag / Die Globe / Loader */}
-          {isDie ? (
+          {isTesting ? (
+            <div
+              style={{
+                position: 'relative',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE'
+              }}
+            >
+              <Loader2 size={16} className="spin-anim" style={{ color: '#0284C7' }} />
+            </div>
+          ) : isDie ? (
             <div
               style={{
                 position: 'relative',
@@ -179,24 +197,6 @@ export default function ProxyTableRow({
                   borderRadius: '1px'
                 }}
               />
-            </div>
-          ) : isTesting ? (
-            <div
-              style={{
-                position: 'relative',
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                overflow: 'hidden',
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #BFDBFE'
-              }}
-            >
-              <Loader2 size={16} className="spin-anim" style={{ color: '#0284C7' }} />
             </div>
           ) : (
             <div
