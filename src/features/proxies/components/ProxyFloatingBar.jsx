@@ -84,14 +84,16 @@ export default function ProxyFloatingBar({
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#94A3B8',
+                color: '#38BDF8',
                 fontSize: '12px',
+                fontWeight: 600,
                 cursor: 'pointer',
                 textDecoration: 'underline',
-                padding: '2px 4px'
+                padding: '2px 6px'
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#94A3B8')}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#7DD3FC')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#38BDF8')}
+              title={`Chọn toàn bộ ${totalCount} proxy trong danh sách`}
             >
               Chọn tất cả ({totalCount})
             </button>
@@ -104,12 +106,14 @@ export default function ProxyFloatingBar({
               border: 'none',
               color: '#F87171',
               fontSize: '12px',
+              fontWeight: 600,
               cursor: 'pointer',
               textDecoration: 'underline',
-              padding: '2px 4px'
+              padding: '2px 6px'
             }}
             onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
             onMouseLeave={(e) => (e.currentTarget.style.color = '#F87171')}
+            title="Bỏ chọn toàn bộ proxy đang chọn"
           >
             Bỏ chọn tất cả
           </button>
