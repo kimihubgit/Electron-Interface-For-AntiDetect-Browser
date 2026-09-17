@@ -34,14 +34,33 @@ export function useLocalStorage(key, fallback) {
     setValue(nextVal);
   }
 
-  // Only sync to localStorage when value is meant for the currently active key
+  const latestValueRef = useRef(value);
+  latestValueRef.current = value;
+
+  // Flush on page unload/close so no pending debounced changes are lost
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      try {
+        if (activeKeyRef.current === key && latestValueRef.current !== undefined) {
+          localStorage.setItem(key, JSON.stringify(latestValueRef.current));
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [key]);
+
+  // Debounced sync to localStorage (300ms) to avoid locking main thread during large batch updates
   useEffect(() => {
     if (activeKeyRef.current === key && value !== undefined) {
-      try {
-        localStorage.setItem(key, JSON.stringify(value));
-      } catch (e) {
-        console.error(`Failed to save to localStorage for key ${key}:`, e);
-      }
+      const timer = setTimeout(() => {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+          console.error(`Failed to save to localStorage for key ${key}:`, e);
+        }
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [key, value]);
 

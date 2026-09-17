@@ -166,6 +166,18 @@ export default function ProxiesPage() {
     );
   };
 
+  const handleSelectBatch = (idsToToggle, shouldSelect) => {
+    setSelectedProxyIds((prev) => {
+      const set = new Set(prev);
+      if (shouldSelect) {
+        idsToToggle.forEach((id) => set.add(id));
+      } else {
+        idsToToggle.forEach((id) => set.delete(id));
+      }
+      return Array.from(set);
+    });
+  };
+
   // Ping Handlers
   const handleCheckSingle = async (p, e) => {
     e?.stopPropagation();
@@ -183,9 +195,10 @@ export default function ProxiesPage() {
     setIsCheckingAll(true);
     setTestingProxyIds((prev) => Array.from(new Set([...prev, ...allIds])));
     try {
-      await checkAllProxies(allIds, (finishedId) => {
-        // Proxy nào ping xong thì ngay lập tức gỡ trạng thái loading của proxy đó
-        setTestingProxyIds((prev) => prev.filter((id) => id !== finishedId));
+      await checkAllProxies(allIds, (finishedIds) => {
+        const idsToRemove = Array.isArray(finishedIds) ? finishedIds : [finishedIds];
+        const removeSet = new Set(idsToRemove);
+        setTestingProxyIds((prev) => prev.filter((id) => !removeSet.has(id)));
       });
     } finally {
       setTestingProxyIds([]);
@@ -199,9 +212,10 @@ export default function ProxiesPage() {
     setTestingProxyIds((prev) => Array.from(new Set([...prev, ...idsToCheck])));
 
     try {
-      await checkAllProxies(idsToCheck, (finishedId) => {
-        // Proxy nào ping xong thì ngay lập tức gỡ trạng thái loading của proxy đó
-        setTestingProxyIds((prev) => prev.filter((item) => item !== finishedId));
+      await checkAllProxies(idsToCheck, (finishedIds) => {
+        const idsToRemove = Array.isArray(finishedIds) ? finishedIds : [finishedIds];
+        const removeSet = new Set(idsToRemove);
+        setTestingProxyIds((prev) => prev.filter((item) => !removeSet.has(item)));
       });
     } finally {
       setTestingProxyIds((prev) => prev.filter((id) => !idsToCheck.includes(id)));
@@ -525,6 +539,7 @@ export default function ProxiesPage() {
             selectedProxyIds={selectedProxyIds}
             onSelectAll={handleSelectAll}
             onSelectOne={handleSelectOne}
+            onSelectBatch={handleSelectBatch}
             isAllSelected={isAllSelected}
             testingProxyIds={testingProxyIds}
             testingId={testingId}

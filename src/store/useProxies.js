@@ -208,9 +208,51 @@ export function useProxies(addLog, currentUser = null) {
 
       addLog?.(`Bắt đầu kiểm tra kết nối (Ping) ${proxiesToTest.length} proxy...`, 'info');
 
-      // Worker pool với 8 luồng song song: proxy nào ping xong thì hiển thị kết quả ngay lập tức
-      const CONCURRENCY_LIMIT = 8;
+      // High-performance worker pool với 25 luồng song song & cơ chế batching update 120ms
+      const CONCURRENCY_LIMIT = 25;
       let currentIndex = 0;
+
+      const pendingUpdates = new Map();
+      const finishedIds = [];
+      let flushTimer = null;
+
+      const flushPendingUpdates = () => {
+        if (pendingUpdates.size === 0) return;
+        const updatesToApply = new Map(pendingUpdates);
+        pendingUpdates.clear();
+        const batchFinishedIds = [...finishedIds];
+        finishedIds.length = 0;
+
+        setProxies(prev => {
+          if (!prev) return [];
+          return prev.map(p => {
+            const update = updatesToApply.get(p.id);
+            return update ? { ...p, ...update } : p;
+          });
+        });
+
+        if (onProgress && batchFinishedIds.length > 0) {
+          onProgress(batchFinishedIds);
+        }
+      };
+
+      const scheduleFlush = () => {
+        if (pendingUpdates.size >= 15) {
+          if (flushTimer) {
+            clearTimeout(flushTimer);
+            flushTimer = null;
+          }
+          flushPendingUpdates();
+          return;
+        }
+
+        if (!flushTimer) {
+          flushTimer = setTimeout(() => {
+            flushTimer = null;
+            flushPendingUpdates();
+          }, 120);
+        }
+      };
 
       const worker = async () => {
         while (currentIndex < proxiesToTest.length) {
@@ -227,27 +269,25 @@ export function useProxies(addLog, currentUser = null) {
             const detectedCity = res?.city || target.city || '';
             const detectedIp = res?.outboundIp || res?.ip || target.outboundIp || target.host;
 
-            // CẬP NHẬT NGAY LẬP TỨC CHO TỪNG PROXY MÀ KHÔNG CẦN CHỜ CÁC PROXY KHÁC
-            setProxies(prev => (prev || []).map(p => p.id === target.id ? {
-              ...p,
+            pendingUpdates.set(target.id, {
               latency,
               status,
               ...(detectedCountry ? { country: detectedCountry } : {}),
               ...(detectedCity ? { city: detectedCity } : {}),
               ...(detectedIp ? { outboundIp: detectedIp } : {}),
               lastCheckedText: 'Just now'
-            } : p));
-
-            // Bắn callback báo hoàn tất cho giao diện lập tức gỡ trạng thái xoay loading của proxy này
-            onProgress?.(target.id, { status, latency, country: detectedCountry });
+            });
+            finishedIds.push(target.id);
+            scheduleFlush();
           } catch (err) {
             console.error(`Lỗi ping proxy ${target.id}:`, err);
-            setProxies(prev => (prev || []).map(p => p.id === target.id ? {
-              ...p,
+            pendingUpdates.set(target.id, {
               status: 'die',
-              latency: 0
-            } : p));
-            onProgress?.(target.id, { status: 'die', latency: 0 });
+              latency: 0,
+              lastCheckedText: 'Just now'
+            });
+            finishedIds.push(target.id);
+            scheduleFlush();
           } finally {
             activeCheckingRef.current.delete(target.id);
           }
@@ -256,6 +296,12 @@ export function useProxies(addLog, currentUser = null) {
 
       const workerCount = Math.min(CONCURRENCY_LIMIT, proxiesToTest.length);
       await Promise.all(Array.from({ length: workerCount }, () => worker()));
+
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+      flushPendingUpdates();
 
       addLog?.(`Đã hoàn thành kiểm tra kết nối ${proxiesToTest.length} proxy`, 'success');
     } finally {

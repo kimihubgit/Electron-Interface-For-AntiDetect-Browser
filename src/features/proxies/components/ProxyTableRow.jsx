@@ -38,7 +38,7 @@ const ISO_LOCATIONS = {
   MY: { name: 'Malaysia', city: 'Kuala Lumpur' }
 };
 
-export default function ProxyTableRow({
+function ProxyTableRow({
   proxy: p,
   isSelected,
   onToggleSelect,
@@ -508,3 +508,5 @@ export default function ProxyTableRow({
     </tr>
   );
 }
+
+export default React.memo(ProxyTableRow);

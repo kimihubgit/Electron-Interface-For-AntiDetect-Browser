@@ -1,12 +1,15 @@
-import React from 'react';
-import { Eye, Shield, Plus } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Eye, Shield, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import ProxyTableRow from './ProxyTableRow';
+
+const EMPTY_PROFILES_ARRAY = [];
 
 export default function ProxyTable({
   filteredProxies = [],
   selectedProxyIds = [],
   onSelectAll,
   onSelectOne,
+  onSelectBatch,
   isAllSelected,
   testingProxyIds = [],
   testingId,
@@ -23,6 +26,62 @@ export default function ProxyTable({
   onOpenNote,
   onOpenAddModal
 }) {
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
+  // Reset to page 1 if filtered list shrinks below current page
+  const totalItems = filteredProxies.length;
+  const totalPages = pageSize === 'all' ? 1 : Math.max(1, Math.ceil(totalItems / pageSize));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  // Fast O(1) Lookups for Selection & Testing State
+  const selectedProxySet = useMemo(() => new Set(selectedProxyIds), [selectedProxyIds]);
+  const testingProxySet = useMemo(() => new Set(testingProxyIds), [testingProxyIds]);
+
+  // Fast O(1) Lookup Map for Assigned Profiles
+  const assignedProfilesMap = useMemo(() => {
+    const map = new Map();
+    for (const prof of profiles) {
+      if (prof.proxy?.host && prof.proxy?.port) {
+        const key = `${prof.proxy.host}:${prof.proxy.port}`;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(prof);
+      }
+    }
+    return map;
+  }, [profiles]);
+
+  // Current page items
+  const displayProxies = useMemo(() => {
+    if (pageSize === 'all') return filteredProxies;
+    const start = (currentPage - 1) * pageSize;
+    return filteredProxies.slice(start, start + pageSize);
+  }, [filteredProxies, currentPage, pageSize]);
+
+  // Check if all items in current page are selected
+  const isCurrentPageAllSelected = useMemo(() => {
+    if (displayProxies.length === 0) return false;
+    return displayProxies.every((p) => selectedProxySet.has(p.id));
+  }, [displayProxies, selectedProxySet]);
+
+  const handleHeaderCheckboxChange = () => {
+    if (onSelectBatch) {
+      const pageIds = displayProxies.map((p) => p.id);
+      onSelectBatch(pageIds, !isCurrentPageAllSelected);
+    } else if (onSelectAll) {
+      onSelectAll();
+    }
+  };
+
+  const startItem = totalItems === 0 ? 0 : pageSize === 'all' ? 1 : (currentPage - 1) * pageSize + 1;
+  const endItem = pageSize === 'all' ? totalItems : Math.min(currentPage * pageSize, totalItems);
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -93,9 +152,10 @@ export default function ProxyTable({
                 <th style={{ width: '38px', padding: '12px 14px', textAlign: 'center' }}>
                   <input
                     type="checkbox"
-                    checked={isAllSelected}
-                    onChange={onSelectAll}
+                    checked={isCurrentPageAllSelected}
+                    onChange={handleHeaderCheckboxChange}
                     style={{ cursor: 'pointer' }}
+                    title={isCurrentPageAllSelected ? 'Bỏ chọn trang này' : 'Chọn toàn bộ trang này'}
                   />
                 </th>
                 <th style={{ padding: '12px 14px', width: '280px' }}>Proxy Info</th>
@@ -127,12 +187,10 @@ export default function ProxyTable({
               </tr>
             </thead>
             <tbody>
-              {filteredProxies.map((p) => {
-                const isSelected = selectedProxyIds.includes(p.id);
-                const isTesting = testingProxyIds.includes(p.id) || testingId === p.id;
-                const assignedProfiles = profiles.filter(
-                  (prof) => prof.proxy?.host === p.host && Number(prof.proxy?.port) === Number(p.port)
-                );
+              {displayProxies.map((p) => {
+                const isSelected = selectedProxySet.has(p.id);
+                const isTesting = testingProxySet.has(p.id) || testingId === p.id;
+                const assignedProfiles = assignedProfilesMap.get(`${p.host}:${p.port}`) || EMPTY_PROFILES_ARRAY;
 
                 return (
                   <ProxyTableRow
@@ -158,6 +216,149 @@ export default function ProxyTable({
           </table>
         )}
       </div>
+
+      {/* Pagination Footer */}
+      {totalItems > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 16px',
+            backgroundColor: '#FFFFFF',
+            borderTop: '1px solid #E2E8F0',
+            fontSize: '12px',
+            color: '#64748B',
+            userSelect: 'none'
+          }}
+        >
+          {/* Item count */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>
+              Hiển thị <strong>{startItem}</strong> - <strong>{endItem}</strong> trong tổng số <strong>{totalItems}</strong> proxy
+            </span>
+            {selectedProxyIds.length > 0 && (
+              <span style={{ color: '#7C3AED', fontWeight: 600 }}>
+                (Đã chọn {selectedProxyIds.length})
+              </span>
+            )}
+          </div>
+
+          {/* Page controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {pageSize !== 'all' && (
+              <>
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage(1)}
+                  title="Trang đầu"
+                  style={{
+                    padding: '4px 6px',
+                    borderRadius: '4px',
+                    border: '1px solid #E2E8F0',
+                    backgroundColor: currentPage <= 1 ? '#F8FAFC' : '#FFFFFF',
+                    color: currentPage <= 1 ? '#CBD5E1' : '#475569',
+                    cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <ChevronsLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  title="Trang trước"
+                  style={{
+                    padding: '4px 6px',
+                    borderRadius: '4px',
+                    border: '1px solid #E2E8F0',
+                    backgroundColor: currentPage <= 1 ? '#F8FAFC' : '#FFFFFF',
+                    color: currentPage <= 1 ? '#CBD5E1' : '#475569',
+                    cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <ChevronLeft size={14} />
+                </button>
+
+                <span style={{ padding: '0 8px', fontWeight: 600, color: '#334155' }}>
+                  Trang {currentPage} / {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  title="Trang sau"
+                  style={{
+                    padding: '4px 6px',
+                    borderRadius: '4px',
+                    border: '1px solid #E2E8F0',
+                    backgroundColor: currentPage >= totalPages ? '#F8FAFC' : '#FFFFFF',
+                    color: currentPage >= totalPages ? '#CBD5E1' : '#475569',
+                    cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <ChevronRight size={14} />
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                  title="Trang cuối"
+                  style={{
+                    padding: '4px 6px',
+                    borderRadius: '4px',
+                    border: '1px solid #E2E8F0',
+                    backgroundColor: currentPage >= totalPages ? '#F8FAFC' : '#FFFFFF',
+                    color: currentPage >= totalPages ? '#CBD5E1' : '#475569',
+                    cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <ChevronsRight size={14} />
+                </button>
+              </>
+            )}
+
+            {/* Page Size Selector */}
+            <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span>Số hàng:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  const val = e.target.value === 'all' ? 'all' : Number(e.target.value);
+                  setPageSize(val);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  color: '#334155',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value={25}>25 / trang</option>
+                <option value={50}>50 / trang</option>
+                <option value={100}>100 / trang</option>
+                <option value={200}>200 / trang</option>
+                <option value="all">Tất cả</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
