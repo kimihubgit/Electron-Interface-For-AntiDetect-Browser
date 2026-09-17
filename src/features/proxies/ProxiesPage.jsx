@@ -540,6 +540,7 @@ export default function ProxiesPage() {
             onSelectAll={handleSelectAll}
             onSelectOne={handleSelectOne}
             onSelectBatch={handleSelectBatch}
+            onClearSelection={() => setSelectedProxyIds([])}
             isAllSelected={isAllSelected}
             testingProxyIds={testingProxyIds}
             testingId={testingId}
@@ -562,6 +563,7 @@ export default function ProxiesPage() {
             selectedProxyIds={selectedProxyIds}
             totalCount={filteredProxies.length}
             onSelectAllVisible={() => setSelectedProxyIds(filteredProxies.map((p) => p.id))}
+            onClearSelection={() => setSelectedProxyIds([])}
             isAllSelected={isAllSelected}
             onPingSelected={handlePingSelected}
             isAnySelectedTesting={selectedProxyIds.some((id) => testingProxyIds.includes(id))}

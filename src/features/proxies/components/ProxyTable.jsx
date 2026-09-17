@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Eye, Shield, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import ProxyTableRow from './ProxyTableRow';
 
@@ -10,6 +10,7 @@ export default function ProxyTable({
   onSelectAll,
   onSelectOne,
   onSelectBatch,
+  onClearSelection,
   isAllSelected,
   testingProxyIds = [],
   testingId,
@@ -64,18 +65,33 @@ export default function ProxyTable({
     return filteredProxies.slice(start, start + pageSize);
   }, [filteredProxies, currentPage, pageSize]);
 
-  // Check if all items in current page are selected
-  const isCurrentPageAllSelected = useMemo(() => {
-    if (displayProxies.length === 0) return false;
-    return displayProxies.every((p) => selectedProxySet.has(p.id));
-  }, [displayProxies, selectedProxySet]);
+  // Global & Page selection states
+  const hasAnySelected = selectedProxyIds.length > 0;
+  const isAllSelectedGlobal = filteredProxies.length > 0 && selectedProxyIds.length === filteredProxies.length;
+  const isIndeterminate = hasAnySelected && !isAllSelectedGlobal;
+
+  const headerCheckboxRef = useRef(null);
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
 
   const handleHeaderCheckboxChange = () => {
-    if (onSelectBatch) {
-      const pageIds = displayProxies.map((p) => p.id);
-      onSelectBatch(pageIds, !isCurrentPageAllSelected);
-    } else if (onSelectAll) {
-      onSelectAll();
+    if (hasAnySelected) {
+      // If ANY are selected, clicking header checkbox acts as "Bỏ chọn tất cả"
+      if (onClearSelection) {
+        onClearSelection();
+      } else if (onSelectAll) {
+        onSelectAll({ target: { checked: false } });
+      }
+    } else {
+      // If NONE are selected, select all filtered proxies
+      if (onSelectAll) {
+        onSelectAll({ target: { checked: true } });
+      } else if (onSelectBatch) {
+        onSelectBatch(filteredProxies.map((p) => p.id), true);
+      }
     }
   };
 
@@ -151,11 +167,12 @@ export default function ProxyTable({
               >
                 <th style={{ width: '38px', padding: '12px 14px', textAlign: 'center' }}>
                   <input
+                    ref={headerCheckboxRef}
                     type="checkbox"
-                    checked={isCurrentPageAllSelected}
+                    checked={isAllSelectedGlobal}
                     onChange={handleHeaderCheckboxChange}
                     style={{ cursor: 'pointer' }}
-                    title={isCurrentPageAllSelected ? 'Bỏ chọn trang này' : 'Chọn toàn bộ trang này'}
+                    title={hasAnySelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
                   />
                 </th>
                 <th style={{ padding: '12px 14px', width: '280px' }}>Proxy Info</th>
@@ -238,9 +255,28 @@ export default function ProxyTable({
               Hiển thị <strong>{startItem}</strong> - <strong>{endItem}</strong> trong tổng số <strong>{totalItems}</strong> proxy
             </span>
             {selectedProxyIds.length > 0 && (
-              <span style={{ color: '#7C3AED', fontWeight: 600 }}>
-                (Đã chọn {selectedProxyIds.length})
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#7C3AED', fontWeight: 600 }}>
+                  (Đã chọn {selectedProxyIds.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={onClearSelection}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#EF4444',
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    padding: '0 2px'
+                  }}
+                  title="Bỏ chọn toàn bộ proxy"
+                >
+                  Bỏ chọn tất cả
+                </button>
+              </div>
             )}
           </div>
 

@@ -14,6 +14,7 @@ export default function ProxyFloatingBar({
   selectedProxyIds = [],
   totalCount = 0,
   onSelectAllVisible,
+  onClearSelection,
   isAllSelected,
   onPingSelected,
   isAnySelectedTesting,
@@ -78,6 +79,7 @@ export default function ProxyFloatingBar({
           </span>
           {!isAllSelected && (
             <button
+              type="button"
               onClick={onSelectAllVisible}
               style={{
                 background: 'none',
@@ -94,6 +96,23 @@ export default function ProxyFloatingBar({
               Chọn tất cả ({totalCount})
             </button>
           )}
+          <button
+            type="button"
+            onClick={onClearSelection}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#F87171',
+              fontSize: '12px',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              padding: '2px 4px'
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#F87171')}
+          >
+            Bỏ chọn tất cả
+          </button>
         </div>
       </div>
 
