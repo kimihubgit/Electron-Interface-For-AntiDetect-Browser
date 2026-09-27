@@ -317,14 +317,26 @@ export function useProfiles(addLog, addHistoryRecord, currentUser = null, curren
           return;
         }
 
+        const isLockTokenExpired = /authorization token|token expired|invalid token/i.test(lockRes.error || '');
+        if (!lockRes.success && isLockTokenExpired) {
+          const authErrorMsg = 'Phiên đăng nhập đã hết hạn. Vui lòng bấm vào Avatar góc phải -> Đăng xuất và đăng nhập lại để tiếp tục sử dụng!';
+          addLog?.(`[Xác thực] ${authErrorMsg}`, 'error');
+          alert(`⚠️ ${authErrorMsg}`);
+          return;
+        }
+
         // Xin vé khởi chạy bảo mật từ server (30s)
         const targetLaunchVer = target.browser_version || (target.browser ? target.browser.replace(/[^0-9]/g, '') : '') || '152';
         const ticketRes = await getLaunchTicketApi(profileId, {
           version: targetLaunchVer
         });
         if (!ticketRes.success) {
-          addLog?.(`[Bảo vệ bản quyền] ${ticketRes.error}`, 'error');
-          alert(`⚠️ ${ticketRes.error}`);
+          const isTicketTokenExpired = /authorization token|token expired|invalid token/i.test(ticketRes.error || '');
+          const errorMsg = isTicketTokenExpired
+            ? 'Phiên đăng nhập đã hết hạn. Vui lòng bấm vào Avatar góc phải -> Đăng xuất và đăng nhập lại để tiếp tục sử dụng!'
+            : ticketRes.error;
+          addLog?.(`[Bảo vệ bản quyền] ${errorMsg}`, 'error');
+          alert(`⚠️ ${errorMsg}`);
           unlockProfileApi(profileId).catch(() => {});
           return;
         }

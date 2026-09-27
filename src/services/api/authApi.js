@@ -212,7 +212,7 @@ export async function getUserInfoApi(tokenOverride = null) {
 
     const data = await infoRes.json();
     if (!infoRes.ok || (data.code !== undefined && data.code !== 20000 && data.status === 'error')) {
-      return { success: false, message: data.message || 'Không thể lấy thông tin người dùng' };
+      return { success: false, statusCode: infoRes.status, message: data.message || 'Không thể lấy thông tin người dùng' };
     }
 
     const info = data.result || data.data || {};
