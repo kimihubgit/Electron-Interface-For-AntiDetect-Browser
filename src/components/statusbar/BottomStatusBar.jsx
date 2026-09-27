@@ -28,6 +28,7 @@ export default function BottomStatusBar() {
     setActiveTrashModal,
     activeTab,
     setActiveTab,
+    setActiveHelpModal,
     checkUpdate,
     isUpdateChecking
   } = useBrowser();
@@ -242,77 +243,77 @@ export default function BottomStatusBar() {
                 {/* Item 1: Help & documentation */}
                 <div
                   onClick={() => {
-                    window.open('https://apidog.com/help', '_blank');
+                    setActiveHelpModal('support');
                     setShowHelpMenu(false);
                   }}
                   style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '7px 10px',
-                  borderRadius: '6px',
-                  fontSize: '12.5px',
-                  color: '#1E293B',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'background-color 0.12s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                <BookOpen size={14} style={{ color: '#475569' }} />
-                <span>{t('footer.helpDocs', 'Help & documentation')}</span>
-              </div>
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '7px 10px',
+                    borderRadius: '6px',
+                    fontSize: '12.5px',
+                    color: '#1E293B',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: 'background-color 0.12s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <BookOpen size={14} style={{ color: '#475569' }} />
+                  <span>{t('footer.helpDocs', 'Help & documentation')}</span>
+                </div>
 
-              {/* Item 2: Keyboard Shortcuts */}
-              <div
-                onClick={() => {
-                  alert('Phím tắt hệ thống:\n• Ctrl + N: Tạo Profile mới\n• Ctrl + Shift + P: Mở Proxy\n• Ctrl + ,: Cài đặt hệ thống');
-                  setShowHelpMenu(false);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '7px 10px',
-                  borderRadius: '6px',
-                  fontSize: '12.5px',
-                  color: '#1E293B',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'background-color 0.12s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                <Keyboard size={14} style={{ color: '#475569' }} />
-                <span>{t('footer.keyboardShortcuts', 'Keyboard Shortcuts')}</span>
-              </div>
+                {/* Item 2: Keyboard Shortcuts */}
+                <div
+                  onClick={() => {
+                    setActiveHelpModal('shortcuts');
+                    setShowHelpMenu(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '7px 10px',
+                    borderRadius: '6px',
+                    fontSize: '12.5px',
+                    color: '#1E293B',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: 'background-color 0.12s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <Keyboard size={14} style={{ color: '#7C3AED' }} />
+                  <span>{t('footer.keyboardShortcuts', 'Phím tắt hệ thống')}</span>
+                </div>
 
-              {/* Item 3: What's New? */}
-              <div
-                onClick={() => {
-                  alert('Có gì mới ở phiên bản v2.4.0:\n• Tích hợp giả lập vân tay WebGL 2.0 mới\n• Tối ưu tốc độ khởi tạo profile lên 40%\n• Hỗ trợ Proxy SOCKS5 đa luồng');
-                  setShowHelpMenu(false);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '7px 10px',
-                  borderRadius: '6px',
-                  fontSize: '12.5px',
-                  color: '#1E293B',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'background-color 0.12s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                <ArrowUpCircle size={14} style={{ color: '#475569' }} />
-                <span>{t('footer.whatsNew', "What's New?")}</span>
-              </div>
+                {/* Item 3: What's New? */}
+                <div
+                  onClick={() => {
+                    setActiveHelpModal('whatsNew');
+                    setShowHelpMenu(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '7px 10px',
+                    borderRadius: '6px',
+                    fontSize: '12.5px',
+                    color: '#1E293B',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: 'background-color 0.12s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <ArrowUpCircle size={14} style={{ color: '#059669' }} />
+                  <span>{t('footer.whatsNew', "Có gì mới? (What's New)")}</span>
+                </div>
 
               {/* Divider */}
               <div style={{ height: '1px', backgroundColor: '#F1F3F5', margin: '4px 0' }} />

@@ -55,6 +55,7 @@ export function useAppState() {
   const [activeReferralModal, setActiveReferralModal] = useState(false); // false | true | 'referrals' | 'project'
   const [activeTrashModal, setActiveTrashModal] = useState(false);
   const [activeGroupModal, setActiveGroupModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', group }
+  const [activeHelpModal, setActiveHelpModal] = useState(null); // null | 'shortcuts' | 'whatsNew' | 'docs'
   const [activeSettingsSection, setActiveSettingsSection] = useState('browser'); // 'browser' | 'general' | 'content' | 'display' | 'core' | 'license'
 
   const [currentPlan, setCurrentPlan] = useState(() => {
@@ -268,6 +269,7 @@ export function useAppState() {
     activeReferralModal, setActiveReferralModal,
     activeTrashModal, setActiveTrashModal,
     activeGroupModal, setActiveGroupModal,
+    activeHelpModal, setActiveHelpModal,
     updateModalInfo, setUpdateModalInfo,
     isUpdateChecking, checkUpdate,
     currentPlan, setCurrentPlan,
@@ -295,6 +297,7 @@ export function useAppState() {
     activeReferralModal,
     activeTrashModal,
     activeGroupModal,
+    activeHelpModal,
     updateModalInfo,
     isUpdateChecking,
     currentPlan,

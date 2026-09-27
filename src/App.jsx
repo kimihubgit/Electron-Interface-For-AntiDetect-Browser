@@ -11,6 +11,7 @@ import SettingsModal from './components/modals/SettingsModal';
 import ReferralModal from './components/modals/ReferralModal';
 import TrashModal from './components/modals/TrashModal';
 import AppUpdateModal from './components/modals/AppUpdateModal';
+import HelpSupportModal from './components/modals/HelpSupportModal';
 import HomePage from './pages/HomePage';
 import BackupPage from './pages/BackupPage';
 import ProfilesPage from './pages/ProfilesPage';
@@ -54,6 +55,8 @@ function AppContent() {
     activeProxyRequestModal,
     activeReferralModal,
     activeTrashModal,
+    activeHelpModal,
+    setActiveHelpModal,
     updateModalInfo,
     setUpdateModalInfo,
     checkUpdate,
@@ -69,6 +72,18 @@ function AppContent() {
       checkUpdate(true);
     }
   }, []);
+
+  // Global F1 or Ctrl+/ shortcut to open Help & Shortcuts modal
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (e.key === 'F1' || (e.ctrlKey && e.key === '/')) {
+        e.preventDefault();
+        setActiveHelpModal(prev => prev ? null : 'shortcuts');
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [setActiveHelpModal]);
 
   const handleSimulateVersion = (version) => {
     if (checkUpdate) {
@@ -191,6 +206,13 @@ function AppContent() {
       {activeProxyRequestModal && <ProxyRequestModal />}
       {activeReferralModal && <ReferralModal />}
       {activeTrashModal && <TrashModal />}
+      {activeHelpModal && (
+        <HelpSupportModal
+          isOpen={Boolean(activeHelpModal)}
+          initialTab={typeof activeHelpModal === 'string' ? activeHelpModal : 'shortcuts'}
+          onClose={() => setActiveHelpModal(null)}
+        />
+      )}
       {updateModalInfo && (
         <AppUpdateModal
           isOpen={Boolean(updateModalInfo)}
