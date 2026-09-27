@@ -26,6 +26,7 @@ import TeamPage from './pages/TeamPage';
 import LoginPage from './features/auth/LoginPage';
 import OAuthCallbackPage from './features/auth/OAuthCallbackPage';
 import AiAgentDebuggerPage from './pages/AiAgentDebuggerPage';
+import SynchronizerPage from './pages/SynchronizerPage';
 import ProxyRequestModal from './components/modals/ProxyRequestModal';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import GlobalToast from './components/common/GlobalToast';
@@ -119,6 +120,7 @@ function AppContent() {
       case 'ai-agent':
       case 'mcp': return <AiAgentDebuggerPage />;
       case 'scripts': return <ScriptsPage />;
+      case 'synchronizer': return <SynchronizerPage />;
       case 'proxy-requests': return <ProxyRequestPage />;
       case 'settings': return <SettingsPage />;
       case 'team':

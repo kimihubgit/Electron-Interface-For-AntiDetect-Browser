@@ -15,7 +15,8 @@ import {
   Cpu,
   Smartphone,
   Sliders,
-  Activity
+  Activity,
+  Layers
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 import { useTranslation } from '../../i18n/I18nContext';
@@ -36,6 +37,7 @@ export default function ActivityBar() {
 
   const primaryItems = [
     { id: 'profiles', label: t('nav.profiles', 'Profiles'), icon: Globe },
+    { id: 'synchronizer', label: t('nav.synchronizer', 'Đồng bộ'), icon: Layers },
     { id: 'proxies', label: t('nav.proxies', 'Proxy'), icon: Shield },
     { id: 'groups', label: t('nav.groups', 'Groups'), icon: FolderTree },
     { id: 'ai-agent', label: t('nav.aiAgent', 'AI Agent'), icon: Sparkles },

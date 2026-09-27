@@ -40,6 +40,7 @@
   },
   "nav": {
     "profiles": "Hồ sơ",
+    "synchronizer": "Đồng bộ",
     "proxies": "Proxy",
     "groups": "Nhóm",
     "extensions": "Tiện ích",

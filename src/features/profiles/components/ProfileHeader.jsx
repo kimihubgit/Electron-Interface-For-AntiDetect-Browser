@@ -13,6 +13,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useTranslation } from '../../../i18n/I18nContext';
+import { useBrowser } from '../../../store/BrowserContext';
 
 /**
  * Search, filtering, view mode switcher, and new profile action toolbar
@@ -35,6 +36,7 @@ export default function ProfileHeader({
   onOpenBatchProfile
 }) {
   const { t } = useTranslation();
+  const { setActiveTab } = useBrowser();
   const [isAddDropdownOpen, setIsAddDropdownOpen] = useState(false);
   const addDropdownRef = useRef(null);
 
@@ -244,6 +246,38 @@ export default function ProfileHeader({
               <span>{t('profiles.launchAllBtn', 'Chạy tất cả')}</span>
             </button>
           )}
+
+          {/* Synchronizer Multi-Window Mode Button */}
+          <button
+            onClick={() => setActiveTab('synchronizer')}
+            title="Mở bảng điều khiển đồng bộ thao tác đa trình duyệt (Synchronizer)"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              height: '32px',
+              padding: '0 12px',
+              borderRadius: '6px',
+              border: '1px solid #DDD6FE',
+              backgroundColor: '#F5F3FF',
+              color: '#7C3AED',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#EDE9FE';
+              e.currentTarget.style.borderColor = '#C4B5FD';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#F5F3FF';
+              e.currentTarget.style.borderColor = '#DDD6FE';
+            }}
+          >
+            <Layers size={13} />
+            <span>Đồng bộ hóa</span>
+          </button>
 
           {/* + New Profile Split Button with Chevron Down */}
           <div ref={addDropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>

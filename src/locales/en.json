@@ -40,6 +40,7 @@
   },
   "nav": {
     "profiles": "Profiles",
+    "synchronizer": "Synchronizer",
     "proxies": "Proxy",
     "groups": "Groups",
     "extensions": "Extensions",
