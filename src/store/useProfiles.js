@@ -319,29 +319,49 @@ export function useProfiles(addLog, addHistoryRecord, currentUser = null, curren
 
         const isLockTokenExpired = /authorization token|token expired|invalid token/i.test(lockRes.error || '');
         if (!lockRes.success && isLockTokenExpired) {
-          const authErrorMsg = 'Phiên đăng nhập đã hết hạn. Vui lòng bấm vào Avatar góc phải -> Đăng xuất và đăng nhập lại để tiếp tục sử dụng!';
-          addLog?.(`[Xác thực] ${authErrorMsg}`, 'error');
-          alert(`⚠️ ${authErrorMsg}`);
-          return;
+          const wantOffline = window.confirm(
+            '⚠️ Phiên đăng nhập máy chủ đã hết hạn sau một thời gian dài.\n\n' +
+            'Dữ liệu hồ sơ (cookie, lịch sử, extension) trên máy tính của bạn hoàn toàn AN TOÀN 100%.\n\n' +
+            '• Bấm [OK] để tiếp tục mở trình duyệt ngay ở chế độ Cục bộ (Offline Mode).\n' +
+            '• Bấm [Cancel] để Đăng nhập lại tài khoản làm mới phiên.'
+          );
+          if (!wantOffline) {
+            window.dispatchEvent(new CustomEvent('app-request-reauth'));
+            return;
+          }
+          addLog?.(`Chạy hồ sơ "${target.name}" ở chế độ Cục bộ (Offline Grace Mode)...`, 'warn');
+        } else {
+          // Xin vé khởi chạy bảo mật từ server (30s)
+          const targetLaunchVer = target.browser_version || (target.browser ? target.browser.replace(/[^0-9]/g, '') : '') || '152';
+          const ticketRes = await getLaunchTicketApi(profileId, {
+            version: targetLaunchVer
+          });
+          if (!ticketRes.success) {
+            const isTicketTokenExpired = /authorization token|token expired|invalid token/i.test(ticketRes.error || '');
+            if (isTicketTokenExpired) {
+              const wantOffline = window.confirm(
+                '⚠️ Phiên đăng nhập máy chủ đã hết hạn sau một thời gian dài.\n\n' +
+                'Dữ liệu hồ sơ (cookie, lịch sử, extension) trên máy tính của bạn hoàn toàn AN TOÀN 100%.\n\n' +
+                '• Bấm [OK] để tiếp tục mở trình duyệt ngay ở chế độ Cục bộ (Offline Mode).\n' +
+                '• Bấm [Cancel] để Đăng nhập lại tài khoản làm mới phiên.'
+              );
+              if (!wantOffline) {
+                window.dispatchEvent(new CustomEvent('app-request-reauth'));
+                unlockProfileApi(profileId).catch(() => {});
+                return;
+              }
+              addLog?.(`Chạy hồ sơ "${target.name}" ở chế độ Cục bộ (Offline Grace Mode)...`, 'warn');
+            } else {
+              addLog?.(`[Bảo vệ bản quyền] ${ticketRes.error}`, 'error');
+              alert(`⚠️ ${ticketRes.error}`);
+              unlockProfileApi(profileId).catch(() => {});
+              return;
+            }
+          } else {
+            target.launch_ticket = ticketRes.launch_ticket;
+            target.session_key = ticketRes.session_key;
+          }
         }
-
-        // Xin vé khởi chạy bảo mật từ server (30s)
-        const targetLaunchVer = target.browser_version || (target.browser ? target.browser.replace(/[^0-9]/g, '') : '') || '152';
-        const ticketRes = await getLaunchTicketApi(profileId, {
-          version: targetLaunchVer
-        });
-        if (!ticketRes.success) {
-          const isTicketTokenExpired = /authorization token|token expired|invalid token/i.test(ticketRes.error || '');
-          const errorMsg = isTicketTokenExpired
-            ? 'Phiên đăng nhập đã hết hạn. Vui lòng bấm vào Avatar góc phải -> Đăng xuất và đăng nhập lại để tiếp tục sử dụng!'
-            : ticketRes.error;
-          addLog?.(`[Bảo vệ bản quyền] ${errorMsg}`, 'error');
-          alert(`⚠️ ${errorMsg}`);
-          unlockProfileApi(profileId).catch(() => {});
-          return;
-        }
-        target.launch_ticket = ticketRes.launch_ticket;
-        target.session_key = ticketRes.session_key;
       }
 
       let realPid = Math.floor(10000 + Math.random() * 90000);

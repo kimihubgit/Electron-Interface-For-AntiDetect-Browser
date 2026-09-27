@@ -59,31 +59,8 @@ export function clearAuthSession() {
   localStorage.removeItem('conn_github');
   localStorage.removeItem('conn_google');
 
-  // 2. Remove all cached user data from localStorage
-  try {
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (
-        key && (
-          key.startsWith('antidetect_profiles_') ||
-          key.startsWith('antidetect_proxies_') ||
-          key.startsWith('antidetect_workspaces_') ||
-          key.startsWith('antidetect_custom_groups_') ||
-          key.startsWith('antidetect_trash_profiles_') ||
-          key.startsWith('antidetect_rotating_proxies_') ||
-          key.startsWith('antidetect_dcom_devices_') ||
-          key.startsWith('antidetect_active_ws_') ||
-          key.startsWith('antidetect_open_ws_tabs_')
-        )
-      ) {
-        keysToRemove.push(key);
-      }
-    }
-    keysToRemove.forEach((k) => localStorage.removeItem(k));
-  } catch (e) {
-    console.warn('Error clearing user cache keys on logout:', e);
-  }
+  // 2. We preserve user profiles, proxies and workspace cache so user data is NEVER lost when re-authenticating.
+  // Profiles are keyed by userScopeKey (user ID + workspace ID), so they stay safely isolated per account.
 
   // 3. Clear session storage completely
   try {
