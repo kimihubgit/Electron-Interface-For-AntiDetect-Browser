@@ -10,6 +10,7 @@ import ProviderConfigModal from './components/ProviderConfigModal';
 import BackupExecutionPanel from './components/BackupExecutionPanel';
 import BackupHistoryTable from './components/BackupHistoryTable';
 import BackupScheduleTab from './components/BackupScheduleTab';
+import BackupTerminalFooter from './components/BackupTerminalFooter';
 
 export default function BackupPage() {
   const { profiles = [], proxies = [] } = useBrowser();
@@ -138,9 +139,7 @@ export default function BackupPage() {
             onExecuteBackup={executeBackup}
             backupStatus={backupStatus}
             backupProgress={backupProgress}
-            backupLogs={backupLogs}
             currentRunningProvider={currentRunningProvider}
-            onResetStatus={resetBackupStatus}
           />
         )}
 
@@ -162,6 +161,15 @@ export default function BackupPage() {
           />
         )}
       </div>
+
+      {/* ── Terminal Console Footer (Docked at bottom) ── */}
+      <BackupTerminalFooter
+        backupStatus={backupStatus}
+        backupProgress={backupProgress}
+        backupLogs={backupLogs}
+        currentRunningProvider={currentRunningProvider}
+        onResetStatus={resetBackupStatus}
+      />
 
       {/* ── Modal for editing provider config ── */}
       {editingProvider && (
