@@ -15,6 +15,7 @@ export {
 
 export {
   getAuthToken,
+  getRefreshToken,
   getStoredUser,
   getStoredWorkspace,
   setAuthSession,
@@ -32,6 +33,7 @@ export {
 export {
   registerWithApi,
   loginWithApi,
+  refreshTokenApi,
   getAuthMeApi,
   getCurrentUserApi,
   getUserInfoApi,

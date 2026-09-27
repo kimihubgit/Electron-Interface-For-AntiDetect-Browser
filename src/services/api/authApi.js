@@ -5,7 +5,7 @@
 import { getApiServerUrl } from '../../config/apiConfig';
 import { apiClient } from '../core/apiClient';
 import { getOrCreateHwid, getDeviceName } from '../core/deviceService';
-import { getAuthToken, setAuthSession } from '../storage/authStorage';
+import { getAuthToken, getRefreshToken, getStoredUser, getStoredWorkspace, setAuthSession } from '../storage/authStorage';
 import { saveAccountSession } from '../storage/accountStorage';
 
 /**
@@ -34,7 +34,10 @@ export async function registerWithApi({ email, username, password, full_name = '
   }
 
   const payload = res.data || {};
-  const token = payload.token;
+  const token = payload.access_token || payload.token;
+  const refreshToken = payload.refresh_token || null;
+  const expiresAt = payload.expires_at || '';
+  const refreshExpiresAt = payload.refresh_expires_at || '';
   const user = payload.user || {
     id: `usr_${Date.now()}`,
     username: cleanUsername,
@@ -46,15 +49,18 @@ export async function registerWithApi({ email, username, password, full_name = '
   if (token) {
     setAuthSession({
       token,
+      access_token: token,
+      refresh_token: refreshToken,
       user,
       workspace,
-      expires_at: payload.expires_at || ''
+      expires_at: expiresAt,
+      refresh_expires_at: refreshExpiresAt
     });
     saveAccountSession({
       user,
       token,
       workspace,
-      expires_at: payload.expires_at || ''
+      expires_at: expiresAt
     });
   }
 
@@ -62,6 +68,8 @@ export async function registerWithApi({ email, username, password, full_name = '
     success: true,
     message: res.message || 'Đăng ký thành công',
     token,
+    access_token: token,
+    refresh_token: refreshToken,
     user,
     workspace
   };
@@ -118,13 +126,24 @@ export async function loginWithApi(arg1, arg2, arg3) {
   }
 
   const payload = res.data || {};
-  const token = payload.token;
+  const token = payload.access_token || payload.token;
+  const refreshToken = payload.refresh_token || null;
   const expiresAt = payload.expires_at || '';
+  const refreshExpiresAt = payload.refresh_expires_at || '';
 
   if (token) {
     // Gọi user info để hoàn thiện thông tin
     const infoRes = await getUserInfoApi(token);
     if (infoRes.success && infoRes.user) {
+      setAuthSession({
+        token,
+        access_token: token,
+        refresh_token: refreshToken,
+        user: infoRes.user,
+        workspace: infoRes.workspace,
+        expires_at: expiresAt,
+        refresh_expires_at: refreshExpiresAt
+      });
       saveAccountSession({
         user: infoRes.user,
         token,
@@ -137,7 +156,9 @@ export async function loginWithApi(arg1, arg2, arg3) {
         data: payload,
         user: infoRes.user,
         workspace: infoRes.workspace,
-        token
+        token,
+        access_token: token,
+        refresh_token: refreshToken
       };
     }
   }
@@ -150,9 +171,12 @@ export async function loginWithApi(arg1, arg2, arg3) {
 
   setAuthSession({
     token,
+    access_token: token,
+    refresh_token: refreshToken,
     user: fallbackUser,
     workspace: null,
-    expires_at: expiresAt
+    expires_at: expiresAt,
+    refresh_expires_at: refreshExpiresAt
   });
   saveAccountSession({
     user: fallbackUser,
@@ -167,7 +191,9 @@ export async function loginWithApi(arg1, arg2, arg3) {
     data: payload,
     user: fallbackUser,
     workspace: null,
-    token
+    token,
+    access_token: token,
+    refresh_token: refreshToken
   };
 }
 
@@ -287,9 +313,10 @@ export async function getUserInfoApi(tokenOverride = null) {
  */
 export async function logoutWithApi(tokenOverride = null) {
   const token = tokenOverride || getAuthToken();
-  if (token) {
+  const refreshToken = getRefreshToken();
+  if (token || refreshToken) {
     try {
-      await apiClient.post('/api/v1/auth/logout', null, { token });
+      await apiClient.post('/api/v1/auth/logout', { refresh_token: refreshToken }, { token, skipAuthRefresh: true });
     } catch { }
   }
   return { success: true, message: 'Logged out successfully' };
@@ -431,7 +458,11 @@ export async function loginWithGoogleApi({ id_token, code, access_token } = {}) 
   }
 
   const payloadData = res.data || {};
-  const token = payloadData.token;
+  const token = payloadData.access_token || payloadData.token;
+  const refreshToken = payloadData.refresh_token || null;
+  const expiresAt = payloadData.expires_at || '';
+  const refreshExpiresAt = payloadData.refresh_expires_at || '';
+
   if (!token) {
     return {
       success: false,
@@ -464,24 +495,97 @@ export async function loginWithGoogleApi({ id_token, code, access_token } = {}) 
 
   setAuthSession({
     token,
+    access_token: token,
+    refresh_token: refreshToken,
     user,
     workspace,
-    expires_at: payloadData.expires_at || ''
+    expires_at: expiresAt,
+    refresh_expires_at: refreshExpiresAt
   });
 
   saveAccountSession({
     user,
     token,
     workspace,
-    expires_at: payloadData.expires_at || ''
+    expires_at: expiresAt
   });
 
   return {
     success: true,
     message: res.message || 'Đăng nhập Google thành công',
     token,
+    access_token: token,
+    refresh_token: refreshToken,
     user,
     workspace
   };
+}
+
+/**
+ * 12. Refresh Access Token (POST /api/v1/auth/refresh)
+ * Uses refresh_token to rotate and acquire a new access_token & refresh_token pair
+ */
+export async function refreshTokenApi(refreshTokenOverride = null) {
+  const refreshToken = refreshTokenOverride || getRefreshToken();
+  if (!refreshToken) {
+    return { success: false, message: 'No refresh token available' };
+  }
+
+  const hwid = getOrCreateHwid();
+  const res = await apiClient.post('/api/v1/auth/refresh', {
+    refresh_token: refreshToken,
+    hwid
+  }, {
+    token: false,
+    skipAuthRefresh: true
+  });
+
+  if (!res.ok) {
+    return {
+      success: false,
+      status: res.status,
+      message: res.message || 'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.',
+      error: res.error
+    };
+  }
+
+  const payload = res.data || {};
+  const newAccessToken = payload.access_token || payload.token;
+  const newRefreshToken = payload.refresh_token;
+  const expiresAt = payload.expires_at || '';
+  const refreshExpiresAt = payload.refresh_expires_at || '';
+
+  if (newAccessToken) {
+    const currentUser = getStoredUser();
+    const currentWs = getStoredWorkspace();
+
+    setAuthSession({
+      token: newAccessToken,
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
+      user: currentUser,
+      workspace: currentWs,
+      expires_at: expiresAt,
+      refresh_expires_at: refreshExpiresAt
+    });
+
+    saveAccountSession({
+      user: currentUser,
+      token: newAccessToken,
+      workspace: currentWs,
+      expires_at: expiresAt
+    });
+
+    return {
+      success: true,
+      token: newAccessToken,
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
+      expires_at: expiresAt,
+      refresh_expires_at: refreshExpiresAt
+    };
+  }
+
+  return { success: false, message: 'Invalid response from refresh token endpoint' };
 }
 

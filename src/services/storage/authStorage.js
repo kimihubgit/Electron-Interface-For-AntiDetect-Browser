@@ -6,6 +6,10 @@ export function getAuthToken() {
   return localStorage.getItem('auth_token') || '';
 }
 
+export function getRefreshToken() {
+  return localStorage.getItem('auth_refresh_token') || '';
+}
+
 export function getStoredUser() {
   try {
     const raw = localStorage.getItem('auth_user');
@@ -24,11 +28,18 @@ export function getStoredWorkspace() {
   }
 }
 
-export function setAuthSession({ token, user, workspace, expires_at }) {
-  if (token) {
-    localStorage.setItem('auth_token', token);
+export function setAuthSession({ token, access_token, refresh_token, user, workspace, expires_at, refresh_expires_at }) {
+  const tokenVal = access_token || token;
+  if (tokenVal) {
+    localStorage.setItem('auth_token', tokenVal);
   } else {
     localStorage.removeItem('auth_token');
+  }
+
+  if (refresh_token) {
+    localStorage.setItem('auth_refresh_token', refresh_token);
+  } else if (refresh_token === null) {
+    localStorage.removeItem('auth_refresh_token');
   }
 
   if (user) {
@@ -48,11 +59,19 @@ export function setAuthSession({ token, user, workspace, expires_at }) {
   } else {
     localStorage.removeItem('auth_expires_at');
   }
+
+  if (refresh_expires_at) {
+    localStorage.setItem('auth_refresh_expires_at', refresh_expires_at);
+  } else if (refresh_expires_at === null) {
+    localStorage.removeItem('auth_refresh_expires_at');
+  }
 }
 
 export function clearAuthSession() {
   // 1. Remove active session tokens and user state
   localStorage.removeItem('auth_token');
+  localStorage.removeItem('auth_refresh_token');
+  localStorage.removeItem('auth_refresh_expires_at');
   localStorage.removeItem('auth_user');
   localStorage.removeItem('auth_workspace');
   localStorage.removeItem('auth_expires_at');

@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
 import { getApiServerUrl } from '../../config/apiConfig';
 import { getMachineGuid } from './deviceService';
-import { getAuthToken } from '../storage/authStorage';
+import {
+  getAuthToken,
+  getRefreshToken,
+  getStoredUser,
+  getStoredWorkspace,
+  setAuthSession,
+  clearAuthSession
+} from '../storage/authStorage';
+import { saveAccountSession } from '../storage/accountStorage';
 
 let activeRequests = 0;
 const apiLoadingListeners = new Set();
+let refreshPromise = null;
 
 function notifyApiLoading() {
   const isLoading = activeRequests > 0;
@@ -46,6 +55,72 @@ export function getActiveWorkspaceId() {
 }
 
 /**
+ * Execute silent refresh with token rotation (Only 1 refresh request at a time)
+ */
+async function executeTokenRefresh() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return null;
+
+  const serverUrl = getApiServerUrl();
+  const hwid = getMachineGuid();
+
+  try {
+    const res = await fetch(`${serverUrl}/api/v1/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Machine-GUID': hwid
+      },
+      body: JSON.stringify({ refresh_token: refreshToken, hwid })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.status !== 'success') {
+      throw new Error(data.message || 'Token refresh failed');
+    }
+
+    const payload = data.data || {};
+    const newAccessToken = payload.access_token || payload.token;
+    const newRefreshToken = payload.refresh_token;
+    const expiresAt = payload.expires_at || '';
+    const refreshExpiresAt = payload.refresh_expires_at || '';
+
+    if (newAccessToken) {
+      const user = getStoredUser();
+      const ws = getStoredWorkspace();
+
+      setAuthSession({
+        token: newAccessToken,
+        access_token: newAccessToken,
+        refresh_token: newRefreshToken,
+        user,
+        workspace: ws,
+        expires_at: expiresAt,
+        refresh_expires_at: refreshExpiresAt
+      });
+
+      saveAccountSession({
+        user,
+        token: newAccessToken,
+        workspace: ws,
+        expires_at: expiresAt
+      });
+
+      return newAccessToken;
+    }
+  } catch (err) {
+    console.warn('[apiClient] Refresh token failed or expired:', err.message);
+    clearAuthSession();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('app-auth-unauthorized', { detail: { message: err.message } }));
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
  * Build standard headers for all requests
  */
 export function getApiHeaders(tokenOverride = null, customHeaders = {}) {
@@ -76,14 +151,15 @@ export function getApiHeaders(tokenOverride = null, customHeaders = {}) {
 }
 
 /**
- * Core request dispatcher
+ * Core request dispatcher with automatic silent token refresh on 401
  */
 export async function apiRequest(path, {
   method = 'GET',
   body = null,
   params = null,
   token = null,
-  headers: customHeaders = {}
+  headers: customHeaders = {},
+  skipAuthRefresh = false
 } = {}) {
   const serverUrl = getApiServerUrl();
   let fullUrl = path.startsWith('http') ? path : `${serverUrl}${path.startsWith('/') ? '' : '/'}${path}`;
@@ -121,6 +197,29 @@ export async function apiRequest(path, {
       data = await res.json();
     } catch {
       data = { status: res.ok ? 'success' : 'error', message: res.statusText };
+    }
+
+    // 401 Unauthorized: Attempt silent refresh with Token Rotation and retry original request
+    const isAuthEndpoint = path.includes('/auth/login') || path.includes('/auth/refresh') || path.includes('/auth/register');
+    if (res.status === 401 && !skipAuthRefresh && !isAuthEndpoint && getRefreshToken()) {
+      if (!refreshPromise) {
+        refreshPromise = executeTokenRefresh().finally(() => {
+          refreshPromise = null;
+        });
+      }
+
+      const refreshedToken = await refreshPromise;
+      if (refreshedToken) {
+        // Silently retry the original request with the fresh rotated token
+        return apiRequest(path, {
+          method,
+          body,
+          params,
+          token: refreshedToken,
+          headers: customHeaders,
+          skipAuthRefresh: true
+        });
+      }
     }
 
     // 409 Conflict (e.g. Profile locked on another machine)
