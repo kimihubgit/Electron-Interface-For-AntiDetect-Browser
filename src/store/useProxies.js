@@ -381,7 +381,7 @@ export function useProxies(addLog, currentUser = null) {
   }, [addLog, setDcomDevices]);
 
   // 4. IPv6 Generator actions
-  const generateIpv6Batch = useCallback(({ prefix = '2402:800:6000:a1b2::/64', count = 50, startPort = 20000, userPrefix = 'ipv6_user', customPass = 'secure_pass', type = 'SOCKS5', country = 'VN' }) => {
+  const generateIpv6Batch = useCallback(({ prefix = '2402:800:6000:a1b2::/64', count = 50, startPort = 20000, userPrefix = 'ipv6_user', customPass = 'secure_pass', type = 'SOCKS5', country = 'VN', bindAddress = '127.0.0.1' }) => {
     const list = [];
     const basePrefix = prefix.replace('/64', '').replace('/48', '').replace(/::$/, '');
     const now = Date.now();
@@ -397,6 +397,7 @@ export function useProxies(addLog, currentUser = null) {
         type: type || 'SOCKS5',
         ipVersion: 'IPv6',
         host: fullIpv6,
+        bindAddress: bindAddress || '127.0.0.1',
         port,
         user: `${userPrefix}_${i + 1}`,
         pass: customPass,

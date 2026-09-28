@@ -20,17 +20,9 @@ import {
   AlertCircle,
   ArrowRight,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown
 } from 'lucide-react';
-
-const PRESETS = [
-  { name: 'Viettel IDC', region: 'VN', prefix: '2402:800:6000:a1b2::/64', flag: '🇻🇳' },
-  { name: 'VNPT Data', region: 'VN', prefix: '2405:4800:1020:c3d4::/64', flag: '🇻🇳' },
-  { name: 'FPT Telecom', region: 'VN', prefix: '2401:d800:2010:55aa::/64', flag: '🇻🇳' },
-  { name: 'OVH Cloud', region: 'FR', prefix: '2001:41d0:305:2100::/64', flag: '🇫🇷' },
-  { name: 'Hetzner Online', region: 'DE', prefix: '2a01:4f8:1c1c:4500::/64', flag: '🇩🇪' },
-  { name: 'AWS EC2', region: 'US', prefix: '2600:1f18:6300:5400::/64', flag: '🇺🇸' }
-];
 
 const QUICK_COUNTS = [10, 20, 50, 100, 200, 500];
 
@@ -42,6 +34,7 @@ export default function Ipv6SubnetTab({
   showToast
 }) {
   const [prefix, setPrefix] = useState('2402:800:6000:a1b2::/64');
+  const [bindAddress, setBindAddress] = useState('127.0.0.1'); // '127.0.0.1' | '0.0.0.0'
   const [count, setCount] = useState(20);
   const [startPort, setStartPort] = useState(20000);
   const [protocol, setProtocol] = useState('SOCKS5'); // SOCKS5 | HTTP
@@ -55,7 +48,7 @@ export default function Ipv6SubnetTab({
   const [copiedId, setCopiedId] = useState(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [copyFormat, setCopyFormat] = useState('colon'); // 'colon' (host:port:user:pass) | 'url' (protocol://user:pass@host:port)
+  const [copyFormat, setCopyFormat] = useState('ipv6'); // 'ipv6' ([host]:port:u:p) | 'address' (address:port:u:p) | 'url'
 
   // Generate random password helper
   const handleRandomPassword = () => {
@@ -84,7 +77,8 @@ export default function Ipv6SubnetTab({
         type: protocol,
         userPrefix: userPrefix.trim() || 'user',
         customPass: customPass.trim() || 'pass123',
-        country
+        country,
+        bindAddress
       });
       setIsGenerating(false);
       showToast?.(`Đã sinh thành công ${count} địa chỉ Proxy IPv6!`, 'success');
@@ -99,13 +93,17 @@ export default function Ipv6SubnetTab({
       (p) =>
         p.host?.toLowerCase().includes(term) ||
         String(p.port).includes(term) ||
-        p.user?.toLowerCase().includes(term)
+        p.user?.toLowerCase().includes(term) ||
+        p.bindAddress?.toLowerCase().includes(term)
     );
   }, [generatedIpv6List, searchTerm]);
 
   // Copy Single Proxy string
   const handleCopySingle = (proxy) => {
-    const text = `[${proxy.host}]:${proxy.port}:${proxy.user}:${proxy.pass}`;
+    let text = `[${proxy.host}]:${proxy.port}:${proxy.user}:${proxy.pass}`;
+    if (copyFormat === 'address') {
+      text = `${proxy.bindAddress || bindAddress}:${proxy.port}:${proxy.user}:${proxy.pass}`;
+    }
     navigator.clipboard.writeText(text);
     setCopiedId(proxy.id);
     setTimeout(() => setCopiedId(null), 1500);
@@ -119,6 +117,9 @@ export default function Ipv6SubnetTab({
         const proto = (p.type || protocol || 'socks5').toLowerCase();
         return `${proto}://${p.user}:${p.pass}@[${p.host}]:${p.port}`;
       }
+      if (copyFormat === 'address') {
+        return `${p.bindAddress || bindAddress}:${p.port}:${p.user}:${p.pass}`;
+      }
       return `[${p.host}]:${p.port}:${p.user}:${p.pass}`;
     });
     navigator.clipboard.writeText(lines.join('\n'));
@@ -130,7 +131,12 @@ export default function Ipv6SubnetTab({
   // Download as TXT file
   const handleDownloadTxt = () => {
     if (generatedIpv6List.length === 0) return;
-    const lines = generatedIpv6List.map((p) => `[${p.host}]:${p.port}:${p.user}:${p.pass}`);
+    const lines = generatedIpv6List.map((p) => {
+      if (copyFormat === 'address') {
+        return `${p.bindAddress || bindAddress}:${p.port}:${p.user}:${p.pass}`;
+      }
+      return `[${p.host}]:${p.port}:${p.user}:${p.pass}`;
+    });
     const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -190,51 +196,13 @@ export default function Ipv6SubnetTab({
             gap: '16px'
           }}
         >
-          {/* Section 1: IPv6 Subnet Prefix & Quick Presets */}
+          {/* Section 1: IPv6 Subnet Prefix */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#1E293B' }}>
                 Dải Subnet Prefix (/64 hoặc /48) <span style={{ color: '#EF4444' }}>*</span>
               </label>
               <span style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 600 }}>18.4 tỷ tỷ IP</span>
-            </div>
-
-            {/* Quick Presets Pills */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
-              {PRESETS.map((item, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    setPrefix(item.prefix);
-                    setCountry(item.region);
-                    showToast?.(`Đã tải mẫu: ${item.name} (${item.flag})`);
-                  }}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '3px 7px',
-                    borderRadius: '5px',
-                    border: prefix === item.prefix ? '1px solid #7C3AED' : '1px solid #E2E8F0',
-                    backgroundColor: prefix === item.prefix ? '#F5F3FF' : '#F8FAFC',
-                    color: prefix === item.prefix ? '#7C3AED' : '#475569',
-                    fontSize: '11px',
-                    fontWeight: prefix === item.prefix ? 600 : 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.12s'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (prefix !== item.prefix) e.currentTarget.style.backgroundColor = '#F1F5F9';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (prefix !== item.prefix) e.currentTarget.style.backgroundColor = '#F8FAFC';
-                  }}
-                >
-                  <span>{item.flag}</span>
-                  <span>{item.name}</span>
-                </button>
-              ))}
             </div>
             <div style={{ position: 'relative' }}>
               <input
@@ -264,7 +232,54 @@ export default function Ipv6SubnetTab({
             </div>
           </div>
 
-          {/* Section 2: Quantity Counter & Quick Pills */}
+          {/* Section 2: Address (Listen / Bind Address) */}
+          <div>
+            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: '#1E293B', marginBottom: '6px' }}>
+              Address
+            </label>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={bindAddress}
+                onChange={(e) => setBindAddress(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  padding: '0 32px 0 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
+                  fontSize: '12.5px',
+                  color: '#0F172A',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => (e.target.style.borderColor = 'var(--apidog-purple)')}
+                onBlur={(e) => (e.target.style.borderColor = '#CBD5E1')}
+              >
+                <option value="127.0.0.1">127.0.0.1 — chỉ dùng trên máy này</option>
+                <option value="0.0.0.0">0.0.0.0 — chia sẻ cho mạng LAN / public ra ngoài</option>
+              </select>
+              <div
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                  color: '#94A3B8',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <ChevronDown size={14} />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Quantity Counter & Quick Pills */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#1E293B' }}>
@@ -354,33 +369,51 @@ export default function Ipv6SubnetTab({
             </div>
           </div>
 
-          {/* Section 3: Protocol & Start Port */}
+          {/* Section 4: Protocol (Selection) & Start Port */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: '#1E293B', marginBottom: '6px' }}>
                 Giao thức (Protocol)
               </label>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                {['SOCKS5', 'HTTP'].map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setProtocol(p)}
-                    style={{
-                      flex: 1,
-                      height: '36px',
-                      borderRadius: '6px',
-                      border: protocol === p ? '1px solid #7C3AED' : '1px solid #E2E8F0',
-                      backgroundColor: protocol === p ? '#F5F3FF' : '#FFFFFF',
-                      color: protocol === p ? '#7C3AED' : '#475569',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {p}
-                  </button>
-                ))}
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={protocol}
+                  onChange={(e) => setProtocol(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '36px',
+                    padding: '0 30px 0 10px',
+                    borderRadius: '6px',
+                    border: '1px solid #CBD5E1',
+                    backgroundColor: '#FFFFFF',
+                    fontSize: '12.5px',
+                    color: '#0F172A',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = 'var(--apidog-purple)')}
+                  onBlur={(e) => (e.target.style.borderColor = '#CBD5E1')}
+                >
+                  <option value="SOCKS5">SOCKS5</option>
+                  <option value="HTTP">HTTP</option>
+                </select>
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    color: '#94A3B8',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <ChevronDown size={14} />
+                </div>
               </div>
             </div>
 
@@ -429,7 +462,7 @@ export default function Ipv6SubnetTab({
             </code>
           </div>
 
-          {/* Section 4: Authentication Credentials */}
+          {/* Section 5: Authentication Credentials */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#1E293B' }}>
               Thông tin xác thực (Auth Credentials)
@@ -664,6 +697,42 @@ export default function Ipv6SubnetTab({
                     </span>
                   </div>
 
+                  {/* Format Switcher */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#F1F5F9', padding: '2px', borderRadius: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setCopyFormat('ipv6')}
+                      style={{
+                        border: 'none',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: copyFormat === 'ipv6' ? 600 : 500,
+                        backgroundColor: copyFormat === 'ipv6' ? '#FFFFFF' : 'transparent',
+                        color: copyFormat === 'ipv6' ? '#7C3AED' : '#64748B',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      IPv6 Host
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCopyFormat('address')}
+                      style={{
+                        border: 'none',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: copyFormat === 'address' ? 600 : 500,
+                        backgroundColor: copyFormat === 'address' ? '#FFFFFF' : 'transparent',
+                        color: copyFormat === 'address' ? '#7C3AED' : '#64748B',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Address ({bindAddress})
+                    </button>
+                  </div>
+
                   {/* Search Filter */}
                   <div
                     style={{
@@ -675,7 +744,7 @@ export default function Ipv6SubnetTab({
                       border: '1px solid #E2E8F0',
                       padding: '0 8px',
                       height: '30px',
-                      width: '180px'
+                      width: '160px'
                     }}
                   >
                     <Search size={12} style={{ color: '#94A3B8', marginRight: '6px' }} />
@@ -813,14 +882,15 @@ export default function Ipv6SubnetTab({
                         zIndex: 10
                       }}
                     >
-                      <th style={{ padding: '8px 14px', width: '40px' }}>#</th>
+                      <th style={{ padding: '8px 14px', width: '35px' }}>#</th>
                       <th style={{ padding: '8px 14px' }}>Địa chỉ IPv6 (Host)</th>
-                      <th style={{ padding: '8px 14px', width: '90px' }}>Port</th>
-                      <th style={{ padding: '8px 14px', width: '90px' }}>Giao thức</th>
+                      <th style={{ padding: '8px 14px', width: '100px' }}>Address (Bind)</th>
+                      <th style={{ padding: '8px 14px', width: '80px' }}>Port</th>
+                      <th style={{ padding: '8px 14px', width: '80px' }}>Giao thức</th>
                       <th style={{ padding: '8px 14px' }}>Username</th>
                       <th style={{ padding: '8px 14px' }}>Password</th>
-                      <th style={{ padding: '8px 14px', width: '90px' }}>Trạng thái</th>
-                      <th style={{ padding: '8px 14px', width: '70px', textAlign: 'center' }}>Thao tác</th>
+                      <th style={{ padding: '8px 14px', width: '80px' }}>Trạng thái</th>
+                      <th style={{ padding: '8px 14px', width: '60px', textAlign: 'center' }}>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -841,11 +911,24 @@ export default function Ipv6SubnetTab({
                           {idx + 1}
                         </td>
                         <td style={{ padding: '8px 14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0F172A' }}>
-                              [{p.host}]
-                            </span>
-                          </div>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#0F172A' }}>
+                            [{p.host}]
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 14px' }}>
+                          <span
+                            style={{
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              backgroundColor: (p.bindAddress || bindAddress) === '127.0.0.1' ? '#F1F5F9' : '#FEF3C7',
+                              color: (p.bindAddress || bindAddress) === '127.0.0.1' ? '#475569' : '#D97706',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              fontFamily: 'monospace'
+                            }}
+                          >
+                            {p.bindAddress || bindAddress}
+                          </span>
                         </td>
                         <td style={{ padding: '8px 14px', fontFamily: 'monospace', fontWeight: 600, color: '#475569' }}>
                           {p.port}
