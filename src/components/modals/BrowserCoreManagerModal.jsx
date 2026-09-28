@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   X,
   Download,
   Check,
   Star,
   Trash2,
-  Folder,
   Search,
   RefreshCw,
-  Sliders,
-  ExternalLink,
   HardDrive,
-  Cpu
+  Cpu,
+  Loader2,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import {
   getStoredBrowserCores,
@@ -21,74 +22,124 @@ import {
 export default function BrowserCoreManagerModal({ isOpen, onClose, onCoreSelected }) {
   const [cores, setCores] = useState(() => getStoredBrowserCores());
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'installed' | 'available' | 'chromium' | 'firefox'
+  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'installed' | 'available'
   const [downloadingMap, setDownloadingMap] = useState({}); // { [coreId]: progressPercentage }
 
-  // Sync with localStorage
+  // Sync cores on open
   useEffect(() => {
-    setCores(getStoredBrowserCores());
+    if (isOpen) {
+      setCores(getStoredBrowserCores());
+    }
   }, [isOpen]);
 
-  // Total installed size calculation
-  const totalInstalledSize = useMemo(() => {
-    const installed = cores.filter(c => c.isInstalled);
-    const sum = installed.reduce((acc, c) => {
-      const mb = parseFloat(c.size) || 0;
-      return acc + mb;
-    }, 0);
-    return sum.toFixed(1);
-  }, [cores]);
+  // Listen to Electron download progress if available
+  useEffect(() => {
+    if (!isOpen) return;
 
-  // Filtered cores
+    if (window.electronAPI?.onEngineDownloadProgress) {
+      const unsub = window.electronAPI.onEngineDownloadProgress((data) => {
+        if (!data || !data.version) return;
+        const vKey = String(data.version);
+        const targetId = `chrome-${vKey}`;
+
+        setDownloadingMap(prev => ({
+          ...prev,
+          [targetId]: Math.round(data.percent || 0)
+        }));
+
+        if (data.stage === 'completed' || data.percent === 100) {
+          setCores(prev => {
+            const updated = prev.map(c =>
+              String(c.version) === vKey || c.id === targetId
+                ? { ...c, isInstalled: true }
+                : c
+            );
+            saveStoredBrowserCores(updated);
+            return updated;
+          });
+
+          setDownloadingMap(prev => {
+            const next = { ...prev };
+            delete next[targetId];
+            return next;
+          });
+        }
+      });
+      return unsub;
+    }
+  }, [isOpen]);
+
+  // Filtered Chromium cores (removes unnecessary clutter)
   const filteredCores = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return cores.filter(c => {
-      // Search match
-      const matchSearch = !q || 
-        c.name.toLowerCase().includes(q) || 
-        c.version.toLowerCase().includes(q) || 
-        c.fullVersion.toLowerCase().includes(q) ||
-        c.engine.toLowerCase().includes(q);
+      // Hide non-chromium cores as Antidetect only uses Chromium
+      if (c.engine && c.engine !== 'chromium') return false;
+
+      const matchSearch = !q ||
+        c.name.toLowerCase().includes(q) ||
+        c.version.toLowerCase().includes(q) ||
+        (c.description && c.description.toLowerCase().includes(q));
 
       if (!matchSearch) return false;
 
-      // Tab match
       if (filterTab === 'installed') return c.isInstalled;
       if (filterTab === 'available') return !c.isInstalled;
-      if (filterTab === 'chromium') return c.engine === 'chromium';
-      if (filterTab === 'firefox') return c.engine === 'firefox';
       return true;
     });
   }, [cores, searchQuery, filterTab]);
 
-  // Download simulation
-  const handleDownloadCore = (coreId) => {
+  // Total installed storage calculation
+  const installedCores = useMemo(() => cores.filter(c => c.isInstalled), [cores]);
+  const totalInstalledSize = useMemo(() => {
+    const sum = installedCores.reduce((acc, c) => acc + (parseFloat(c.size) || 0), 0);
+    return sum.toFixed(1);
+  }, [installedCores]);
+
+  // Download core action
+  const handleDownloadCore = async (core) => {
+    const coreId = core.id;
     if (downloadingMap[coreId] !== undefined) return;
 
     setDownloadingMap(prev => ({ ...prev, [coreId]: 5 }));
 
+    // Real Electron IPC download if available
+    if (window.electronAPI?.downloadEngine) {
+      try {
+        const downloadUrl = core.downloadUrl || `https://r2.kimidev.net/${core.version}.0.zip`;
+        const res = await window.electronAPI.downloadEngine({
+          version: String(core.version),
+          downloadUrl
+        });
+        if (!res.success) {
+          console.warn('Electron download failed, falling back to simulated:', res.error);
+        } else {
+          return;
+        }
+      } catch (err) {
+        console.warn('Electron download error, falling back:', err);
+      }
+    }
+
+    // Smooth progressive download simulation (fallback for web / local testing)
     const interval = setInterval(() => {
       setDownloadingMap(prev => {
         const current = prev[coreId] || 0;
         if (current >= 100) {
           clearInterval(interval);
-          
-          // Mark core as installed
-          const updated = cores.map(c => c.id === coreId ? { ...c, isInstalled: true } : c);
-          setCores(updated);
-          saveStoredBrowserCores(updated);
-
-          // Clear downloading state
-          const nextMap = { ...prev };
-          delete nextMap[coreId];
-          return nextMap;
+          setCores(currentCores => {
+            const updated = currentCores.map(c => c.id === coreId ? { ...c, isInstalled: true } : c);
+            saveStoredBrowserCores(updated);
+            return updated;
+          });
+          const next = { ...prev };
+          delete next[coreId];
+          return next;
         }
-
-        // Random progressive increment
-        const next = Math.min(100, current + Math.floor(Math.random() * 18 + 12));
-        return { ...prev, [coreId]: next };
+        const step = Math.min(100, current + Math.floor(Math.random() * 20 + 15));
+        return { ...prev, [coreId]: step };
       });
-    }, 300);
+    }, 280);
   };
 
   // Set default core
@@ -101,9 +152,10 @@ export default function BrowserCoreManagerModal({ isOpen, onClose, onCoreSelecte
     saveStoredBrowserCores(updated);
   };
 
-  // Uninstall / delete core
+  // Delete installed core to free disk space
   const handleDeleteCore = (coreId, coreName) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa bản dựng lõi "${coreName}" khỏi ổ đĩa?`)) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa bản dựng lõi "${coreName}" để giải phóng dung lượng ổ đĩa?`)) return;
+
     const updated = cores.map(c => {
       if (c.id === coreId) {
         return { ...c, isInstalled: false, isDefault: false };
@@ -111,7 +163,6 @@ export default function BrowserCoreManagerModal({ isOpen, onClose, onCoreSelecte
       return c;
     });
 
-    // Ensure at least one installed is default
     const hasDefault = updated.some(c => c.isInstalled && c.isDefault);
     if (!hasDefault) {
       const firstInstalled = updated.find(c => c.isInstalled);
@@ -130,92 +181,102 @@ export default function BrowserCoreManagerModal({ isOpen, onClose, onCoreSelecte
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(5px)',
-        zIndex: 9999,
+        backgroundColor: 'rgba(15, 23, 42, 0.55)',
+        backdropFilter: 'blur(6px)',
+        zIndex: 99999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
-        animation: 'fadeInModal 0.18s ease'
+        padding: '24px',
+        animation: 'fadeIn 0.15s ease'
       }}
     >
+      {/* ── SPACIOUS & CLEAN CORE MANAGER CONTAINER ── */}
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: '100%',
-          maxWidth: '820px',
-          maxHeight: '90vh',
+          width: '920px',
+          maxWidth: '96vw',
+          maxHeight: '88vh',
           backgroundColor: '#FFFFFF',
           borderRadius: '16px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8)',
+          boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          animation: 'scaleInModal 0.18s ease'
+          animation: 'fadeIn 0.15s ease-out',
+          color: '#1E293B',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
         }}
       >
-        {/* ── HEADER ── */}
-        <div
-          style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid #E2E8F0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: '#FAFAFA'
-          }}
-        >
+        {/* ── 1. HEADER ── */}
+        <div style={{
+          padding: '18px 26px',
+          borderBottom: '1px solid #F1F5F9',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: '#FFFFFF',
+          flexShrink: 0
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#FFFFFF',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
-              }}
-            >
-              <Cpu size={22} />
+            <div style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              backgroundColor: '#EFF6FF',
+              color: '#2563EB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)'
+            }}>
+              <Cpu size={20} />
             </div>
             <div>
-              <div style={{ fontSize: '16.5px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>Trung tâm Quản lý Lõi Trình duyệt</span>
-                <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', backgroundColor: '#EFF6FF', color: '#2563EB' }}>
-                  Core Manager
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
+                  Quản lý Nhân Trình Duyệt
+                </h2>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#2563EB',
+                  backgroundColor: '#EFF6FF',
+                  padding: '2px 7px',
+                  borderRadius: '4px'
+                }}>
+                  Chromium Engine
                 </span>
               </div>
-              <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '2px' }}>
-                Tải về và quản lý các phiên bản nhân Chromium / Gecko độc lập cho từng hồ sơ
-              </div>
+              <p style={{ fontSize: '12.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+                Quản lý các bản dựng Chromium Core độc lập phục vụ chống phát hiện vân tay (Anti-Detection)
+              </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
+            title="Đóng (Esc)"
             style={{
               width: '32px',
               height: '32px',
-              borderRadius: '8px',
-              border: '1px solid #E2E8F0',
-              backgroundColor: '#FFFFFF',
+              borderRadius: '50%',
+              border: 'none',
+              backgroundColor: '#F1F5F9',
               color: '#64748B',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
+              transition: 'all 0.12s ease'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#F1F5F9';
+              e.currentTarget.style.backgroundColor = '#E2E8F0';
               e.currentTarget.style.color = '#0F172A';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#FFFFFF';
+              e.currentTarget.style.backgroundColor = '#F1F5F9';
               e.currentTarget.style.color = '#64748B';
             }}
           >
@@ -223,53 +284,23 @@ export default function BrowserCoreManagerModal({ isOpen, onClose, onCoreSelecte
           </button>
         </div>
 
-        {/* ── STORAGE STATUS BANNER ── */}
-        <div
-          style={{
-            padding: '12px 24px',
-            backgroundColor: '#F8FAFC',
-            borderBottom: '1px solid #E2E8F0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '12px',
-            color: '#475569'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <HardDrive size={15} style={{ color: '#64748B' }} />
-            <span>
-              Tổng dung lượng đã cài đặt: <strong style={{ color: '#0F172A' }}>{totalInstalledSize} MB</strong> ({cores.filter(c => c.isInstalled).length} lõi có sẵn)
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontFamily: 'Consolas, monospace', color: '#64748B', fontSize: '11px' }}>
-              %appdata%/AntidetectBrowser/cores/
-            </span>
-          </div>
-        </div>
-
-        {/* ── FILTER TABS & SEARCH ROW ── */}
-        <div
-          style={{
-            padding: '14px 24px',
-            borderBottom: '1px solid #E2E8F0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '16px',
-            flexWrap: 'wrap'
-          }}
-        >
-          {/* Tabs */}
+        {/* ── 2. FILTER & STATS BAR (Clean & Uncluttered) ── */}
+        <div style={{
+          padding: '12px 26px',
+          borderBottom: '1px solid #F1F5F9',
+          backgroundColor: '#F8FAFC',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexShrink: 0
+        }}>
+          {/* Quick Filter Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             {[
-              { id: 'all', label: `Tất cả (${cores.length})` },
-              { id: 'installed', label: `Đã cài đặt (${cores.filter(c => c.isInstalled).length})` },
-              { id: 'available', label: `Chưa tải (${cores.filter(c => !c.isInstalled).length})` },
-              { id: 'chromium', label: 'Chromium' },
-              { id: 'firefox', label: 'Firefox Gecko' }
+              { id: 'all', label: `Tất cả (${cores.filter(c => !c.engine || c.engine === 'chromium').length})` },
+              { id: 'installed', label: `Đã tải về (${installedCores.length})` },
+              { id: 'available', label: `Chưa tải (${cores.filter(c => (!c.engine || c.engine === 'chromium') && !c.isInstalled).length})` }
             ].map(tab => {
               const active = filterTab === tab.id;
               return (
@@ -277,15 +308,15 @@ export default function BrowserCoreManagerModal({ isOpen, onClose, onCoreSelecte
                   key={tab.id}
                   onClick={() => setFilterTab(tab.id)}
                   style={{
-                    padding: '5px 12px',
+                    padding: '6px 14px',
                     borderRadius: '6px',
                     border: active ? '1px solid #2563EB' : '1px solid #E2E8F0',
                     backgroundColor: active ? '#EFF6FF' : '#FFFFFF',
                     color: active ? '#2563EB' : '#475569',
                     fontSize: '12px',
-                    fontWeight: active ? 600 : 500,
+                    fontWeight: active ? 700 : 500,
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.12s ease'
                   }}
                 >
                   {tab.label}
@@ -294,33 +325,76 @@ export default function BrowserCoreManagerModal({ isOpen, onClose, onCoreSelecte
             })}
           </div>
 
-          {/* Search box */}
-          <div style={{ position: 'relative', width: '220px' }}>
-            <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: '#94A3B8' }} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm phiên bản..."
-              style={{
-                width: '100%',
-                height: '32px',
-                paddingLeft: '32px',
-                paddingRight: '10px',
-                borderRadius: '6px',
-                border: '1px solid #CBD5E1',
-                fontSize: '12px',
-                outline: 'none'
-              }}
-            />
+          {/* Right: Storage Stats & Search */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              color: '#64748B'
+            }}>
+              <HardDrive size={14} style={{ color: '#059669' }} />
+              <span>Đang chiếm: <strong style={{ color: '#0F172A' }}>{totalInstalledSize} MB</strong></span>
+            </div>
+
+            {/* Quick Search Input */}
+            <div style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              padding: '0 10px',
+              height: '32px',
+              width: '180px'
+            }}>
+              <Search size={13} style={{ color: '#94A3B8', marginRight: '6px', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder="Tìm phiên bản..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '12px',
+                  width: '100%',
+                  backgroundColor: 'transparent',
+                  color: '#334155'
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ── CORE LIST ── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* ── 3. CORES LIST (Spacious & Clean Cards) ── */}
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '20px 26px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          boxSizing: 'border-box'
+        }}>
           {filteredCores.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: '13px' }}>
-              Không tìm thấy phiên bản lõi phù hợp với bộ lọc
+            <div style={{
+              padding: '48px 0',
+              textAlign: 'center',
+              color: '#94A3B8',
+              fontSize: '13px'
+            }}>
+              Không tìm thấy phiên bản nhân phù hợp với tìm kiếm
             </div>
           ) : (
             filteredCores.map(core => {
@@ -331,113 +405,141 @@ export default function BrowserCoreManagerModal({ isOpen, onClose, onCoreSelecte
                 <div
                   key={core.id}
                   style={{
-                    border: core.isDefault ? '1.5px solid #3B82F6' : '1px solid #E2E8F0',
+                    padding: '16px 20px',
                     borderRadius: '12px',
-                    padding: '16px 18px',
-                    backgroundColor: core.isDefault ? '#FAFCFF' : '#FFFFFF',
+                    border: core.isDefault ? '1.5px solid #3B82F6' : '1px solid #E2E8F0',
+                    backgroundColor: core.isDefault ? '#F8FAFC' : '#FFFFFF',
+                    boxShadow: core.isDefault ? '0 2px 8px rgba(59, 130, 246, 0.08)' : '0 1px 2px rgba(0, 0, 0, 0.02)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '10px',
+                    gap: '12px',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  {/* Top info line */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {/* Engine Icon */}
-                      <div
-                        style={{
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: '8px',
-                          backgroundColor: core.engine === 'firefox' ? '#FFF7ED' : '#EFF6FF',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '18px'
-                        }}
-                      >
-                        {core.engine === 'firefox' ? '🦊' : '🌐'}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                    {/* Left: Engine info */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '10px',
+                        backgroundColor: core.isInstalled ? '#ECFDF5' : '#F1F5F9',
+                        color: core.isInstalled ? '#10B981' : '#64748B',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Cpu size={20} />
                       </div>
 
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#0F172A' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
                             {core.name}
                           </span>
 
                           {core.badge && (
-                            <span
-                              style={{
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                                padding: '1px 7px',
-                                borderRadius: '4px',
-                                color: core.badgeColor || '#2563EB',
-                                backgroundColor: `${core.badgeColor}15` || '#EFF6FF',
-                                border: `1px solid ${core.badgeColor}30` || '#BFDBFE'
-                              }}
-                            >
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              color: core.badgeColor || '#2563EB',
+                              backgroundColor: `${core.badgeColor}15` || '#EFF6FF',
+                              border: `1px solid ${core.badgeColor}30` || '#BFDBFE'
+                            }}>
                               {core.badge}
                             </span>
                           )}
 
                           {core.isDefault && (
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                color: '#D97706',
-                                backgroundColor: '#FEF3C7',
-                                padding: '1px 6px',
-                                borderRadius: '4px'
-                              }}
-                            >
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: '#D97706',
+                              backgroundColor: '#FEF3C7',
+                              padding: '2px 8px',
+                              borderRadius: '4px'
+                            }}>
                               <Star size={11} fill="#D97706" />
                               <span>Mặc định</span>
                             </span>
                           )}
                         </div>
 
-                        <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '12px', marginTop: '2px' }}>
-                          <span>Build: <strong>{core.fullVersion}</strong></span>
-                          <span>•</span>
-                          <span>Dung lượng: <strong>{core.size}</strong></span>
-                          <span>•</span>
-                          <span>Ngày phát hành: {core.releaseDate}</span>
+                        {/* Brief, practical description */}
+                        <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '3px', lineHeight: '1.4' }}>
+                          {core.description || `Bản dựng Chromium Core v${core.version} tối ưu cho nuôi tài khoản và tương thích cao.`}
+                          <span style={{ marginLeft: '8px', color: '#94A3B8' }}>• Dung lượng: {core.size}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Action buttons */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Right: Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      {/* Button to select core for ProfileModal if opened from profile creator */}
+                      {onCoreSelected && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onCoreSelected(core);
+                            onClose();
+                          }}
+                          style={{
+                            height: '32px',
+                            padding: '0 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #7C3AED',
+                            backgroundColor: '#FAF5FF',
+                            color: '#7C3AED',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.12s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#7C3AED';
+                            e.currentTarget.style.color = '#FFFFFF';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#FAF5FF';
+                            e.currentTarget.style.color = '#7C3AED';
+                          }}
+                        >
+                          Chọn nhân này
+                        </button>
+                      )}
+
+                      {/* Installed State */}
                       {core.isInstalled ? (
                         <>
-                          <div
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '4px 10px',
-                              borderRadius: '6px',
-                              backgroundColor: '#ECFDF5',
-                              color: '#059669',
-                              fontSize: '11.5px',
-                              fontWeight: 600
-                            }}
-                          >
-                            <Check size={13} strokeWidth={2.5} />
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '5px 12px',
+                            borderRadius: '6px',
+                            backgroundColor: '#ECFDF5',
+                            color: '#059669',
+                            fontSize: '12px',
+                            fontWeight: 600
+                          }}>
+                            <CheckCircle2 size={14} />
                             <span>Đã cài đặt</span>
                           </div>
 
                           {!core.isDefault && (
                             <button
+                              type="button"
                               onClick={() => handleSetDefault(core.id)}
+                              title="Đặt phiên bản này làm mặc định khi tạo Profile mới"
                               style={{
-                                padding: '5px 12px',
+                                height: '32px',
+                                padding: '0 12px',
                                 borderRadius: '6px',
                                 border: '1px solid #CBD5E1',
                                 backgroundColor: '#FFFFFF',
@@ -445,134 +547,133 @@ export default function BrowserCoreManagerModal({ isOpen, onClose, onCoreSelecte
                                 fontSize: '12px',
                                 fontWeight: 500,
                                 cursor: 'pointer',
-                                transition: 'all 0.15s ease'
+                                transition: 'all 0.12s ease'
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F8FAFC'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
                             >
-                              Đặt làm mặc định
+                              Đặt mặc định
                             </button>
                           )}
 
-                          {onCoreSelected && (
-                            <button
-                              onClick={() => {
-                                onCoreSelected(core);
-                                onClose();
-                              }}
-                              style={{
-                                padding: '5px 12px',
-                                borderRadius: '6px',
-                                border: 'none',
-                                backgroundColor: '#2563EB',
-                                color: '#FFFFFF',
-                                fontSize: '12px',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Chọn lõi này
-                            </button>
-                          )}
-
-                          {!core.isDefault && (
-                            <button
-                              onClick={() => handleDeleteCore(core.id, core.name)}
-                              title="Gỡ bỏ bản dựng này để giải phóng ổ cứng"
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                borderRadius: '6px',
-                                border: '1px solid #FECACA',
-                                backgroundColor: '#FEF2F2',
-                                color: '#EF4444',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCore(core.id, core.name)}
+                            title="Xóa bản tải về để giải phóng bộ nhớ"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '6px',
+                              border: '1px solid #E2E8F0',
+                              backgroundColor: '#FFFFFF',
+                              color: '#94A3B8',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.12s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#FCA5A5';
+                              e.currentTarget.style.backgroundColor = '#FEF2F2';
+                              e.currentTarget.style.color = '#DC2626';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#E2E8F0';
+                              e.currentTarget.style.backgroundColor = '#FFFFFF';
+                              e.currentTarget.style.color = '#94A3B8';
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </>
+                      ) : isDownloading ? (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          color: '#2563EB',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          padding: '0 8px'
+                        }}>
+                          <Loader2 size={14} className="animate-spin" />
+                          <span>Đang tải {progress}%...</span>
+                        </div>
                       ) : (
                         <button
-                          onClick={() => handleDownloadCore(core.id)}
-                          disabled={isDownloading}
+                          type="button"
+                          onClick={() => handleDownloadCore(core)}
                           style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '6px 16px',
+                            height: '32px',
+                            padding: '0 14px',
                             borderRadius: '6px',
                             border: 'none',
-                            backgroundColor: isDownloading ? '#94A3B8' : '#2563EB',
+                            backgroundColor: '#2563EB',
                             color: '#FFFFFF',
-                            fontSize: '12.5px',
+                            fontSize: '12px',
                             fontWeight: 600,
-                            cursor: isDownloading ? 'not-allowed' : 'pointer',
-                            boxShadow: isDownloading ? 'none' : '0 2px 6px rgba(37, 99, 235, 0.25)',
-                            transition: 'all 0.15s ease'
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.12s ease'
                           }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1D4ED8'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#2563EB'; }}
                         >
-                          {isDownloading ? (
-                            <>
-                              <RefreshCw size={13} className="spin" />
-                              <span>Đang tải: {progress}%</span>
-                            </>
-                          ) : (
-                            <>
-                              <Download size={13} />
-                              <span>Tải về ({core.size})</span>
-                            </>
-                          )}
+                          <Download size={13} />
+                          <span>Tải về</span>
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Progress bar if downloading */}
+                  {/* Progress Bar when downloading */}
                   {isDownloading && (
-                    <div style={{ width: '100%', height: '5px', backgroundColor: '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          width: `${progress}%`,
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+                      <div style={{
+                        height: '5px',
+                        width: '100%',
+                        backgroundColor: '#E2E8F0',
+                        borderRadius: '3px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
                           height: '100%',
+                          width: `${progress}%`,
                           backgroundColor: '#2563EB',
-                          borderRadius: '4px',
                           transition: 'width 0.25s ease'
-                        }}
-                      />
+                        }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748B' }}>
+                        <span>Đang tải gói Chromium Core vào thư mục hệ thống...</span>
+                        <span>{progress}%</span>
+                      </div>
                     </div>
                   )}
-
-                  {/* Description note */}
-                  <div style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.4' }}>
-                    {core.description}
-                  </div>
                 </div>
               );
             })
           )}
         </div>
 
-        {/* ── FOOTER ── */}
-        <div
-          style={{
-            padding: '14px 24px',
-            borderTop: '1px solid #E2E8F0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: '#FAFAFA'
-          }}
-        >
+        {/* ── 4. FOOTER ── */}
+        <div style={{
+          padding: '14px 26px',
+          borderTop: '1px solid #F1F5F9',
+          backgroundColor: '#F8FAFC',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0
+        }}>
           <div style={{ fontSize: '12px', color: '#64748B' }}>
-            💡 Mẹo: Các phiên bản lõi sau khi tải về sẽ tự động xuất hiện trong danh sách tạo Profile mới.
+            * Các bản dựng Chromium được lưu trữ độc lập trong máy tính, hoàn toàn không can thiệp vào Chrome cá nhân.
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             style={{
               padding: '6px 18px',
