@@ -33,10 +33,6 @@ export default function ExtensionsPage() {
   // Store filters
   const [storeSearch, setStoreSearch] = useState('');
 
-  // Manager filters
-  const [managerSearch, setManagerSearch] = useState('');
-  const [managerStatus, setManagerStatus] = useState('all'); // 'all' | 'enabled' | 'disabled'
-
   // Modal: Install
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [installSource, setInstallSource] = useState('file'); // 'file' | 'folder' | 'store'
@@ -99,25 +95,6 @@ export default function ExtensionsPage() {
     });
   }, [storeSearch]);
 
-  // Filtered manager list
-  const filteredManagerExtensions = useMemo(() => {
-    return extensions.filter(ext => {
-      const q = managerSearch.trim().toLowerCase();
-      const matchesSearch =
-        !q ||
-        ext.name.toLowerCase().includes(q) ||
-        (ext.description && ext.description.toLowerCase().includes(q)) ||
-        (ext.author && ext.author.toLowerCase().includes(q)) ||
-        (ext.extId && ext.extId.toLowerCase().includes(q));
-
-      const matchesStatus =
-        managerStatus === 'all' ||
-        (managerStatus === 'enabled' && ext.enabled) ||
-        (managerStatus === 'disabled' && !ext.enabled);
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [extensions, managerSearch, managerStatus]);
 
   // Toggle extension enabled state
   const handleToggle = async (id) => {
@@ -482,13 +459,8 @@ export default function ExtensionsPage() {
       {activeView === 'manager' && (
         <ExtensionsManagerTab
           extensions={extensions}
-          filteredExtensions={filteredManagerExtensions}
           profilesCount={profiles.length}
           isLoading={isLoadingInstalled}
-          search={managerSearch}
-          setSearch={setManagerSearch}
-          status={managerStatus}
-          setStatus={setManagerStatus}
           onToggle={handleToggle}
           onOpenFolder={handleOpenFolder}
           onOpenAssignModal={handleOpenAssignModal}
