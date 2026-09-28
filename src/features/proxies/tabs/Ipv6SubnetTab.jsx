@@ -169,108 +169,12 @@ export default function Ipv6SubnetTab({
         overflow: 'hidden'
       }}
     >
-      {/* ── SUB-HEADER BANNER ── */}
-      <div
-        style={{
-          padding: '16px 24px',
-          borderBottom: '1px solid #E2E8F0',
-          backgroundColor: '#FFFFFF',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
-          flexShrink: 0
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)',
-              color: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 3px 8px rgba(124, 58, 237, 0.25)',
-              flexShrink: 0
-            }}
-          >
-            <Cpu size={20} />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>
-                Trình Tạo Proxy IPv6 Subnet /64 & /48
-              </h2>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  backgroundColor: '#EDE9FE',
-                  color: '#7C3AED',
-                  padding: '2px 8px',
-                  borderRadius: '12px'
-                }}
-              >
-                IPv6 Generator Pro
-              </span>
-            </div>
-            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
-              Sinh hàng loạt địa chỉ IPv6 tĩnh độc lập từ subnet của máy chủ VPS / Dedicated Server kèm Port và Authentication riêng biệt
-            </div>
-          </div>
-        </div>
-
-        {/* Preset Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, color: '#94A3B8', marginRight: '2px' }}>
-            Dải Subnet mẫu:
-          </span>
-          {PRESETS.map((item, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                setPrefix(item.prefix);
-                setCountry(item.region);
-                showToast?.(`Đã tải cấu hình mẫu: ${item.name} (${item.flag})`);
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '4px 9px',
-                borderRadius: '6px',
-                border: prefix === item.prefix ? '1px solid #7C3AED' : '1px solid #E2E8F0',
-                backgroundColor: prefix === item.prefix ? '#F5F3FF' : '#FFFFFF',
-                color: prefix === item.prefix ? '#7C3AED' : '#475569',
-                fontSize: '11.5px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                if (prefix !== item.prefix) e.currentTarget.style.backgroundColor = '#F1F5F9';
-              }}
-              onMouseLeave={(e) => {
-                if (prefix !== item.prefix) e.currentTarget.style.backgroundColor = '#FFFFFF';
-              }}
-            >
-              <span>{item.flag}</span>
-              <span>{item.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ── MAIN WORKSPACE (2-COLUMN SPLIT) ── */}
       <div
         style={{
           flex: 1,
           display: 'grid',
-          gridTemplateColumns: '420px 1fr',
+          gridTemplateColumns: '400px 1fr',
           overflow: 'hidden'
         }}
       >
@@ -279,20 +183,58 @@ export default function Ipv6SubnetTab({
           style={{
             borderRight: '1px solid #E2E8F0',
             backgroundColor: '#FFFFFF',
-            padding: '20px 24px',
+            padding: '18px 22px',
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: '18px'
+            gap: '16px'
           }}
         >
-          {/* Section 1: IPv6 Subnet Prefix */}
+          {/* Section 1: IPv6 Subnet Prefix & Quick Presets */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#1E293B' }}>
                 Dải Subnet Prefix (/64 hoặc /48) <span style={{ color: '#EF4444' }}>*</span>
               </label>
-              <span style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 600 }}>18.4 tỷ tỷ IP khả dụng</span>
+              <span style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 600 }}>18.4 tỷ tỷ IP</span>
+            </div>
+
+            {/* Quick Presets Pills */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              {PRESETS.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setPrefix(item.prefix);
+                    setCountry(item.region);
+                    showToast?.(`Đã tải mẫu: ${item.name} (${item.flag})`);
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '3px 7px',
+                    borderRadius: '5px',
+                    border: prefix === item.prefix ? '1px solid #7C3AED' : '1px solid #E2E8F0',
+                    backgroundColor: prefix === item.prefix ? '#F5F3FF' : '#F8FAFC',
+                    color: prefix === item.prefix ? '#7C3AED' : '#475569',
+                    fontSize: '11px',
+                    fontWeight: prefix === item.prefix ? 600 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.12s'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (prefix !== item.prefix) e.currentTarget.style.backgroundColor = '#F1F5F9';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (prefix !== item.prefix) e.currentTarget.style.backgroundColor = '#F8FAFC';
+                  }}
+                >
+                  <span>{item.flag}</span>
+                  <span>{item.name}</span>
+                </button>
+              ))}
             </div>
             <div style={{ position: 'relative' }}>
               <input
