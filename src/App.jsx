@@ -17,6 +17,8 @@ import BackupPage from './pages/BackupPage';
 import ProfilesPage from './pages/ProfilesPage';
 import ProxiesPage from './pages/ProxiesPage';
 import GroupsPage from './pages/GroupsPage';
+import GroupFormModal from './features/groups/modals/GroupFormModal';
+import DeleteGroupConfirmModal from './features/groups/modals/DeleteGroupConfirmModal';
 import SettingsPage from './pages/SettingsPage';
 import ExtensionsPage from './pages/ExtensionsPage';
 import HistoryPage from './pages/HistoryPage';
@@ -63,7 +65,14 @@ function AppContent() {
     isReloading,
     reloadKey,
     isLoadingProfiles,
-    profiles = []
+    profiles = [],
+    addGroup,
+    editGroup,
+    deleteGroup,
+    activeGroupModal,
+    setActiveGroupModal,
+    deleteConfirmGroup,
+    setDeleteConfirmGroup
   } = useBrowser();
 
   // Silent check for update on app startup
@@ -128,7 +137,7 @@ function AppContent() {
       case 'backup': return <BackupPage />;
       case 'profiles': return <ProfilesPage />;
       case 'proxies': return <ProxiesPage />;
-      case 'groups': return <GroupsPage />;
+      case 'groups': return <ProfilesPage />;
       case 'extensions': return <ExtensionsPage />;
       case 'history': return <HistoryPage />;
       case 'automation': return <AutomationPage />;
@@ -211,6 +220,36 @@ function AppContent() {
           isOpen={Boolean(activeHelpModal)}
           initialTab={typeof activeHelpModal === 'string' ? activeHelpModal : 'shortcuts'}
           onClose={() => setActiveHelpModal(null)}
+        />
+      )}
+      {activeGroupModal && (
+        <GroupFormModal
+          activeGroupModal={activeGroupModal}
+          onClose={() => setActiveGroupModal(null)}
+          onSubmit={({ name, desc, color, mode, group }) => {
+            if (mode === 'create') {
+              const result = addGroup({ name, desc, color });
+              if (!result) return `Nhóm "${name}" đã tồn tại. Vui lòng chọn tên khác!`;
+            } else if (mode === 'edit' && group) {
+              const success = editGroup(group.id, { name, desc, color });
+              if (!success) return `Tên nhóm "${name}" bị trùng hoặc không hợp lệ!`;
+            }
+            setActiveGroupModal(null);
+            return null;
+          }}
+        />
+      )}
+      {deleteConfirmGroup && (
+        <DeleteGroupConfirmModal
+          group={deleteConfirmGroup}
+          profiles={profiles}
+          onClose={() => setDeleteConfirmGroup(null)}
+          onConfirm={() => {
+            if (deleteConfirmGroup) {
+              deleteGroup(deleteConfirmGroup.id);
+              setDeleteConfirmGroup(null);
+            }
+          }}
         />
       )}
       {updateModalInfo && (

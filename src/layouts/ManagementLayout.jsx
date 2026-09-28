@@ -45,8 +45,8 @@ export default function ManagementLayout({ children }) {
           display: 'flex',
           overflow: 'hidden'
         }}>
-          {/* Collapsible White Explorer Sidebar (Hidden in Extensions, Backup, Team, Groups, Proxies, Synchronizer tabs for full-width layout) */}
-          {!isSidebarCollapsed && activeTab !== 'extensions' && activeTab !== 'backup' && activeTab !== 'team' && activeTab !== 'invite' && activeTab !== 'groups' && activeTab !== 'proxies' && activeTab !== 'synchronizer' && <ExplorerPane />}
+          {/* Collapsible White Explorer Sidebar (Hidden in Extensions, Backup, Team, Proxies, Synchronizer tabs for full-width layout) */}
+          {!isSidebarCollapsed && activeTab !== 'extensions' && activeTab !== 'backup' && activeTab !== 'team' && activeTab !== 'invite' && activeTab !== 'proxies' && activeTab !== 'synchronizer' && <ExplorerPane />}
 
           {/* Main content area */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, overflow: 'hidden' }}>

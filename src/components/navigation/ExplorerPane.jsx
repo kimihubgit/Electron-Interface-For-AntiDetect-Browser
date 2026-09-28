@@ -32,7 +32,8 @@ import {
   Check,
   Download,
   Sparkles,
-  Layers
+  Layers,
+  Pencil
 } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 import { useTranslation } from '../../i18n/I18nContext';
@@ -58,6 +59,7 @@ export default function ExplorerPane() {
     setActiveProfileModal,
     setActiveProxyModal,
     setActiveGroupModal,
+    setDeleteConfirmGroup,
     setActiveTrashModal,
     setActiveUpgradeModal,
     activeSettingsSection = 'general',
@@ -105,6 +107,7 @@ export default function ExplorerPane() {
   const [collapsedDates, setCollapsedDates] = useState({});
   const [hoveredDate, setHoveredDate] = useState(null);
   const [hoveredRecordId, setHoveredRecordId] = useState(null);
+  const [hoveredGroupId, setHoveredGroupId] = useState(null);
 
   const toggleDateCollapse = (date) => {
     setCollapsedDates(prev => ({
@@ -130,10 +133,13 @@ export default function ExplorerPane() {
     { name: 'All', label: t('profiles.all', 'Tất cả'), count: safeProfiles.length, isAll: true },
     { name: 'Ungrouped', label: t('profiles.ungrouped', 'Chưa phân nhóm'), count: ungroupedProfiles.length },
     ...customGroups.map(g => ({
+      id: g.id,
       name: g.name,
       label: g.name,
       count: safeProfiles.filter(p => p.group === g.name).length,
-      color: g.color
+      color: g.color,
+      isCustom: true,
+      rawGroup: g
     }))
   ];
 
@@ -734,14 +740,60 @@ export default function ExplorerPane() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════ */}
-        {/* 2. PROFILES EXPLORER (when activeTab === 'profiles')        */}
+        {/* 2. PROFILES & GROUPS EXPLORER (activeTab === 'profiles')     */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        {(activeTab === 'profiles' || activeTab === 'workspace') && (
+        {(activeTab === 'profiles' || activeTab === 'workspace' || activeTab === 'groups') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {/* Header: Nhóm hồ sơ + Thêm nhóm button */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 6px 4px 6px',
+              marginBottom: '2px'
+            }}>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: 'var(--apidog-text-muted, #94A3B8)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em'
+              }}>
+                {t('groups.title', 'Nhóm hồ sơ')}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (setActiveGroupModal) setActiveGroupModal({ mode: 'create' });
+                }}
+                title={t('groups.newGroup', 'Tạo nhóm mới')}
+                style={{
+                  padding: '3px 6px',
+                  borderRadius: '4px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#7C3AED',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  transition: 'all 0.12s ease'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#EDE9FE'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+              >
+                <Plus size={13} />
+                <span>{t('common.add', 'Thêm')}</span>
+              </button>
+            </div>
 
-            {/* List of groups directly rendered */}
+            {/* List of groups */}
             {groups.map(g => {
               const isSelected = selectedGroup === g.name;
+              const isHovered = hoveredGroupId === g.name;
+
               return (
                 <div
                   key={g.name}
@@ -749,102 +801,113 @@ export default function ExplorerPane() {
                     setSelectedGroup(g.name);
                     setActiveTab('profiles');
                   }}
+                  onMouseEnter={() => setHoveredGroupId(g.name)}
+                  onMouseLeave={() => setHoveredGroupId(null)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '6px 10px',
-                    borderRadius: 'var(--radius-sm)',
-                    backgroundColor: isSelected ? '#F3E8FF' : 'transparent',
-                    color: isSelected ? 'var(--apidog-purple)' : '#334155',
+                    padding: '6px 8px',
+                    borderRadius: 'var(--radius-sm, 6px)',
+                    backgroundColor: isSelected ? '#F3E8FF' : (isHovered ? '#F8FAFC' : 'transparent'),
+                    color: isSelected ? 'var(--apidog-purple, #7C3AED)' : '#334155',
                     fontWeight: isSelected ? 600 : 500,
                     cursor: 'pointer',
                     fontSize: '12px',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                    transition: 'all 0.12s ease',
+                    position: 'relative'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Folder size={14} style={{ color: isSelected ? 'var(--apidog-purple)' : '#94A3B8' }} />
-                    <span>{g.label}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1, marginRight: '6px' }}>
+                    <Folder size={14} style={{ color: g.color || (isSelected ? '#7C3AED' : '#94A3B8'), flexShrink: 0 }} />
+                    <span style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      minWidth: 0
+                    }}>
+                      {g.label}
+                    </span>
                   </div>
-                  <span style={{ fontSize: '11px', color: isSelected ? 'var(--apidog-purple)' : '#94A3B8', fontWeight: 500 }}>
-                    {g.count}
-                  </span>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                    {/* If custom group and hovered: show edit and delete buttons */}
+                    {g.isCustom && isHovered && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (setActiveGroupModal) setActiveGroupModal({ mode: 'edit', group: g.rawGroup });
+                          }}
+                          title={t('common.edit', 'Sửa nhóm')}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#64748B',
+                            cursor: 'pointer',
+                            padding: '3px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#7C3AED'; e.currentTarget.style.backgroundColor = '#EDE9FE'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (setDeleteConfirmGroup) setDeleteConfirmGroup(g.rawGroup);
+                          }}
+                          title={t('common.delete', 'Xóa nhóm')}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#64748B',
+                            cursor: 'pointer',
+                            padding: '3px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#DC2626'; e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    )}
+
+                    <span style={{
+                      fontSize: '11px',
+                      color: isSelected ? 'var(--apidog-purple, #7C3AED)' : '#94A3B8',
+                      fontWeight: 500,
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      backgroundColor: isSelected ? 'rgba(124, 58, 237, 0.12)' : '#F1F5F9'
+                    }}>
+                      {g.count}
+                    </span>
+                  </div>
                 </div>
               );
             })}
-          </div>
-        )}
 
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {/* 3. GROUPS EXPLORER (when activeTab === 'groups')            */}
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {activeTab === 'groups' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 8px',
-              fontSize: '12px',
-              color: 'var(--apidog-text-muted)',
-              fontWeight: 600
-            }}>
-              <span>📁 Cây thư mục Nhóm</span>
-            </div>
-
-            {groups.map(g => (
-              <div
-                key={g.name}
-                onClick={() => {
-                  setSelectedGroup(g.name);
-                  setActiveTab('profiles');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '7px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: selectedGroup === g.name ? '#EDE9FE' : 'transparent',
-                  color: selectedGroup === g.name ? '#7C3AED' : '#334155',
-                  fontWeight: selectedGroup === g.name ? 600 : 500,
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedGroup !== g.name) e.currentTarget.style.backgroundColor = '#F8FAFC';
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedGroup !== g.name) e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Folder size={14} style={{ color: g.color || '#7C3AED' }} />
-                  <span>{g.label}</span>
-                </div>
-                <span style={{ fontSize: '11px', color: '#94A3B8' }}>{g.count} hồ sơ</span>
-              </div>
-            ))}
-
-            <div style={{ marginTop: '12px' }}>
+            {/* Quick dashed button to create new group */}
+            <div style={{ marginTop: '8px', paddingTop: '4px' }}>
               <button
                 onClick={() => setActiveGroupModal && setActiveGroupModal({ mode: 'create' })}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '5px',
-                  padding: '7px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px dashed #D1D5DB',
+                  gap: '6px',
+                  padding: '6px 10px',
+                  borderRadius: 'var(--radius-sm, 6px)',
+                  border: '1px dashed #CBD5E1',
                   background: 'transparent',
                   color: '#7C3AED',
                   fontSize: '11.5px',
@@ -858,11 +921,11 @@ export default function ExplorerPane() {
                   e.currentTarget.style.backgroundColor = '#FAF5FF';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#D1D5DB';
+                  e.currentTarget.style.borderColor = '#CBD5E1';
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <Plus size={13} /> + Tạo Nhóm Mới
+                <Plus size={13} /> {t('groups.newGroup', 'Tạo nhóm mới')}
               </button>
             </div>
           </div>

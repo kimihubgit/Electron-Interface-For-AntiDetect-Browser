@@ -41,7 +41,6 @@ export default function ActivityBar() {
     { id: 'profiles', label: t('nav.profiles', 'Profiles'), icon: Globe },
     { id: 'synchronizer', label: t('nav.synchronizer', 'Đồng bộ'), icon: ChromeSyncIcon },
     { id: 'proxies', label: t('nav.proxies', 'Proxy'), icon: Server },
-    { id: 'groups', label: t('nav.groups', 'Groups'), icon: FolderTree },
     { id: 'ai-agent', label: t('nav.aiAgent', 'AI Agent'), icon: Sparkles },
     { id: 'extensions', label: t('nav.extensions', 'Extensions'), icon: Puzzle },
     { id: 'scripts', label: t('nav.scripts', 'Scripts'), icon: FileCode },
