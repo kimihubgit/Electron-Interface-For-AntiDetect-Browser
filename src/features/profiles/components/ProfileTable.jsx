@@ -27,6 +27,7 @@ export default function ProfileTable({
   deleteProfile,
   saveProfile,
   cloneProfile,
+  onRunCookieRobot,
   addLog,
   batchStopProfiles,
   sortBy = 'latest',
@@ -431,6 +432,7 @@ export default function ProfileTable({
               deleteProfile={deleteProfile}
               saveProfile={saveProfile}
               cloneProfile={cloneProfile}
+              onRunCookieRobot={onRunCookieRobot}
               addLog={addLog}
               t={t}
             />

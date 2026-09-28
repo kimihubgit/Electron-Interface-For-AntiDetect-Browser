@@ -9,6 +9,7 @@ import ProfileGrid from './components/ProfileGrid';
 import ProfileBatchBar from './components/ProfileBatchBar';
 import MoveGroupModal from './components/MoveGroupModal';
 import TransferProfileModal from './components/TransferProfileModal';
+import CookieRobotModal from './components/CookieRobotModal';
 import DragSelectionBox from './components/DragSelectionBox';
 import EngineDownloadModal from '../../components/modals/EngineDownloadModal';
 import SkeletonLoader from '../../components/common/SkeletonLoader';
@@ -90,6 +91,9 @@ export default function ProfilesPage() {
 
   // Active action dropdown menu for individual profile row/card
   const [activeMenuId, setActiveMenuId] = useState(null);
+
+  // Cookie Robot modal state
+  const [cookieRobotProfile, setCookieRobotProfile] = useState(null);
 
   // Running profiles chronological ordered list (pinned to top)
   const [runningOrder, setRunningOrder] = useState([]);
@@ -329,6 +333,7 @@ export default function ProfilesPage() {
             deleteProfile={deleteProfile}
             saveProfile={saveProfile}
             cloneProfile={cloneProfile}
+            onRunCookieRobot={setCookieRobotProfile}
             addLog={addLog}
             batchStopProfiles={batchStopProfiles}
             sortBy={sortBy}
@@ -348,6 +353,7 @@ export default function ProfilesPage() {
             deleteProfile={deleteProfile}
             saveProfile={saveProfile}
             cloneProfile={cloneProfile}
+            onRunCookieRobot={setCookieRobotProfile}
             addLog={addLog}
           />
         )}
@@ -412,6 +418,21 @@ export default function ProfilesPage() {
           }}
         />
       )}
+
+      {/* ── MODAL: RUN COOKIE ROBOT ── */}
+      <CookieRobotModal
+        isOpen={!!cookieRobotProfile}
+        profile={cookieRobotProfile}
+        onClose={() => setCookieRobotProfile(null)}
+        onLaunchProfile={(updatedProfile) => {
+          if (updatedProfile?.id) {
+            saveProfile(updatedProfile);
+            toggleLaunchProfile(updatedProfile.id);
+          }
+        }}
+        addLog={addLog}
+        showToast={showToast}
+      />
 
       {/* ── DRAG SELECTION MARQUEE BOX ── */}
       <DragSelectionBox dragBox={dragBox} />

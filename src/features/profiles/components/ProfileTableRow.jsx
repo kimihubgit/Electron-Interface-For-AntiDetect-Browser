@@ -23,6 +23,7 @@ function ProfileTableRowComponent({
   deleteProfile,
   saveProfile,
   cloneProfile,
+  onRunCookieRobot,
   addLog,
   t
 }) {
@@ -238,6 +239,7 @@ function ProfileTableRowComponent({
                 cloneProfile(p.id);
               }}
               onSave={saveProfile}
+              onRunCookieRobot={onRunCookieRobot}
               addLog={addLog}
             />
           )}

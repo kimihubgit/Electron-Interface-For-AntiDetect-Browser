@@ -18,6 +18,7 @@ export default function ProfileGrid({
   deleteProfile,
   saveProfile,
   cloneProfile,
+  onRunCookieRobot,
   addLog
 }) {
   return (
@@ -268,6 +269,7 @@ export default function ProfileGrid({
                     onClose={() => setActiveMenuId(null)}
                     saveProfile={saveProfile}
                     cloneProfile={cloneProfile}
+                    onRunCookieRobot={onRunCookieRobot}
                     addLog={addLog}
                   />
                 )}

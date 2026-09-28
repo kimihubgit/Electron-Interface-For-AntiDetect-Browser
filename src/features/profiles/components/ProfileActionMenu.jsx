@@ -1,9 +1,6 @@
 import React from 'react';
 import {
-  Fingerprint,
-  UserCheck,
-  Wifi,
-  Users,
+  Bot,
   Copy,
   FileText,
   ExternalLink,
@@ -19,8 +16,14 @@ export default function ProfileActionMenu({
   onClose,
   saveProfile,
   cloneProfile,
+  onSave,
+  onClone,
+  onRunCookieRobot,
   addLog
 }) {
+  const save = saveProfile || onSave;
+  const clone = cloneProfile || onClone;
+
   const menuItemStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -31,7 +34,7 @@ export default function ProfileActionMenu({
     fontWeight: 500,
     color: '#1E293B',
     cursor: 'pointer',
-    transition: 'background-color 0.12s ease',
+    transition: 'all 0.12s ease',
     whiteSpace: 'nowrap'
   };
 
@@ -57,101 +60,36 @@ export default function ProfileActionMenu({
         textAlign: 'left'
       }}
     >
-      {/* 1. Cập nhật Fingerprints */}
+      {/* 1. Run Cookie Robot */}
       <div
         onClick={() => {
           onClose?.();
-          const updated = {
-            ...profile,
-            canvas: 'noise',
-            webgl: 'noise',
-            webglVendor: 'Google Inc. (NVIDIA)',
-            webglRenderer: `ANGLE (NVIDIA, RTX 40${Math.floor(Math.random() * 40 + 60)} Direct3D11)`,
-            cores: [4, 6, 8, 12, 16][Math.floor(Math.random() * 5)],
-            ram: [8, 16, 32][Math.floor(Math.random() * 3)]
-          };
-          saveProfile(updated);
-          addLog?.(`Đã làm mới bộ Fingerprint cho "${profile.name}"`, 'success');
-          alert(`Đã cập nhật Fingerprints mới cho "${profile.name}"!`);
-        }}
-        style={menuItemStyle}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-      >
-        <Fingerprint size={15} style={{ color: '#475569' }} />
-        <span>Cập nhật Fingerprints</span>
-      </div>
-
-      {/* 2. Cập nhật Account */}
-      <div
-        onClick={() => {
-          onClose?.();
-          const currentAcc = profile.account || '';
-          const newAcc = prompt(`Cập nhật thông tin tài khoản (Username / Password) cho "${profile.name}":`, currentAcc);
-          if (newAcc !== null) {
-            saveProfile({ ...profile, account: newAcc });
-            addLog?.(`Đã cập nhật Account cho "${profile.name}"`, 'info');
+          if (onRunCookieRobot) {
+            onRunCookieRobot(profile);
+          } else {
+            addLog?.(`Đang khởi chạy Cookie Robot cho "${profile.name}"`, 'success');
+            alert(`🤖 Bắt đầu chạy Cookie Robot cho profile "${profile.name}"!`);
           }
         }}
         style={menuItemStyle}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-      >
-        <UserCheck size={15} style={{ color: '#475569' }} />
-        <span>Cập nhật Account</span>
-      </div>
-
-      {/* 3. Cập nhật Proxy */}
-      <div
-        onClick={() => {
-          onClose?.();
-          const host = prompt('Nhập Host/IP Proxy mới:', profile.proxy?.host || '');
-          if (host) {
-            const port = prompt('Nhập Port:', profile.proxy?.port || '1080');
-            saveProfile({
-              ...profile,
-              proxy: {
-                ...profile.proxy,
-                type: profile.proxy?.type || 'SOCKS5',
-                host: host.trim(),
-                port: port ? port.trim() : '1080',
-                status: 'live'
-              }
-            });
-            addLog?.(`Đã cập nhật Proxy cho "${profile.name}"`, 'info');
-          }
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#F5F3FF';
+          e.currentTarget.style.color = '#7C3AED';
         }}
-        style={menuItemStyle}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-      >
-        <Wifi size={15} style={{ color: '#475569' }} />
-        <span>Cập nhật Proxy</span>
-      </div>
-
-      {/* 4. Thành viên */}
-      <div
-        onClick={() => {
-          onClose?.();
-          const member = prompt(`Gán hồ sơ "${profile.name}" cho thành viên:`, profile.operator || 'Thành viên');
-          if (member) {
-            saveProfile({ ...profile, operator: member.trim() });
-            addLog?.(`Đã gán hồ sơ "${profile.name}" cho "${member}"`, 'info');
-          }
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.color = '#1E293B';
         }}
-        style={menuItemStyle}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
       >
-        <Users size={15} style={{ color: '#475569' }} />
-        <span>Thành viên</span>
+        <Bot size={15} style={{ color: '#7C3AED' }} />
+        <span style={{ fontWeight: 600 }}>Run Cookie Robot</span>
       </div>
 
-      {/* 5. Nhân bản Profile */}
+      {/* 2. Nhân bản Profile */}
       <div
         onClick={() => {
           onClose?.();
-          cloneProfile(profile.id);
+          clone?.(profile.id);
         }}
         style={menuItemStyle}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
