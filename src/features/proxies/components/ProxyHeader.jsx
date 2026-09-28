@@ -3,7 +3,6 @@ import {
   Shield,
   Layers,
   RotateCw,
-  Smartphone,
   Cpu,
   RefreshCw,
   Upload,
@@ -44,7 +43,6 @@ export default function ProxyHeader({
 
   const SUB_TABS = [
     { id: 'pool', label: 'Proxy Tĩnh', count: proxiesCount, icon: Layers },
-    { id: 'dcom', label: 'Thiết Bị DCOM 4G', count: dcomCount, icon: Smartphone },
     { id: 'ipv6', label: 'Sinh IPv6 Subnet', count: ipv6Count, icon: Cpu }
   ];
 
@@ -82,7 +80,7 @@ export default function ProxyHeader({
               Quản Lý Proxy
             </h2>
             <div style={{ fontSize: '11px', color: '#64748B' }}>
-              Kho kết nối proxy tĩnh, thiết bị DCOM 4G và dải IPv6 Subnet
+              Kho kết nối proxy tĩnh và dải IPv6 Subnet
             </div>
           </div>
         </div>
@@ -365,79 +363,10 @@ export default function ProxyHeader({
                     </div>
                   </div>
 
-                  <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '4px 0' }} />
-
-                  {/* Option 4: Thêm DCOM */}
-                  <div
-                    onClick={() => {
-                      setIsAddDropdownOpen(false);
-                      setActiveSubTab('dcom');
-                      onOpenAddDcomModal();
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '9px',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.12s'
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    <div
-                      style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '6px',
-                        backgroundColor: '#ECFDF5',
-                        color: '#059669',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                      }}
-                    >
-                      <Smartphone size={14} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>Kết nối DCOM 4G</div>
-                      <div style={{ fontSize: '11px', color: '#64748B' }}>Huawei, ZTE USB Dongle</div>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
           </>
-        )}
-
-
-        {activeSubTab === 'dcom' && (
-          <button
-            onClick={onOpenAddDcomModal}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              height: '32px',
-              padding: '0 14px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: 'var(--apidog-purple)',
-              color: '#FFFFFF',
-              fontSize: '12.5px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 2px 5px rgba(124, 58, 237, 0.25)',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--apidog-purple-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--apidog-purple)')}
-          >
-            <Plus size={15} />
-            <span>+ Kết nối DCOM mới</span>
-          </button>
         )}
       </div>
     </div>

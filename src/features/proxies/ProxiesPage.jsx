@@ -9,7 +9,6 @@ import ProxyTable from './components/ProxyTable';
 import ProxyFloatingBar from './components/ProxyFloatingBar';
 
 // Subtabs
-import DcomDonglesTab from './tabs/DcomDonglesTab';
 import Ipv6SubnetTab from './tabs/Ipv6SubnetTab';
 
 // Modals
@@ -18,7 +17,6 @@ import ProxyBulkModal from './modals/ProxyBulkModal';
 import ProxyAssignModal from './modals/ProxyAssignModal';
 import ProxyNoteModal from './modals/ProxyNoteModal';
 import ProxyDeleteConfirmModal from './modals/ProxyDeleteConfirmModal';
-import AddDcomModal from './modals/AddDcomModal';
 
 export default function ProxiesPage() {
   const {
@@ -98,15 +96,7 @@ export default function ProxiesPage() {
   const [bulkType, setBulkType] = useState('SOCKS5');
   const [bulkIpVersion, setBulkIpVersion] = useState('IPv4');
 
-  // DCOM Modal State
 
-  const [showAddDcomModal, setShowAddDcomModal] = useState(false);
-  const [dcomFormData, setDcomFormData] = useState({
-    name: 'Huawei E3372 4G #1',
-    comPort: 'COM3',
-    localPort: 20001,
-    carrier: 'Viettel 4G'
-  });
 
   // Copy helper
   const handleCopy = (text, id) => {
@@ -496,13 +486,11 @@ export default function ProxiesPage() {
         activeSubTab={activeSubTab}
         setActiveSubTab={setActiveSubTab}
         proxiesCount={proxies.length}
-        dcomCount={dcomDevices.length}
         ipv6Count={generatedIpv6List.length}
         handleCheckAll={handleCheckAll}
         isCheckingAll={isCheckingAll}
         onOpenBulkModal={() => setShowBulkModal(true)}
         onOpenAddModal={handleOpenAddModal}
-        onOpenAddDcomModal={() => setShowAddDcomModal(true)}
       />
 
       {/* 2. Sub-tab Contents */}
@@ -565,13 +553,7 @@ export default function ProxiesPage() {
       )}
 
 
-      {activeSubTab === 'dcom' && (
-        <DcomDonglesTab
-          dcomDevices={dcomDevices}
-          triggerDcomRotate={triggerDcomRotate}
-          deleteDcomDevice={deleteDcomDevice}
-        />
-      )}
+
 
       {activeSubTab === 'ipv6' && (
         <Ipv6SubnetTab
@@ -638,18 +620,7 @@ export default function ProxiesPage() {
       />
 
 
-      <AddDcomModal
-        isOpen={showAddDcomModal}
-        onClose={() => setShowAddDcomModal(false)}
-        formData={dcomFormData}
-        setFormData={setDcomFormData}
-        onSubmit={() => {
-          if (!dcomFormData.name.trim()) return;
-          addDcomDevice(dcomFormData);
-          setShowAddDcomModal(false);
-          showToast?.('Đã kết nối thiết bị DCOM thành công');
-        }}
-      />
+
     </div>
   );
 }
