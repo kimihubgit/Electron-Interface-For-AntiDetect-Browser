@@ -1,723 +1,634 @@
 import React, { useState } from 'react';
 import {
   X,
-  HelpCircle,
-  Keyboard,
-  Sparkles,
   BookOpen,
-  MessageCircle,
-  Send,
-  ExternalLink,
   Search,
-  CheckCircle2,
-  Zap,
+  ExternalLink,
   Shield,
   Layers,
   Globe,
-  Monitor
+  Zap,
+  HelpCircle,
+  MessageCircle,
+  Send,
+  CheckCircle2,
+  ChevronRight,
+  Info,
+  Server,
+  Terminal,
+  FileCode
 } from 'lucide-react';
 import { useTranslation } from '../../i18n/I18nContext';
 
 export default function HelpSupportModal({
   isOpen,
-  onClose,
-  initialTab = 'shortcuts'
+  onClose
 }) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState(initialTab || 'shortcuts');
-  const [shortcutQuery, setShortcutQuery] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState('gettingStarted');
+  const [searchQuery, setSearchQuery] = useState('');
 
   if (!isOpen) return null;
 
-  // Shortcuts catalog
-  const SHORTCUT_GROUPS = [
+  // Documentation sections & topics (ONLY documentation & guides)
+  const DOC_TOPICS = [
     {
-      category: 'Quản lý Hồ sơ (Profiles)',
+      id: 'gettingStarted',
+      category: 'Khởi đầu',
+      title: 'Bắt đầu nhanh với Antidetect Browser',
+      icon: BookOpen,
+      badge: 'Cơ bản',
+      badgeColor: '#10B981',
+      badgeBg: '#ECFDF5',
+      summary: 'Quy trình tạo hồ sơ trình duyệt, gắn proxy và khởi chạy cửa sổ đầu tiên.',
+      content: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>
+              1. Tạo và cấu hình Profile đầu tiên
+            </h3>
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', margin: 0 }}>
+              Để bắt đầu, hãy nhấn nút <strong>"+ Tạo Profile"</strong> ở góc trên bên phải trang Quản lý Hồ sơ.
+              Mỗi hồ sơ tương ứng với một phiên trình duyệt độc lập hoàn toàn, sở hữu kho lưu trữ Cookie, LocalStorage và dấu vân tay thiết bị riêng biệt.
+            </p>
+          </div>
+
+          <div style={{
+            backgroundColor: '#F8FAFC',
+            border: '1px solid #E2E8F0',
+            borderRadius: '8px',
+            padding: '14px 16px'
+          }}>
+            <h4 style={{ fontSize: '13.5px', fontWeight: 600, color: '#1E293B', margin: '0 0 6px 0' }}>
+              Các bước cấu hình nhanh:
+            </h4>
+            <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '12.5px', color: '#475569', lineHeight: '1.7' }}>
+              <li><strong>Đặt tên Profile:</strong> Đặt tên dễ nhớ theo mục đích tài khoản (ví dụ: FB-Ads-01, TikTok-Shop-VN).</li>
+              <li><strong>Chọn Nhóm:</strong> Phân loại vào nhóm hồ sơ để quản lý và lọc nhanh.</li>
+              <li><strong>Thiết lập Proxy:</strong> Chọn proxy có sẵn trong Kho hoặc nhập trực tiếp theo định dạng <code>host:port:user:pass</code>.</li>
+              <li><strong>Tùy chọn Fingerprint:</strong> Bạn có thể giữ mặc định để hệ thống tự động sinh cấu hình phần cứng tự nhiên nhất hoặc tùy chỉnh hệ điều hành (Windows, macOS, Linux).</li>
+            </ol>
+          </div>
+
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>
+              2. Nhập Cookie (Cookies Import)
+            </h3>
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', margin: 0 }}>
+              Antidetect Browser hỗ trợ tự động giải nén và nạp Cookie ở cả định dạng <strong>JSON</strong> và <strong>Netscape</strong>.
+              Bạn chỉ cần dán đoạn cookie vào mục Cookie khi tạo hoặc chỉnh sửa profile, hệ thống sẽ tự động gán vào trình duyệt mà không cần đăng nhập lại tài khoản.
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'proxyManagement',
+      category: 'Mạng & Proxy',
+      title: 'Cấu hình Proxy & IPv6 LAN Subnet',
       icon: Globe,
-      color: '#7C3AED',
-      items: [
-        { keys: ['Ctrl', 'N'], desc: 'Tạo hồ sơ mới (Single Profile)' },
-        { keys: ['Ctrl', 'B'], desc: 'Tạo hồ sơ hàng loạt (Batch Create)' },
-        { keys: ['Space'], desc: 'Khởi chạy hoặc Tắt hồ sơ đang chọn' },
-        { keys: ['Ctrl', 'F'], desc: 'Tìm kiếm nhanh hồ sơ theo tên hoặc proxy' },
-        { keys: ['Delete'], desc: 'Chuyển các hồ sơ đã chọn vào Thùng rác' }
-      ]
+      badge: 'Mạng',
+      badgeColor: '#2563EB',
+      badgeBg: '#EFF6FF',
+      summary: 'Hướng dẫn thiết lập Proxy HTTP, SOCKS5, DCOM xoay IP và IPv6 LAN Server.',
+      content: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>
+              1. Các giao thức Proxy được hỗ trợ
+            </h3>
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', margin: 0 }}>
+              Hệ thống tích hợp lõi Local Core Daemon (Rust) hỗ trợ truyền tải lưu lượng tốc độ cao qua các giao thức:
+            </p>
+            <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', fontSize: '12.5px', color: '#475569', lineHeight: '1.7' }}>
+              <li><strong>HTTP / HTTPS:</strong> Proxy web phổ thông, hỗ trợ xác thực tài khoản/mật khẩu.</li>
+              <li><strong>SOCKS5:</strong> Truyền tải an toàn tầng socket, tương thích cao với tất cả các nền tảng mạng xã hội và web3.</li>
+              <li><strong>Proxy xoay IP (Rotating / DCOM):</strong> Hỗ trợ link kích hoạt đổi IP tự động qua API đổi IP.</li>
+            </ul>
+          </div>
+
+          <div style={{
+            backgroundColor: '#EFF6FF',
+            border: '1px solid #BFDBFE',
+            borderRadius: '8px',
+            padding: '14px 16px'
+          }}>
+            <h4 style={{ fontSize: '13.5px', fontWeight: 600, color: '#1E40AF', margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Server size={15} /> Máy chủ Proxy IPv6 LAN Subnet nội bộ
+            </h4>
+            <p style={{ fontSize: '12.5px', color: '#1E3A8A', lineHeight: '1.6', margin: 0 }}>
+              Tại tab <strong>Proxy &rarr; IPv6 Subnet</strong>, bạn có thể bật máy chủ chuyển tiếp proxy cục bộ (Port 8085).
+              Máy chủ này cho phép các thiết bị khác trong cùng mạng LAN kết nối sử dụng dải IP IPv6 mà không cần cài đặt phần mềm phụ trợ.
+            </p>
+          </div>
+        </div>
+      )
     },
     {
-      category: 'Đồng bộ hóa & Cửa sổ (Synchronizer)',
+      id: 'synchronizer',
+      category: 'Đồng bộ hóa',
+      title: 'Đồng bộ thao tác đa trình duyệt (Synchronizer)',
       icon: Layers,
-      color: '#2563EB',
-      items: [
-        { keys: ['Ctrl', 'Shift', 'S'], desc: 'Mở trang Đồng bộ hóa đa trình duyệt' },
-        { keys: ['Ctrl', 'Alt', 'T'], desc: 'Tự động xếp 4 cửa sổ Chrome dạng lưới 2x2' },
-        { keys: ['Ctrl', 'Alt', 'F'], desc: 'Đưa tất cả cửa sổ Chrome lên trên cùng' },
-        { keys: ['F5'], desc: 'Làm mới toàn bộ trang trên các cửa sổ đang chạy' }
-      ]
+      badge: 'Nâng cao',
+      badgeColor: '#7C3AED',
+      badgeBg: '#EDE9FE',
+      summary: 'Điều khiển đồng loạt nhiều cửa sổ Chrome với 1 cửa sổ Master duy nhất.',
+      content: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>
+              1. Cơ chế hoạt động của Synchronizer
+            </h3>
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', margin: 0 }}>
+              Tính năng Đồng bộ hóa cho phép bạn chỉ định 1 cửa sổ làm <strong>Cửa sổ Chính (Master)</strong>.
+              Mọi thao tác chuột (click, cuộn trang, di chuột) và gõ phím trên cửa sổ Master sẽ được nhân bản tức thì sang các <strong>Cửa sổ Phụ (Followers)</strong> thông qua giao thức Chrome DevTools Protocol (CDP).
+            </p>
+          </div>
+
+          <div style={{
+            backgroundColor: '#FAF5FF',
+            border: '1px solid #E9D5FF',
+            borderRadius: '8px',
+            padding: '14px 16px'
+          }}>
+            <h4 style={{ fontSize: '13.5px', fontWeight: 600, color: '#6B21A8', margin: '0 0 6px 0' }}>
+              Các tính năng an toàn chống phát hiện:
+            </h4>
+            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12.5px', color: '#581C87', lineHeight: '1.7' }}>
+              <li><strong>Độ trễ ngẫu nhiên (Random Delay):</strong> Tự động chèn độ trễ từ 50ms - 250ms giữa các click chuột ở từng cửa sổ để tránh bị nhận diện hành vi máy móc (botting).</li>
+              <li><strong>Tự động xếp lưới (Grid Tiling):</strong> Nhấn <code>Ctrl + Alt + T</code> hoặc chọn menu Xếp lưới 2x2 / 2x3 để hệ thống tự động căn chỉnh kích thước các cửa sổ vừa vặn trên màn hình.</li>
+            </ul>
+          </div>
+        </div>
+      )
     },
     {
-      category: 'Điều hướng & Hệ thống (Navigation)',
-      icon: Monitor,
-      color: '#059669',
-      items: [
-        { keys: ['Ctrl', '1'], desc: 'Về Trang chủ (Home Workspace)' },
-        { keys: ['Ctrl', '2'], desc: 'Mở trang Quản lý Hồ sơ' },
-        { keys: ['Ctrl', '3'], desc: 'Mở trang Quản lý Proxy' },
-        { keys: ['Ctrl', '4'], desc: 'Mở trang Quản lý Nhóm' },
-        { keys: ['Ctrl', ','], desc: 'Mở bảng Cài đặt hệ thống' },
-        { keys: ['Ctrl', 'Shift', 'L'], desc: 'Bật/Tắt giao diện Sáng / Tối' }
-      ]
+      id: 'fingerprint',
+      category: 'Bảo mật',
+      title: 'Công nghệ chống nhận diện Fingerprint',
+      icon: Shield,
+      badge: 'Cốt lõi',
+      badgeColor: '#D97706',
+      badgeBg: '#FEF3C7',
+      summary: 'Cách Antidetect giả lập Canvas, WebGL, AudioContext, Fonts và WebRTC an toàn.',
+      content: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: '0 0 8px 0' }}>
+              Nguyên lý bảo vệ Fingerprint
+            </h3>
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', margin: 0 }}>
+              Khác với việc chặn hoặc giả lập sơ sài khiến các trang kiểm tra (như Pixelscan, CreepJS, BrowserLeaks) đánh cắp cờ đỏ (red flag),
+              Antidetect Browser can thiệp ở tầng thấp bằng cách thêm nhiễu vi mô (noise injection) tự nhiên vào các API nhạy cảm:
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#F8FAFC' }}>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1E293B', marginBottom: '4px' }}>Canvas & WebGL 2.0</div>
+              <div style={{ fontSize: '11.5px', color: '#64748B', lineHeight: '1.5' }}>
+                Thêm độ lệch màu vi mô pixel, giữ nguyên chỉ số Hash không đổi trong suốt vòng đời của từng profile.
+              </div>
+            </div>
+
+            <div style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#F8FAFC' }}>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1E293B', marginBottom: '4px' }}>WebRTC & Real IP</div>
+              <div style={{ fontSize: '11.5px', color: '#64748B', lineHeight: '1.5' }}>
+                Khóa hoàn toàn rò rỉ địa chỉ IP thật, tự động gán địa chỉ IP Public tương ứng với Proxy đã chỉ định.
+              </div>
+            </div>
+
+            <div style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#F8FAFC' }}>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1E293B', marginBottom: '4px' }}>Timezone & GeoLocation</div>
+              <div style={{ fontSize: '11.5px', color: '#64748B', lineHeight: '1.5' }}>
+                Tự động đồng bộ múi giờ, kinh độ, vĩ độ và ngôn ngữ trình duyệt theo đúng vị trí địa lý của Proxy.
+              </div>
+            </div>
+
+            <div style={{ padding: '12px', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#F8FAFC' }}>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#1E293B', marginBottom: '4px' }}>Audio & Hardware Concurrency</div>
+              <div style={{ fontSize: '11.5px', color: '#64748B', lineHeight: '1.5' }}>
+                Tùy biến số nhân CPU, bộ nhớ RAM, card đồ họa GPU giả lập khớp hoàn hảo với User-Agent.
+              </div>
+            </div>
+          </div>
+        </div>
+      )
     },
     {
-      category: 'Thao tác Dữ liệu & Bảng (Selection)',
-      icon: Zap,
-      color: '#D97706',
-      items: [
-        { keys: ['Ctrl', 'A'], desc: 'Chọn tất cả hồ sơ hoặc proxy trên trang' },
-        { keys: ['Esc'], desc: 'Bỏ chọn tất cả / Đóng cửa sổ popup hiện tại' }
-      ]
+      id: 'troubleshooting',
+      category: 'Hỗ trợ & Lỗi',
+      title: 'Câu hỏi thường gặp & Khắc phục sự cố',
+      icon: HelpCircle,
+      badge: 'Khắc phục',
+      badgeColor: '#EF4444',
+      badgeBg: '#FEF2F2',
+      summary: 'Các lỗi kết nối proxy, lỗi tải profile và hướng xử lý nhanh.',
+      content: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ padding: '12px 14px', border: '1px solid #E2E8F0', borderRadius: '8px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Q: Trình duyệt mở lên bị báo "Không thể kết nối Internet" (Proxy Error)?
+            </h4>
+            <p style={{ fontSize: '12.5px', color: '#475569', margin: 0, lineHeight: '1.5' }}>
+              Kiểm tra lại Proxy của bạn tại tab Proxy. Bấm nút <strong>"Kiểm tra Proxy"</strong> để xác minh xem server proxy còn sống hay đã hết hạn băng thông / đổi IP.
+            </p>
+          </div>
+
+          <div style={{ padding: '12px 14px', border: '1px solid #E2E8F0', borderRadius: '8px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Q: Lỡ xóa nhầm Profile thì có lấy lại được không?
+            </h4>
+            <p style={{ fontSize: '12.5px', color: '#475569', margin: 0, lineHeight: '1.5' }}>
+              Hệ thống có cơ chế <strong>Thùng rác (Trash Bin)</strong>. Profile khi bấm xóa sẽ được đưa vào Thùng rác trong 30 ngày. Bạn chỉ cần nhấn icon Thùng rác ở góc trên bảng để khôi phục nguyên vẹn.
+            </p>
+          </div>
+
+          <div style={{ padding: '12px 14px', border: '1px solid #E2E8F0', borderRadius: '8px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Q: Làm sao để chuyển Profile sang máy tính khác hoặc người dùng khác?
+            </h4>
+            <p style={{ fontSize: '12.5px', color: '#475569', margin: 0, lineHeight: '1.5' }}>
+              Chọn các profile cần chuyển &rarr; Bấm nút <strong>"Chuyển giao (Transfer)"</strong> trên thanh thao tác hàng loạt &rarr; Nhập email hoặc tài khoản người nhận.
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'supportChannels',
+      category: 'Hỗ trợ & Lỗi',
+      title: 'Kênh liên hệ hỗ trợ kỹ thuật 24/7',
+      icon: MessageCircle,
+      badge: 'Liên hệ',
+      badgeColor: '#0284C7',
+      badgeBg: '#E0F2FE',
+      summary: 'Các kênh Telegram, Discord và Email trực tiếp từ đội ngũ kỹ thuật.',
+      content: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <p style={{ fontSize: '13px', color: '#475569', margin: '0 0 6px 0' }}>
+            Nếu bạn gặp khó khăn trong quá trình cài đặt hoặc vận hành, vui lòng liên hệ trực tiếp với chúng tôi:
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {/* Telegram */}
+            <div
+              onClick={() => window.open('https://t.me/antidetect_support', '_blank')}
+              style={{
+                padding: '14px',
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#0284C7'; e.currentTarget.style.backgroundColor = '#F0F9FF'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+            >
+              <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#E0F2FE', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Send size={18} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  Telegram Support <ExternalLink size={11} style={{ color: '#94A3B8' }} />
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748B' }}>Phản hồi trong vòng 5 phút</div>
+              </div>
+            </div>
+
+            {/* Discord */}
+            <div
+              onClick={() => window.open('https://discord.gg', '_blank')}
+              style={{
+                padding: '14px',
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#6366F1'; e.currentTarget.style.backgroundColor = '#EEF2FF'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.backgroundColor = '#FFFFFF'; }}
+            >
+              <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#EEF2FF', color: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MessageCircle size={18} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  Cộng đồng Discord <ExternalLink size={11} style={{ color: '#94A3B8' }} />
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748B' }}>10,000+ thành viên MMO</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
     }
   ];
 
-  // Filter shortcuts
-  const filteredGroups = SHORTCUT_GROUPS.map(group => {
-    const matchedItems = group.items.filter(item =>
-      item.desc.toLowerCase().includes(shortcutQuery.toLowerCase()) ||
-      item.keys.some(k => k.toLowerCase().includes(shortcutQuery.toLowerCase()))
-    );
-    return { ...group, items: matchedItems };
-  }).filter(group => group.items.length > 0);
+  // Filter topics by search
+  const filteredTopics = DOC_TOPICS.filter(t =>
+    !searchQuery.trim() ||
+    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // What's New Releases data
-  const RELEASES = [
-    {
-      version: 'v2.4.0',
-      date: 'Phiên bản mới nhất (Tháng 9/2026)',
-      isLatest: true,
-      highlights: [
-        {
-          tag: 'Tính năng mới',
-          tagColor: '#7C3AED',
-          title: 'Đồng bộ hóa đa trình duyệt (Multi-Window Synchronizer)',
-          desc: 'Cho phép gán 1 Profile làm Cửa sổ chính (Master) và điều khiển đồng loạt các Chrome phụ làm theo. Tích hợp tính năng xếp lưới 2x2/2x3 và độ trễ ngẫu nhiên chống bot.'
-        },
-        {
-          tag: 'Bảo mật',
-          tagColor: '#059669',
-          title: 'Nâng cấp Dual Token OAuth2 (Access & Refresh Token)',
-          desc: 'Hỗ trợ Refresh Token 30 ngày an toàn, cơ chế tự động xoay token ngầm (silent token rotation) và khả năng hoạt động offline mượt mà không bị treo phần mềm.'
-        },
-        {
-          tag: 'Hiệu năng',
-          tagColor: '#2563EB',
-          title: 'Tối ưu kiểm tra Proxy & Phân trang đa luồng',
-          desc: 'Tăng tốc độ ping kiểm tra proxy lên 300%, tối ưu phân trang thông minh và bộ nút chọn/bỏ chọn tất cả trực quan.'
-        },
-        {
-          tag: 'Cải tiến UX',
-          tagColor: '#D97706',
-          title: 'Terminal Sao lưu Đám mây dạng Footer Console',
-          desc: 'Đưa khung dòng lệnh trong trang Sao lưu xuống thanh footer cố định ở đáy trang, giải phóng diện tích cho giao diện tạo sao lưu.'
-        }
-      ]
-    },
-    {
-      version: 'v2.3.5',
-      date: 'Bản phát hành Tháng 8/2026',
-      isLatest: false,
-      highlights: [
-        {
-          tag: 'Antidetect',
-          tagColor: '#059669',
-          title: 'Cập nhật nhân Chromium v128 & WebGL 2.0',
-          desc: 'Vượt qua các hệ thống kiểm tra vân tay Cloudflare, Pixelscan, CreepJS với điểm trust score 100%.'
-        },
-        {
-          tag: 'Tính năng',
-          tagColor: '#7C3AED',
-          title: 'Quản trị nhóm làm việc (Team Workspace)',
-          desc: 'Phân quyền hồ sơ theo vai trò Quản trị viên, Quản lý và Thành viên một cách bảo mật.'
-        }
-      ]
-    }
-  ];
+  const currentTopic = DOC_TOPICS.find(t => t.id === selectedTopic) || DOC_TOPICS[0];
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.55)',
-      backdropFilter: 'blur(4px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1200,
-      padding: '20px'
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '720px',
-        backgroundColor: '#FFFFFF',
-        borderRadius: '14px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        border: '1px solid #E2E8F0',
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.5)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
-        flexDirection: 'column',
-        maxHeight: '85vh',
-        overflow: 'hidden',
-        animation: 'fadeInModal 0.2s ease-out'
-      }}>
-        {/* ── 1. MODAL HEADER ── */}
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 99999,
+        padding: '20px'
+      }}
+      onClick={onClose}
+    >
+      {/* ── MODAL CONTAINER (Dedicated to Documentation & User Guide) ── */}
+      <div
+        style={{
+          width: '980px',
+          maxWidth: '96vw',
+          height: '640px',
+          maxHeight: '90vh',
+          backgroundColor: '#FFFFFF',
+          borderRadius: '16px',
+          border: '1px solid #E2E8F0',
+          boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          animation: 'fadeIn 0.15s ease-out'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── 1. HEADER (Title, Search & Close) ── */}
         <div style={{
+          padding: '16px 24px',
+          borderBottom: '1px solid #F1F5F9',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '16px 24px',
-          borderBottom: '1px solid #F1F5F9',
-          backgroundColor: '#FFFFFF'
+          backgroundColor: '#FFFFFF',
+          flexShrink: 0
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '36px',
               height: '36px',
-              borderRadius: '10px',
+              borderRadius: '8px',
               backgroundColor: '#EDE9FE',
+              color: '#7C3AED',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: '#7C3AED'
+              justifyContent: 'center'
             }}>
-              <HelpCircle size={20} />
+              <BookOpen size={18} />
             </div>
             <div>
               <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
-                Trung tâm Trợ giúp & Hỗ trợ
+                Tài liệu & Hướng dẫn sử dụng
               </h2>
               <p style={{ fontSize: '12px', margin: '2px 0 0 0', color: '#64748B' }}>
-                Phím tắt thao tác nhanh, thông tin cập nhật mới và kênh trợ giúp
+                Cẩm nang tính năng, cấu hình Proxy, Fingerprint và giải đáp thắc mắc
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            style={{
-              width: '32px',
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Search Input */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#F8FAFC',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              padding: '0 10px',
               height: '32px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: '#F1F5F9',
-              color: '#64748B',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background-color 0.15s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E2E8F0'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
-          >
-            <X size={16} />
-          </button>
-        </div>
+              width: '240px'
+            }}>
+              <Search size={13} style={{ color: '#94A3B8', marginRight: '6px', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder="Tìm kiếm tài liệu..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '12px',
+                  width: '100%',
+                  backgroundColor: 'transparent',
+                  color: '#334155'
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
 
-        {/* ── 2. SUB NAVIGATION TABS ── */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '0 24px',
-          borderBottom: '1px solid #E2E8F0',
-          backgroundColor: '#F8FAFC'
-        }}>
-          <button
-            onClick={() => setActiveTab('shortcuts')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '10px 14px',
-              fontSize: '12.5px',
-              fontWeight: 600,
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: activeTab === 'shortcuts' ? '#7C3AED' : '#64748B',
-              borderBottom: `2px solid ${activeTab === 'shortcuts' ? '#7C3AED' : 'transparent'}`,
-              cursor: 'pointer'
-            }}
-          >
-            <Keyboard size={15} />
-            <span>Phím tắt hệ thống</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('whatsNew')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '10px 14px',
-              fontSize: '12.5px',
-              fontWeight: 600,
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: activeTab === 'whatsNew' ? '#7C3AED' : '#64748B',
-              borderBottom: `2px solid ${activeTab === 'whatsNew' ? '#7C3AED' : 'transparent'}`,
-              cursor: 'pointer'
-            }}
-          >
-            <Sparkles size={15} />
-            <span>Có gì mới? (v2.4.0)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('support')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '10px 14px',
-              fontSize: '12.5px',
-              fontWeight: 600,
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: activeTab === 'support' ? '#7C3AED' : '#64748B',
-              borderBottom: `2px solid ${activeTab === 'support' ? '#7C3AED' : 'transparent'}`,
-              cursor: 'pointer'
-            }}
-          >
-            <MessageCircle size={15} />
-            <span>Kênh hỗ trợ & Tài liệu</span>
-          </button>
-        </div>
-
-        {/* ── 3. MODAL CONTENT BODY ── */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '20px 24px',
-          boxSizing: 'border-box'
-        }}>
-          {/* TAB 1: KEYBOARD SHORTCUTS */}
-          {activeTab === 'shortcuts' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Search box for shortcuts */}
-              <div style={{
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              title="Đóng (Esc)"
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: '#F1F5F9',
+                color: '#64748B',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                backgroundColor: '#F8FAFC',
-                border: '1px solid #CBD5E1',
-                borderRadius: '8px',
-                padding: '0 12px',
-                height: '36px'
-              }}>
-                <Search size={14} style={{ color: '#94A3B8', marginRight: '8px' }} />
-                <input
-                  type="text"
-                  placeholder="Tìm phím tắt (VD: Tạo mới, Proxy, Đồng bộ, Chạy...)"
-                  value={shortcutQuery}
-                  onChange={(e) => setShortcutQuery(e.target.value)}
-                  style={{
-                    border: 'none',
-                    outline: 'none',
-                    backgroundColor: 'transparent',
-                    fontSize: '12.5px',
-                    color: '#0F172A',
-                    width: '100%'
-                  }}
-                />
-                {shortcutQuery && (
-                  <button
-                    onClick={() => setShortcutQuery('')}
-                    style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-
-              {/* Shortcut Categories List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                {filteredGroups.map(group => {
-                  const Icon = group.icon;
-                  return (
-                    <div
-                      key={group.category}
-                      style={{
-                        backgroundColor: '#FFFFFF',
-                        border: '1px solid #E2E8F0',
-                        borderRadius: '10px',
-                        overflow: 'hidden'
-                      }}
-                    >
-                      {/* Group Header */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '10px 14px',
-                        backgroundColor: '#F8FAFC',
-                        borderBottom: '1px solid #E2E8F0'
-                      }}>
-                        <Icon size={14} style={{ color: group.color }} />
-                        <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1E293B' }}>
-                          {group.category}
-                        </span>
-                      </div>
-
-                      {/* Items */}
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {group.items.map((item, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '10px 14px',
-                              borderBottom: idx === group.items.length - 1 ? 'none' : '1px solid #F1F5F9',
-                              fontSize: '12.5px'
-                            }}
-                          >
-                            <span style={{ color: '#334155', fontWeight: 500 }}>
-                              {item.desc}
-                            </span>
-
-                            {/* Shortcut Badges */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              {item.keys.map((k, kIdx) => (
-                                <React.Fragment key={kIdx}>
-                                  <kbd style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    minWidth: '22px',
-                                    padding: '2px 7px',
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                    fontFamily: 'system-ui, sans-serif',
-                                    color: '#1E293B',
-                                    backgroundColor: '#F8FAFC',
-                                    border: '1px solid #CBD5E1',
-                                    borderBottom: '2px solid #94A3B8',
-                                    borderRadius: '5px',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                                  }}>
-                                    {k}
-                                  </kbd>
-                                  {kIdx < item.keys.length - 1 && (
-                                    <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>+</span>
-                                  )}
-                                </React.Fragment>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {filteredGroups.length === 0 && (
-                  <div style={{ padding: '30px 20px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
-                    Không tìm thấy phím tắt phù hợp với từ khóa "{shortcutQuery}"
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: WHAT'S NEW (RELEASE CHANGELOG) */}
-          {activeTab === 'whatsNew' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {RELEASES.map(release => (
-                <div
-                  key={release.version}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '10px',
-                    border: '1px solid #E2E8F0',
-                    padding: '18px 20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '14px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-                  }}
-                >
-                  {/* Version Title Bar */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                        {release.version}
-                      </span>
-                      {release.isLatest && (
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          backgroundColor: '#DCFCE7',
-                          color: '#15803D'
-                        }}>
-                          MỚI NHẤT
-                        </span>
-                      )}
-                    </div>
-                    <span style={{ fontSize: '12px', color: '#64748B' }}>
-                      {release.date}
-                    </span>
-                  </div>
-
-                  {/* Highlights List */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {release.highlights.map((item, hIdx) => (
-                      <div
-                        key={hIdx}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '3px',
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          backgroundColor: '#F8FAFC',
-                          border: '1px solid #F1F5F9'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            padding: '1px 6px',
-                            borderRadius: '4px',
-                            backgroundColor: `${item.tagColor}15`,
-                            color: item.tagColor
-                          }}>
-                            {item.tag}
-                          </span>
-                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>
-                            {item.title}
-                          </span>
-                        </div>
-                        <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
-                          {item.desc}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* TAB 3: SUPPORT & COMMUNITY */}
-          {activeTab === 'support' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ fontSize: '13px', color: '#475569' }}>
-                Đội ngũ kỹ thuật Antidetect Browser luôn sẵn sàng hỗ trợ bạn 24/7. Vui lòng chọn kênh liên hệ thuận tiện:
-              </div>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '14px'
-              }}>
-                {/* Channel 1: Documentation */}
-                <div
-                  onClick={() => window.open('https://apidog.com/help', '_blank')}
-                  style={{
-                    padding: '16px',
-                    borderRadius: '10px',
-                    border: '1px solid #E2E8F0',
-                    backgroundColor: '#FFFFFF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#7C3AED';
-                    e.currentTarget.style.backgroundColor = '#FBF8FF';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#E2E8F0';
-                    e.currentTarget.style.backgroundColor = '#FFFFFF';
-                  }}
-                >
-                  <div style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '10px',
-                    backgroundColor: '#EDE9FE',
-                    color: '#7C3AED',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <BookOpen size={20} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Tài liệu hướng dẫn</span>
-                      <ExternalLink size={12} style={{ color: '#94A3B8' }} />
-                    </div>
-                    <span style={{ fontSize: '11.5px', color: '#64748B' }}>
-                      Xem wiki, cấu hình API và cẩm nang nuôi nick
-                    </span>
-                  </div>
-                </div>
-
-                {/* Channel 2: Telegram Support */}
-                <div
-                  onClick={() => window.open('https://t.me/antidetect_support', '_blank')}
-                  style={{
-                    padding: '16px',
-                    borderRadius: '10px',
-                    border: '1px solid #E2E8F0',
-                    backgroundColor: '#FFFFFF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#0284C7';
-                    e.currentTarget.style.backgroundColor = '#F0F9FF';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#E2E8F0';
-                    e.currentTarget.style.backgroundColor = '#FFFFFF';
-                  }}
-                >
-                  <div style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '10px',
-                    backgroundColor: '#E0F2FE',
-                    color: '#0284C7',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Send size={20} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Telegram Hỗ Trợ 24/7</span>
-                      <ExternalLink size={12} style={{ color: '#94A3B8' }} />
-                    </div>
-                    <span style={{ fontSize: '11.5px', color: '#64748B' }}>
-                      Phản hồi kỹ thuật trong vòng 5 phút
-                    </span>
-                  </div>
-                </div>
-
-                {/* Channel 3: Community Discord */}
-                <div
-                  onClick={() => window.open('https://discord.gg', '_blank')}
-                  style={{
-                    padding: '16px',
-                    borderRadius: '10px',
-                    border: '1px solid #E2E8F0',
-                    backgroundColor: '#FFFFFF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#6366F1';
-                    e.currentTarget.style.backgroundColor = '#EEF2FF';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#E2E8F0';
-                    e.currentTarget.style.backgroundColor = '#FFFFFF';
-                  }}
-                >
-                  <div style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '10px',
-                    backgroundColor: '#EEF2FF',
-                    color: '#6366F1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <MessageCircle size={20} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Cộng đồng MMO Discord</span>
-                      <ExternalLink size={12} style={{ color: '#94A3B8' }} />
-                    </div>
-                    <span style={{ fontSize: '11.5px', color: '#64748B' }}>
-                      Giao lưu cùng hơn 10,000+ thành viên
-                    </span>
-                  </div>
-                </div>
-
-                {/* Channel 4: Email */}
-                <div
-                  onClick={() => window.open('mailto:support@antidetect.io')}
-                  style={{
-                    padding: '16px',
-                    borderRadius: '10px',
-                    border: '1px solid #E2E8F0',
-                    backgroundColor: '#FFFFFF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#059669';
-                    e.currentTarget.style.backgroundColor = '#ECFDF5';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#E2E8F0';
-                    e.currentTarget.style.backgroundColor = '#FFFFFF';
-                  }}
-                >
-                  <div style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '10px',
-                    backgroundColor: '#D1FAE5',
-                    color: '#059669',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Shield size={20} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Email Hỗ Trợ Doanh Nghiệp</span>
-                    </div>
-                    <span style={{ fontSize: '11.5px', color: '#64748B' }}>
-                      support@antidetect.io
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+                justifyContent: 'center',
+                transition: 'all 0.12s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#E2E8F0';
+                e.currentTarget.style.color = '#0F172A';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#F1F5F9';
+                e.currentTarget.style.color = '#64748B';
+              }}
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
-        {/* ── 4. MODAL FOOTER ── */}
+        {/* ── 2. TWO-COLUMN DOCS BODY (Left Topics Nav | Right Reading Pane) ── */}
+        <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
+          {/* Left Column: Topics Navigation */}
+          <div style={{
+            width: '280px',
+            borderRight: '1px solid #F1F5F9',
+            backgroundColor: '#F8FAFC',
+            overflowY: 'auto',
+            padding: '12px 8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            flexShrink: 0
+          }}>
+            <div style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              color: '#94A3B8',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              padding: '4px 10px 6px 10px'
+            }}>
+              Danh mục hướng dẫn ({filteredTopics.length})
+            </div>
+
+            {filteredTopics.map((topic) => {
+              const isSelected = selectedTopic === topic.id;
+              const IconComp = topic.icon;
+
+              return (
+                <div
+                  key={topic.id}
+                  onClick={() => setSelectedTopic(topic.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    padding: '9px 10px',
+                    borderRadius: '8px',
+                    backgroundColor: isSelected ? '#FFFFFF' : 'transparent',
+                    border: isSelected ? '1px solid #E2E8F0' : '1px solid transparent',
+                    boxShadow: isSelected ? '0 1px 3px rgba(0, 0, 0, 0.05)' : 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.12s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.backgroundColor = '#F1F5F9';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '6px',
+                    backgroundColor: topic.badgeBg,
+                    color: topic.badgeColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '1px'
+                  }}>
+                    <IconComp size={15} />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: '12.5px',
+                      fontWeight: isSelected ? 700 : 500,
+                      color: isSelected ? '#7C3AED' : '#1E293B',
+                      lineHeight: '1.3'
+                    }}>
+                      {topic.title}
+                    </div>
+                    <div style={{
+                      fontSize: '11px',
+                      color: '#64748B',
+                      marginTop: '3px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {topic.category}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Right Column: Detailed Reading Article */}
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '28px 36px',
+            backgroundColor: '#FFFFFF',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+          }}>
+            {/* Article Header */}
+            <div style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: currentTopic.badgeColor,
+                  backgroundColor: currentTopic.badgeBg,
+                  padding: '2px 8px',
+                  borderRadius: '4px'
+                }}>
+                  {currentTopic.badge}
+                </span>
+                <span style={{ fontSize: '11.5px', color: '#94A3B8' }}>•</span>
+                <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+                  {currentTopic.category}
+                </span>
+              </div>
+
+              <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+                {currentTopic.title}
+              </h1>
+              <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: '1.5' }}>
+                {currentTopic.summary}
+              </p>
+            </div>
+
+            {/* Article Dynamic Content */}
+            <div style={{ flex: 1 }}>
+              {currentTopic.content}
+            </div>
+          </div>
+        </div>
+
+        {/* ── 3. FOOTER ── */}
         <div style={{
           padding: '12px 24px',
-          borderTop: '1px solid #E2E8F0',
+          borderTop: '1px solid #F1F5F9',
           backgroundColor: '#F8FAFC',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          flexShrink: 0
         }}>
-          <span style={{ fontSize: '11.5px', color: '#64748B' }}>
-            Antidetect Browser v2.4.0 • Được bảo vệ bởi bản quyền 2026
+          <span style={{ fontSize: '12px', color: '#64748B' }}>
+            Tài liệu hướng dẫn Antidetect Browser • Cập nhật định kỳ 2026
           </span>
           <button
             onClick={onClose}
@@ -727,7 +638,7 @@ export default function HelpSupportModal({
               border: '1px solid #CBD5E1',
               backgroundColor: '#FFFFFF',
               color: '#334155',
-              fontSize: '12px',
+              fontSize: '12.5px',
               fontWeight: 600,
               cursor: 'pointer'
             }}

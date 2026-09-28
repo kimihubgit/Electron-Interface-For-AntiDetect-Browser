@@ -293,8 +293,8 @@ export default function BottomStatusBar() {
                 {/* Item 3: What's New? */}
                 <div
                   onClick={() => {
-                    setActiveHelpModal('whatsNew');
                     setShowHelpMenu(false);
+                    handleCheckUpdate();
                   }}
                   style={{
                     display: 'flex',
