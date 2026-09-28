@@ -1,0 +1,29 @@
+[package]
+name = "local-daemon"
+version = "1.0.0"
+edition = "2021"
+description = "High-performance Local Core Daemon & Antidetect Sync Engine in Rust"
+
+[dependencies]
+# Async runtime & HTTP Server
+tokio = { version = "1.38", features = ["full"] }
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower = { version = "0.4", features = ["util"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Serialization & JSON
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# High-speed HTTP client for Cloud API forwarding & CDP
+reqwest = { version = "0.12", features = ["json", "socks", "stream"] }
+tokio-tungstenite = { version = "0.23", features = ["connect"] }
+futures-util = "0.3"
+
+# Networking & Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+chrono = "0.4"
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"

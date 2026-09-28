@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import ChromeSyncIcon from '../../components/icons/ChromeSyncIcon';
 import { getCountryFlag } from '../profiles/utils/profileUtils';
+import localDaemonApi from '../../services/localDaemonApi';
 
 export default function SynchronizerPage() {
   const { profiles = [], toggleLaunchProfile, setActiveTab, showToast } = useBrowser();
@@ -104,15 +105,22 @@ export default function SynchronizerPage() {
       }
       setIsSyncing(true);
       showToast?.(`Đã bắt đầu đồng bộ thao tác từ Master "${masterProfile?.name}"!`, 'success');
+      
+      const followerIds = runningProfiles.filter((p) => String(p.id) !== String(masterProfile?.id)).map((p) => p.id);
+
+      // Kích hoạt qua Local Daemon (127.0.0.1:50325)
+      localDaemonApi.startSync(masterProfile?.id, followerIds);
+
       if (window.electronAPI?.startSync) {
         window.electronAPI.startSync({
           masterId: masterProfile?.id,
-          followerIds: runningProfiles.filter((p) => String(p.id) !== String(masterProfile?.id)).map((p) => p.id)
+          followerIds
         });
       }
     } else {
       setIsSyncing(false);
       showToast?.('Đã dừng đồng bộ thao tác.');
+      localDaemonApi.stopSync();
       if (window.electronAPI?.stopSync) {
         window.electronAPI.stopSync();
       }

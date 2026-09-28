@@ -39,10 +39,16 @@ if (!gotTheLock) {
   });
 }
 
+const { startLocalDaemon, stopLocalDaemon } = require('./daemon/daemonManager.cjs');
+const { getActiveProfilesList } = require('./ipc/browserIpc.cjs');
+
 // Khởi tạo toàn bộ các bộ xử lý IPC (Browser, Engine, System, Proxy, Update, Window)
 registerAllIpcHandlers();
 
 app.whenReady().then(() => {
+  // Tự động khởi chạy Local Core Daemon (127.0.0.1:50325)
+  startLocalDaemon(getActiveProfilesList);
+
   createWindow();
 
   app.on('activate', () => {
@@ -53,7 +59,12 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  stopLocalDaemon();
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('before-quit', () => {
+  stopLocalDaemon();
 });
