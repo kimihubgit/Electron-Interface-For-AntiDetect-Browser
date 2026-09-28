@@ -44,7 +44,6 @@ export default function ProxyHeader({
 
   const SUB_TABS = [
     { id: 'pool', label: 'Proxy Tĩnh', count: proxiesCount, icon: Layers },
-    { id: 'rotating', label: 'Proxy Xoay (API)', count: rotatingCount, icon: RotateCw },
     { id: 'dcom', label: 'Thiết Bị DCOM 4G', count: dcomCount, icon: Smartphone },
     { id: 'ipv6', label: 'Sinh IPv6 Subnet', count: ipv6Count, icon: Cpu }
   ];
@@ -83,7 +82,7 @@ export default function ProxyHeader({
               Quản Lý Proxy
             </h2>
             <div style={{ fontSize: '11px', color: '#64748B' }}>
-              Kho kết nối proxy tĩnh, proxy xoay dân cư, DCOM 4G và dải IPv6
+              Kho kết nối proxy tĩnh, thiết bị DCOM 4G và dải IPv6 Subnet
             </div>
           </div>
         </div>
@@ -368,46 +367,6 @@ export default function ProxyHeader({
 
                   <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '4px 0' }} />
 
-                  {/* Option 3: Thêm proxy xoay */}
-                  <div
-                    onClick={() => {
-                      setIsAddDropdownOpen(false);
-                      setActiveSubTab('rotating');
-                      onOpenAddRotatingModal();
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '9px',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.12s'
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    <div
-                      style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '6px',
-                        backgroundColor: '#FEF3C7',
-                        color: '#D97706',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                      }}
-                    >
-                      <RotateCw size={14} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>Thêm Proxy Xoay (API)</div>
-                      <div style={{ fontSize: '11px', color: '#64748B' }}>TMProxy, TinProxy, ProxyNo1...</div>
-                    </div>
-                  </div>
-
                   {/* Option 4: Thêm DCOM */}
                   <div
                     onClick={() => {
@@ -453,32 +412,6 @@ export default function ProxyHeader({
           </>
         )}
 
-        {activeSubTab === 'rotating' && (
-          <button
-            onClick={onOpenAddRotatingModal}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              height: '32px',
-              padding: '0 14px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: 'var(--apidog-purple)',
-              color: '#FFFFFF',
-              fontSize: '12.5px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 2px 5px rgba(124, 58, 237, 0.25)',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--apidog-purple-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--apidog-purple)')}
-          >
-            <Plus size={15} />
-            <span>+ Thêm Proxy Xoay</span>
-          </button>
-        )}
 
         {activeSubTab === 'dcom' && (
           <button

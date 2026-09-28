@@ -9,7 +9,6 @@ import ProxyTable from './components/ProxyTable';
 import ProxyFloatingBar from './components/ProxyFloatingBar';
 
 // Subtabs
-import RotatingProxiesTab from './tabs/RotatingProxiesTab';
 import DcomDonglesTab from './tabs/DcomDonglesTab';
 import Ipv6SubnetTab from './tabs/Ipv6SubnetTab';
 
@@ -19,7 +18,6 @@ import ProxyBulkModal from './modals/ProxyBulkModal';
 import ProxyAssignModal from './modals/ProxyAssignModal';
 import ProxyNoteModal from './modals/ProxyNoteModal';
 import ProxyDeleteConfirmModal from './modals/ProxyDeleteConfirmModal';
-import AddRotatingProxyModal from './modals/AddRotatingProxyModal';
 import AddDcomModal from './modals/AddDcomModal';
 
 export default function ProxiesPage() {
@@ -44,6 +42,7 @@ export default function ProxiesPage() {
     generatedIpv6List = [],
     generateIpv6Batch,
     addGeneratedIpv6ToPool,
+    setGeneratedIpv6List,
     showToast
   } = useBrowser();
 
@@ -99,15 +98,7 @@ export default function ProxiesPage() {
   const [bulkType, setBulkType] = useState('SOCKS5');
   const [bulkIpVersion, setBulkIpVersion] = useState('IPv4');
 
-  // Rotating & DCOM Modals State
-  const [showAddRotatingModal, setShowAddRotatingModal] = useState(false);
-  const [rotatingFormData, setRotatingFormData] = useState({
-    name: '',
-    provider: 'TMProxy',
-    rotateUrl: '',
-    protocol: 'HTTP',
-    cooldown: 60
-  });
+  // DCOM Modal State
 
   const [showAddDcomModal, setShowAddDcomModal] = useState(false);
   const [dcomFormData, setDcomFormData] = useState({
@@ -505,14 +496,12 @@ export default function ProxiesPage() {
         activeSubTab={activeSubTab}
         setActiveSubTab={setActiveSubTab}
         proxiesCount={proxies.length}
-        rotatingCount={rotatingProxies.length}
         dcomCount={dcomDevices.length}
         ipv6Count={generatedIpv6List.length}
         handleCheckAll={handleCheckAll}
         isCheckingAll={isCheckingAll}
         onOpenBulkModal={() => setShowBulkModal(true)}
         onOpenAddModal={handleOpenAddModal}
-        onOpenAddRotatingModal={() => setShowAddRotatingModal(true)}
         onOpenAddDcomModal={() => setShowAddDcomModal(true)}
       />
 
@@ -575,13 +564,6 @@ export default function ProxiesPage() {
         </div>
       )}
 
-      {activeSubTab === 'rotating' && (
-        <RotatingProxiesTab
-          rotatingProxies={rotatingProxies}
-          triggerRotateProxy={triggerRotateProxy}
-          deleteRotatingProxy={deleteRotatingProxy}
-        />
-      )}
 
       {activeSubTab === 'dcom' && (
         <DcomDonglesTab
@@ -596,6 +578,7 @@ export default function ProxiesPage() {
           generatedIpv6List={generatedIpv6List}
           generateIpv6Batch={generateIpv6Batch}
           addGeneratedIpv6ToPool={addGeneratedIpv6ToPool}
+          setGeneratedIpv6List={setGeneratedIpv6List}
           showToast={showToast}
         />
       )}
@@ -654,19 +637,6 @@ export default function ProxiesPage() {
         onConfirm={handleConfirmDelete}
       />
 
-      <AddRotatingProxyModal
-        isOpen={showAddRotatingModal}
-        onClose={() => setShowAddRotatingModal(false)}
-        formData={rotatingFormData}
-        setFormData={setRotatingFormData}
-        onSubmit={() => {
-          if (!rotatingFormData.name.trim()) return;
-          addRotatingProxy(rotatingFormData);
-          setShowAddRotatingModal(false);
-          setRotatingFormData({ name: '', provider: 'TMProxy', rotateUrl: '', protocol: 'HTTP', cooldown: 60 });
-          showToast?.('Đã thêm proxy xoay mới thành công');
-        }}
-      />
 
       <AddDcomModal
         isOpen={showAddDcomModal}
