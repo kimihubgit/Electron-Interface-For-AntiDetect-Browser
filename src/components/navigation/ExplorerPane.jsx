@@ -872,47 +872,37 @@ export default function ExplorerPane() {
         {/* 4.1 SCRIPTS EXPLORER (when activeTab === 'scripts')         */}
         {/* ═══════════════════════════════════════════════════════════ */}
         {activeTab === 'scripts' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px 4px' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               padding: '6px 8px',
               fontSize: '12px',
-              color: '#2563EB',
+              color: '#7C3AED',
               fontWeight: 700
             }}>
               <FileCode size={14} />
-              <span>Tệp kịch bản Playwright & Puppeteer</span>
+              <span>Kịch bản tự động hóa</span>
             </div>
-
-            {[
-              { name: 'facebook_farming.js', engine: 'Playwright', size: '3.2 KB' },
-              { name: 'tiktok_shop_auto.js', engine: 'Puppeteer', size: '4.8 KB' },
-              { name: 'crypto_airdrop_bot.js', engine: 'Web3 / PW', size: '5.1 KB' },
-              { name: 'shopee_price_scraper.js', engine: 'Puppeteer', size: '2.9 KB' }
-            ].map((s, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '7px 10px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  border: '1px solid var(--apidog-border)',
-                  backgroundColor: 'var(--apidog-bg)',
-                  fontSize: '12px'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <FileCode size={13} color="#2563EB" />
-                  <span style={{ fontFamily: 'monospace', fontWeight: 500, color: 'var(--apidog-text-main)' }}>{s.name}</span>
-                </div>
-                <span style={{ fontSize: '10px', color: 'var(--apidog-text-muted)' }}>{s.engine}</span>
-              </div>
-            ))}
+            <div style={{
+              padding: '16px 12px',
+              borderRadius: '8px',
+              backgroundColor: '#F8FAFC',
+              border: '1px dashed #CBD5E1',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                Đang nâng cấp tính năng
+              </span>
+              <span style={{ fontSize: '11px', color: '#64748B', lineHeight: 1.4 }}>
+                Hệ thống kịch bản Playwright & Puppeteer sẽ sớm ra mắt trong bản cập nhật kế tiếp.
+              </span>
+            </div>
           </div>
         )}
 
