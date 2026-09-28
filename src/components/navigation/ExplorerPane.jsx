@@ -17,7 +17,6 @@ import {
   Bot,
   Settings,
   Server,
-  Key,
   FileCode,
   AlertTriangle,
   Puzzle,
@@ -1133,8 +1132,7 @@ export default function ExplorerPane() {
               { id: 'general', label: t('settings.tabs.general', 'General'), icon: Settings },
               { id: 'fingerprint', label: t('settings.tabs.fingerprint', 'Fingerprint'), icon: Fingerprint },
               { id: 'network', label: t('settings.tabs.network', 'Network'), icon: Shield },
-              { id: 'cookie', label: t('settings.tabs.cookie', 'Cookie'), icon: Cookie },
-              { id: 'license', label: t('settings.tabs.license', 'License'), icon: Key }
+              { id: 'cookie', label: t('settings.tabs.cookie', 'Cookie'), icon: Cookie }
             ].map((item) => {
               const Icon = item.icon;
               const isSelected = (activeSettingsSection || 'browser') === item.id;
