@@ -19,6 +19,7 @@ export default function ProfileGrid({
   saveProfile,
   cloneProfile,
   onRunCookieRobot,
+  onExportCookie,
   addLog
 }) {
   return (
@@ -270,6 +271,7 @@ export default function ProfileGrid({
                     saveProfile={saveProfile}
                     cloneProfile={cloneProfile}
                     onRunCookieRobot={onRunCookieRobot}
+                    onExportCookie={onExportCookie}
                     addLog={addLog}
                   />
                 )}

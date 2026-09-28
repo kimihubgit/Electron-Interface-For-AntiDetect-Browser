@@ -24,6 +24,7 @@ function ProfileTableRowComponent({
   saveProfile,
   cloneProfile,
   onRunCookieRobot,
+  onExportCookie,
   addLog,
   t
 }) {
@@ -240,6 +241,7 @@ function ProfileTableRowComponent({
               }}
               onSave={saveProfile}
               onRunCookieRobot={onRunCookieRobot}
+              onExportCookie={onExportCookie}
               addLog={addLog}
             />
           )}

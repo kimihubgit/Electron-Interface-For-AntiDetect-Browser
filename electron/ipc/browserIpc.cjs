@@ -1,7 +1,8 @@
 const { app, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const http = require('http');
+const { spawn, spawnSync } = require('child_process');
 const { getMainWindow } = require('../window.cjs');
 const { findBrowserExecutable } = require('./engineIpc.cjs');
 
@@ -399,6 +400,193 @@ function registerBrowserIpc() {
     broadcastRunningProfiles();
     return { success: true };
   });
+
+  // Trích xuất cookies thật từ Chromium (Live CDP hoặc SQLite/Profile)
+  ipcMain.handle('export-profile-cookies', async (event, profile) => {
+    if (!profile || !profile.id) {
+      return { success: false, error: 'Thiếu thông tin profile' };
+    }
+
+    const safeId = String(profile.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const appData = app.getPath('userData');
+    const profileDir = path.join(appData, 'profiles_data', safeId);
+
+    // 1. Thử trích xuất Live qua CDP nếu trình duyệt đang mở hoặc có DevToolsActivePort
+    try {
+      const liveCookies = await fetchCookiesFromDevTools(profileDir);
+      if (Array.isArray(liveCookies) && liveCookies.length > 0) {
+        return {
+          success: true,
+          source: 'live_cdp',
+          count: liveCookies.length,
+          cookies: liveCookies
+        };
+      }
+    } catch (e) {
+      console.warn(`[Cookie Export] CDP extraction failed:`, e.message);
+    }
+
+    // 2. Thử đọc cơ sở dữ liệu SQLite Cookies trên đĩa
+    try {
+      const offlineCookies = extractCookiesViaPython(profileDir);
+      if (Array.isArray(offlineCookies) && offlineCookies.length > 0) {
+        return {
+          success: true,
+          source: 'sqlite_cache',
+          count: offlineCookies.length,
+          cookies: offlineCookies
+        };
+      }
+    } catch (e) {
+      console.warn(`[Cookie Export] SQLite extraction failed:`, e.message);
+    }
+
+    // 3. Fallback đọc cookies đã lưu trong đối tượng profile
+    if (profile.cookies) {
+      let parsed = [];
+      if (Array.isArray(profile.cookies)) {
+        parsed = profile.cookies;
+      } else if (typeof profile.cookies === 'string') {
+        try {
+          parsed = JSON.parse(profile.cookies);
+          if (!Array.isArray(parsed)) parsed = [parsed];
+        } catch {
+          const lines = profile.cookies.split('\n');
+          for (const line of lines) {
+            const l = line.trim();
+            if (!l || l.startsWith('#')) continue;
+            const p = l.split('\t');
+            if (p.length >= 7) {
+              parsed.push({
+                domain: p[0],
+                path: p[2],
+                secure: p[3] === 'TRUE',
+                expires: parseInt(p[4]) || 0,
+                name: p[5],
+                value: p[6]
+              });
+            }
+          }
+        }
+      }
+      return {
+        success: true,
+        source: 'profile_stored',
+        count: parsed.length,
+        cookies: parsed
+      };
+    }
+
+    return {
+      success: true,
+      source: 'empty',
+      count: 0,
+      cookies: []
+    };
+  });
+}
+
+async function fetchCookiesFromDevTools(profileDir) {
+  const devToolsFile = path.join(profileDir, 'DevToolsActivePort');
+  if (!fs.existsSync(devToolsFile)) return null;
+
+  try {
+    const content = fs.readFileSync(devToolsFile, 'utf8').trim().split('\n');
+    const port = parseInt(content[0], 10);
+    if (!port || isNaN(port)) return null;
+
+    const versionInfo = await new Promise((resolve, reject) => {
+      const req = http.get(`http://127.0.0.1:${port}/json/version`, { timeout: 1500 }, res => {
+        let data = '';
+        res.on('data', d => data += d);
+        res.on('end', () => {
+          try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+        });
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+    });
+
+    if (!versionInfo || !versionInfo.webSocketDebuggerUrl) return null;
+
+    if (typeof WebSocket === 'undefined') return null;
+
+    const ws = new WebSocket(versionInfo.webSocketDebuggerUrl);
+    const cookies = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        try { ws.close(); } catch {}
+        reject(new Error('WebSocket timeout'));
+      }, 2500);
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ id: 101, method: 'Storage.getCookies' }));
+      };
+      ws.onmessage = (event) => {
+        clearTimeout(timer);
+        try {
+          const res = JSON.parse(event.data);
+          if (res.id === 101) {
+            resolve(res.result?.cookies || []);
+          }
+        } catch (e) {
+          reject(e);
+        }
+      };
+      ws.onerror = (err) => {
+        clearTimeout(timer);
+        reject(err);
+      };
+    });
+
+    try { ws.close(); } catch {}
+    return cookies;
+  } catch (err) {
+    return null;
+  }
+}
+
+function extractCookiesViaPython(profileDir) {
+  const cookieDb = path.join(profileDir, 'Default', 'Network', 'Cookies');
+  if (!fs.existsSync(cookieDb)) return null;
+
+  try {
+    const pyScript = `
+import os, sys, json, sqlite3, shutil
+profile_dir = sys.argv[1]
+cookie_db = os.path.join(profile_dir, 'Default', 'Network', 'Cookies')
+temp_db = os.path.join(os.environ.get('TEMP', '.'), 'ck_' + str(os.getpid()) + '.db')
+try:
+    shutil.copy2(cookie_db, temp_db)
+    conn = sqlite3.connect(temp_db)
+    cur = conn.cursor()
+    cur.execute("SELECT host_key, name, path, expires_utc, is_secure, is_httponly FROM cookies")
+    rows = cur.fetchall()
+    cookies = []
+    for r in rows:
+        exp = r[3] // 1000000 - 11644473600 if r[3] else 0
+        cookies.append({
+            "domain": r[0],
+            "name": r[1],
+            "path": r[2],
+            "expires": exp,
+            "secure": bool(r[4]),
+            "httpOnly": bool(r[5]),
+            "value": ""
+        })
+    conn.close()
+    try: os.remove(temp_db)
+    except: pass
+    print(json.dumps(cookies))
+except Exception:
+    print("[]")
+`;
+    const res = spawnSync('python', ['-c', pyScript, profileDir], { encoding: 'utf8', timeout: 2500 });
+    if (res.status === 0 && res.stdout) {
+      const parsed = JSON.parse(res.stdout.trim());
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return null;
 }
 
 function getActiveProfilesCount() {

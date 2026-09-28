@@ -71,5 +71,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   startLocalProxyServer: (config) => ipcRenderer.invoke('start-local-proxy-server', config),
   stopLocalProxyServer: () => ipcRenderer.invoke('stop-local-proxy-server'),
-  getLocalProxyStatus: () => ipcRenderer.invoke('get-local-proxy-status')
+  getLocalProxyStatus: () => ipcRenderer.invoke('get-local-proxy-status'),
+  exportProfileCookies: (profile) => ipcRenderer.invoke('export-profile-cookies', profile)
 });

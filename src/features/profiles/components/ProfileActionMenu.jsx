@@ -19,6 +19,7 @@ export default function ProfileActionMenu({
   onSave,
   onClone,
   onRunCookieRobot,
+  onExportCookie,
   addLog
 }) {
   const save = saveProfile || onSave;
@@ -118,28 +119,41 @@ export default function ProfileActionMenu({
         <span>Nhập cookie</span>
       </div>
 
-      {/* 7. Xuất cookie */}
+      {/* 4. Xuất cookie */}
       <div
         onClick={() => {
           onClose?.();
-          const sampleCookies = [
-            { domain: ".google.com", name: "SID", value: "DQAA" + Math.random().toString(36).substring(2) },
-            { domain: ".facebook.com", name: "c_user", value: "1000" + Math.floor(Math.random() * 899999999 + 100000000) }
-          ];
-          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleCookies, null, 2));
-          const dlAnchor = document.createElement('a');
-          dlAnchor.setAttribute("href", dataStr);
-          dlAnchor.setAttribute("download", `cookies_${profile.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`);
-          document.body.appendChild(dlAnchor);
-          dlAnchor.click();
-          dlAnchor.remove();
-          addLog?.(`Đã xuất file cookies cho "${profile.name}"`, 'info');
+          if (onExportCookie) {
+            onExportCookie(profile);
+          } else {
+            const raw = profile.cookies;
+            let cookies = [];
+            if (Array.isArray(raw)) {
+              cookies = raw;
+            } else if (typeof raw === 'string') {
+              try { cookies = JSON.parse(raw); } catch { cookies = []; }
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cookies, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `cookies_${profile.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            addLog?.(`Đã xuất file cookies (${cookies.length} cookies) cho "${profile.name}"`, 'info');
+          }
         }}
         style={menuItemStyle}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F1F5F9'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#F5F3FF';
+          e.currentTarget.style.color = '#7C3AED';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.color = '#1E293B';
+        }}
       >
-        <ExternalLink size={15} style={{ color: '#475569' }} />
+        <ExternalLink size={15} style={{ color: '#7C3AED' }} />
         <span>Xuất cookie</span>
       </div>
 

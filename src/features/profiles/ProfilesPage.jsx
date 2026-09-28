@@ -10,6 +10,7 @@ import ProfileBatchBar from './components/ProfileBatchBar';
 import MoveGroupModal from './components/MoveGroupModal';
 import TransferProfileModal from './components/TransferProfileModal';
 import CookieRobotModal from './components/CookieRobotModal';
+import ExportCookieModal from './components/ExportCookieModal';
 import DragSelectionBox from './components/DragSelectionBox';
 import EngineDownloadModal from '../../components/modals/EngineDownloadModal';
 import SkeletonLoader from '../../components/common/SkeletonLoader';
@@ -94,6 +95,9 @@ export default function ProfilesPage() {
 
   // Cookie Robot modal state
   const [cookieRobotProfile, setCookieRobotProfile] = useState(null);
+
+  // Export Cookie modal state
+  const [exportCookieProfile, setExportCookieProfile] = useState(null);
 
   // Running profiles chronological ordered list (pinned to top)
   const [runningOrder, setRunningOrder] = useState([]);
@@ -334,6 +338,7 @@ export default function ProfilesPage() {
             saveProfile={saveProfile}
             cloneProfile={cloneProfile}
             onRunCookieRobot={setCookieRobotProfile}
+            onExportCookie={setExportCookieProfile}
             addLog={addLog}
             batchStopProfiles={batchStopProfiles}
             sortBy={sortBy}
@@ -354,6 +359,7 @@ export default function ProfilesPage() {
             saveProfile={saveProfile}
             cloneProfile={cloneProfile}
             onRunCookieRobot={setCookieRobotProfile}
+            onExportCookie={setExportCookieProfile}
             addLog={addLog}
           />
         )}
@@ -430,6 +436,16 @@ export default function ProfilesPage() {
             toggleLaunchProfile(updatedProfile.id);
           }
         }}
+        addLog={addLog}
+        showToast={showToast}
+      />
+
+      {/* ── MODAL: EXPORT COOKIES ── */}
+      <ExportCookieModal
+        isOpen={!!exportCookieProfile}
+        profile={exportCookieProfile}
+        onClose={() => setExportCookieProfile(null)}
+        onOpenCookieRobot={(p) => setCookieRobotProfile(p)}
         addLog={addLog}
         showToast={showToast}
       />
