@@ -110,27 +110,6 @@ export default function ProfileHeader({
           {/* Group Filter Selection */}
           <GroupFilterSelect />
 
-          {/* OS Filter Dropdown */}
-          <select
-            value={osFilter}
-            onChange={(e) => setOsFilter(e.target.value)}
-            style={{
-              height: '32px',
-              padding: '0 10px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              backgroundColor: '#FFFFFF',
-              fontSize: '12px',
-              color: '#334155',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
-          >
-            <option value="all">{t('profiles.osAll', 'Hệ điều hành (Tất cả)')}</option>
-            <option value="windows">{t('profiles.osWindows', '🪟 Windows')}</option>
-            <option value="macos">{t('profiles.osMacos', '🍎 macOS')}</option>
-            <option value="linux">{t('profiles.osLinux', '🐧 Linux')}</option>
-          </select>
 
           {/* Sort Selector */}
           <select
