@@ -8,10 +8,10 @@ import {
   Globe,
   Monitor,
   ArrowRight,
-  Layers,
   Check,
   Radio
 } from 'lucide-react';
+import ChromeSyncIcon from '../../components/icons/ChromeSyncIcon';
 import { getCountryFlag } from '../profiles/utils/profileUtils';
 
 export default function SynchronizerPage() {
@@ -179,7 +179,7 @@ export default function SynchronizerPage() {
               justifyContent: 'center'
             }}
           >
-            <Layers size={16} />
+            <ChromeSyncIcon size={16} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--apidog-text-main, #0F172A)' }}>

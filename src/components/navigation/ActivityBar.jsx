@@ -16,8 +16,10 @@ import {
   Smartphone,
   Sliders,
   Activity,
-  Layers
+  Layers,
+  Server
 } from 'lucide-react';
+import ChromeSyncIcon from '../icons/ChromeSyncIcon';
 import { useBrowser } from '../../store/BrowserContext';
 import { useTranslation } from '../../i18n/I18nContext';
 
@@ -37,8 +39,8 @@ export default function ActivityBar() {
 
   const primaryItems = [
     { id: 'profiles', label: t('nav.profiles', 'Profiles'), icon: Globe },
-    { id: 'synchronizer', label: t('nav.synchronizer', 'Đồng bộ'), icon: Layers },
-    { id: 'proxies', label: t('nav.proxies', 'Proxy'), icon: Shield },
+    { id: 'synchronizer', label: t('nav.synchronizer', 'Đồng bộ'), icon: ChromeSyncIcon },
+    { id: 'proxies', label: t('nav.proxies', 'Proxy'), icon: Server },
     { id: 'groups', label: t('nav.groups', 'Groups'), icon: FolderTree },
     { id: 'ai-agent', label: t('nav.aiAgent', 'AI Agent'), icon: Sparkles },
     { id: 'extensions', label: t('nav.extensions', 'Extensions'), icon: Puzzle },
