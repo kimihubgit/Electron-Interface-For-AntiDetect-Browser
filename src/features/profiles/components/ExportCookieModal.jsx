@@ -56,7 +56,7 @@ export default function ExportCookieModal({
     const loadCookies = async () => {
       let found = [];
 
-      // 1. First check Electron native extraction from physical SQLite / live CDP
+      // 1. Check Electron native extraction from physical SQLite / live CDP
       if (window.electronAPI?.exportProfileCookies) {
         try {
           const res = await window.electronAPI.exportProfileCookies(profile);
@@ -92,20 +92,23 @@ export default function ExportCookieModal({
 
   if (!isOpen || !profile) return null;
 
-  const profileDisplayNumber = profile.order || profile.id || 1;
-  const profileDisplayName = profile.name || `Profile #${profileDisplayNumber}`;
+  // Clean profile order number & clean name
+  const orderNum = profile.order !== undefined && profile.order !== null
+    ? profile.order
+    : (typeof profile.id === 'number' ? profile.id : String(profile.id).replace(/\D/g, '').slice(-3) || '1');
+  const profileName = profile.name || `Profile #${orderNum}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(jsonText).then(() => {
       setCopied(true);
-      if (showToast) showToast('Đã sao chép danh sách cookie vào bộ nhớ tạm!', 'success');
-      addLog?.(`Đã sao chép danh sách cookie của "${profileDisplayName}"`, 'info');
+      if (showToast) showToast('Đã sao chép danh sách cookie!', 'success');
+      addLog?.(`Đã sao chép danh sách cookie của "${profileName}"`, 'info');
       setTimeout(() => setCopied(false), 2000);
     });
   };
 
   const handleSaveJsonFile = () => {
-    const safeName = (profile.name || `profile_${profileDisplayNumber}`).replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+    const safeName = profileName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
     const fileName = `cookies_${safeName}.json`;
 
     const blob = new Blob([jsonText], { type: 'application/json;charset=utf-8' });
@@ -119,7 +122,7 @@ export default function ExportCookieModal({
     URL.revokeObjectURL(url);
 
     if (showToast) showToast(`Đã lưu tệp ${fileName}!`, 'success');
-    addLog?.(`Đã lưu tệp cookie JSON "${fileName}" cho hồ sơ "${profileDisplayName}"`, 'success');
+    addLog?.(`Đã lưu tệp cookie JSON "${fileName}" cho hồ sơ "${profileName}"`, 'success');
     onClose();
   };
 
@@ -130,7 +133,7 @@ export default function ExportCookieModal({
         position: 'fixed',
         inset: 0,
         backgroundColor: 'rgba(15, 23, 42, 0.45)',
-        backdropFilter: 'blur(3px)',
+        backdropFilter: 'blur(2px)',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
@@ -143,31 +146,30 @@ export default function ExportCookieModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
-          maxWidth: '560px',
+          maxWidth: '520px',
           backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          boxShadow: '0 20px 40px -8px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08)',
-          overflow: 'hidden',
+          borderRadius: '10px',
+          boxShadow: '0 20px 35px -8px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.06)',
           display: 'flex',
           flexDirection: 'column',
-          fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
         }}
       >
-        {/* ── Top Header / Description ── */}
-        <div style={{ padding: '20px 24px 14px 24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        {/* ── Top Area: Description & Close Button ── */}
+        <div style={{ padding: '18px 20px 0 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
             <p
               style={{
                 margin: 0,
-                fontSize: '13px',
+                fontSize: '12.5px',
                 color: '#4B5563',
-                lineHeight: 1.5,
-                maxWidth: '470px'
+                lineHeight: 1.45
               }}
             >
               Đây là cookie profile đã lưu ở lần đóng trình duyệt gần nhất. Sao chép danh sách, hoặc lưu thành tệp JSON để nhập vào profile khác.
             </p>
             <button
+              type="button"
               onClick={onClose}
               style={{
                 background: 'none',
@@ -175,73 +177,70 @@ export default function ExportCookieModal({
                 color: '#9CA3AF',
                 cursor: 'pointer',
                 padding: '2px',
-                borderRadius: '6px',
+                borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
                 transition: 'all 0.12s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#F3F4F6';
                 e.currentTarget.style.color = '#374151';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
                 e.currentTarget.style.color = '#9CA3AF';
               }}
             >
-              <X size={18} />
+              <X size={17} />
             </button>
           </div>
 
-          {/* Profile Name Box */}
+          {/* Profile Badge Input Box */}
           <div
             style={{
-              marginTop: '14px',
-              padding: '10px 14px',
-              borderRadius: '8px',
+              marginTop: '12px',
+              padding: '8px 12px',
+              borderRadius: '6px',
               border: '1px solid #E5E7EB',
               backgroundColor: '#F9FAFB',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              fontSize: '13.5px'
+              gap: '6px',
+              fontSize: '13px'
             }}
           >
             <span style={{ fontWeight: 700, color: '#111827' }}>Profile</span>
-            <span style={{ color: '#6B7280', fontWeight: 600 }}>#{profileDisplayNumber}</span>
-            <span style={{ color: '#111827', fontWeight: 500 }}>{profileDisplayName}</span>
+            <span style={{ color: '#6B7280', fontWeight: 500 }}>#{orderNum}</span>
+            <span style={{ color: '#111827', fontWeight: 500 }}>{profileName}</span>
           </div>
 
           {/* Cookie Label */}
-          <div style={{ marginTop: '16px', marginBottom: '6px' }}>
+          <div style={{ marginTop: '14px', marginBottom: '6px' }}>
             <label style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
               Cookie
             </label>
           </div>
 
-          {/* Cookie Display Box with Blue Border */}
+          {/* Cookie Code Box with Vibrant Blue Border */}
           <div
             style={{
               border: '1.5px solid #2563EB',
-              borderRadius: '8px',
+              borderRadius: '6px',
               overflow: 'hidden',
-              backgroundColor: '#FFFFFF',
-              boxShadow: '0 0 0 3px rgba(37, 99, 235, 0.1)'
+              backgroundColor: '#FFFFFF'
             }}
           >
-            {/* Raw JSON Code Area */}
+            {/* Raw JSON Code Display */}
             <div
               style={{
-                maxHeight: '230px',
-                minHeight: '160px',
+                height: '210px',
                 overflowY: 'auto',
-                padding: '12px 14px',
+                padding: '10px 12px',
                 backgroundColor: '#FFFFFF'
               }}
             >
               {isLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '140px', color: '#6B7280', fontSize: '12.5px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontSize: '12px' }}>
                   Đang tải danh sách cookie...
                 </div>
               ) : (
@@ -261,27 +260,27 @@ export default function ExportCookieModal({
               )}
             </div>
 
-            {/* Sub-footer inside Cookie Box */}
+            {/* Bottom Info & Copy Bar inside Cookie Box */}
             <div
               style={{
                 borderTop: '1px solid #E5E7EB',
-                padding: '8px 12px',
-                backgroundColor: '#F9FAFB',
+                padding: '7px 12px 8px 12px',
+                backgroundColor: '#FFFFFF',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '6px'
+                gap: '4px'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '11.5px', color: '#6B7280' }}>
+                <span style={{ fontSize: '11px', color: '#6B7280' }}>
                   Chỉ để xem. Mở profile rồi đóng lại để danh sách này được cập nhật.
                 </span>
-                <span style={{ fontSize: '12px', color: '#374151', fontWeight: 600 }}>
+                <span style={{ fontSize: '11.5px', color: '#374151', fontWeight: 500 }}>
                   {rawCookies.length} cookie
                 </span>
               </div>
 
-              {/* Copy button */}
+              {/* Copy Button */}
               <div>
                 <button
                   type="button"
@@ -289,21 +288,21 @@ export default function ExportCookieModal({
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '3px 6px',
+                    gap: '5px',
+                    padding: '2px 4px',
                     border: 'none',
                     backgroundColor: 'transparent',
                     color: copied ? '#059669' : '#111827',
-                    fontSize: '12.5px',
+                    fontSize: '12px',
                     fontWeight: 500,
                     cursor: 'pointer',
                     borderRadius: '4px',
                     transition: 'all 0.12s ease'
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#E5E7EB')}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F3F4F6')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  {copied ? <Check size={14} color="#059669" /> : <Copy size={14} color="#374151" />}
+                  {copied ? <Check size={13} color="#059669" /> : <Copy size={13} color="#374151" />}
                   <span>{copied ? 'Đã sao chép' : 'Sao chép'}</span>
                 </button>
               </div>
@@ -311,23 +310,23 @@ export default function ExportCookieModal({
           </div>
         </div>
 
-        {/* ── Modal Bottom Actions (Hủy & Lưu tệp JSON) ── */}
+        {/* ── Modal Footer: Hủy & Lưu tệp JSON ── */}
         <div
           style={{
-            padding: '12px 24px 16px 24px',
+            padding: '14px 20px',
+            marginTop: '10px',
             backgroundColor: '#FFFFFF',
-            borderTop: '1px solid #F3F4F6',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            gap: '10px'
+            gap: '8px'
           }}
         >
           <button
             type="button"
             onClick={onClose}
             style={{
-              padding: '7px 20px',
+              padding: '6px 18px',
               borderRadius: '6px',
               border: '1px solid #D1D5DB',
               backgroundColor: '#FFFFFF',
@@ -347,7 +346,7 @@ export default function ExportCookieModal({
             type="button"
             onClick={handleSaveJsonFile}
             style={{
-              padding: '7px 20px',
+              padding: '6px 18px',
               borderRadius: '6px',
               border: 'none',
               backgroundColor: '#1677FF',
@@ -355,7 +354,7 @@ export default function ExportCookieModal({
               fontSize: '13px',
               fontWeight: 500,
               cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(22, 119, 255, 0.25)',
+              boxShadow: '0 1px 3px rgba(22, 119, 255, 0.3)',
               transition: 'all 0.12s ease'
             }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0958D9')}
