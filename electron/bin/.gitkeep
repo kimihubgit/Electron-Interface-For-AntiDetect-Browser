@@ -1,0 +1,3 @@
+# Thư mục chứa file binary đã biên dịch từ Rust (local-daemon.exe)
+# Khi build Rust bằng lệnh: cargo build --release
+# File exe sẽ được copy vào đây để electron-builder tự đóng gói vào bộ cài.

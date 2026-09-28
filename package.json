@@ -9,6 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "app": "electron electron/main.cjs",
+    "build:daemon": "cargo build --release --manifest-path crates/local-daemon/Cargo.toml",
+    "copy:daemon": "powershell -Command \"if (Test-Path crates/local-daemon/target/release/local-daemon.exe) { Copy-Item crates/local-daemon/target/release/local-daemon.exe electron/bin/ -Force }\"",
     "build:exe": "vite build && electron-builder --win nsis --x64"
   },
   "dependencies": {
