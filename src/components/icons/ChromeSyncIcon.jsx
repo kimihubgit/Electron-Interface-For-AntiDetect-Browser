@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * Icon 2 tab Chrome chồng lên nhau theo hướng ngang
+ * Icon 2 ô vuông hơi bo góc chồng lên nhau tối giản
  * Chuẩn Lucide SVG (viewBox 0 0 24 24, strokeWidth 2px)
  */
 export default function ChromeSyncIcon({
@@ -28,16 +28,11 @@ export default function ChromeSyncIcon({
       className={className}
       {...props}
     >
-      {/* Tab/Cửa sổ Chrome 1 (phía sau bên trái) */}
-      <path d="M3 17V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
-      <path d="M3 9.5h12" />
-      <path d="M6 7h2" />
+      {/* Ô vuông 1 (phía sau bên trái, hơi bo góc) */}
+      <path d="M4 16V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
 
-      {/* Tab/Cửa sổ Chrome 2 (chồng đè sang hướng ngang bên phải) */}
-      <rect x="8" y="7" width="13" height="13" rx="2" />
-      <path d="M8 12h13" />
-      <circle cx="11.5" cy="9.5" r="0.75" fill={color} />
-      <circle cx="14" cy="9.5" r="0.75" fill={color} />
+      {/* Ô vuông 2 (phía trước bên phải, hơi bo góc) */}
+      <rect x="8" y="7" width="12" height="12" rx="2" />
     </svg>
   );
 }
