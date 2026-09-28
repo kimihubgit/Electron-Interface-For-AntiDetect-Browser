@@ -21,7 +21,11 @@ import {
   ArrowRight,
   ExternalLink,
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  Play,
+  Square,
+  Wifi,
+  Activity
 } from 'lucide-react';
 
 const QUICK_COUNTS = [10, 20, 50, 100, 200, 500];
@@ -49,6 +53,64 @@ export default function Ipv6SubnetTab({
   const [copiedAll, setCopiedAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [copyFormat, setCopyFormat] = useState('ipv6'); // 'ipv6' ([host]:port:u:p) | 'address' (address:port:u:p) | 'url'
+
+  // Trạng thái Proxy Server Local & LAN
+  const [isServerRunning, setIsServerRunning] = useState(false);
+  const [serverStats, setServerStats] = useState(null);
+  const [isStartingServer, setIsStartingServer] = useState(false);
+
+  // Kiểm tra trạng thái server ban đầu
+  React.useEffect(() => {
+    if (window.electronAPI?.getLocalProxyStatus) {
+      window.electronAPI.getLocalProxyStatus().then((status) => {
+        if (status) {
+          setIsServerRunning(!!status.isRunning);
+          setServerStats(status.config || status);
+        }
+      });
+    }
+  }, []);
+
+  // Bật / Tắt Máy Chủ Proxy Local/LAN
+  const handleToggleServer = async () => {
+    if (!isServerRunning) {
+      setIsStartingServer(true);
+      try {
+        const res = await window.electronAPI?.startLocalProxyServer?.({
+          bindAddress,
+          startPort: Number(startPort) || 20000,
+          count: Math.min(200, Math.max(1, Number(count) || 10)),
+          user: userPrefix.trim() || 'user',
+          pass: customPass.trim() || 'pass123',
+          proxiesList: generatedIpv6List
+        });
+
+        if (res?.success) {
+          setIsServerRunning(true);
+          setServerStats(res.config);
+          showToast?.(res.message || 'Đã khởi động Máy Chủ Proxy thành công!', 'success');
+        } else {
+          showToast?.(res?.error || 'Không thể khởi động Máy Chủ Proxy', 'error');
+        }
+      } catch (err) {
+        showToast?.(`Lỗi khởi động: ${err.message}`, 'error');
+      } finally {
+        setIsStartingServer(false);
+      }
+    } else {
+      setIsStartingServer(true);
+      try {
+        await window.electronAPI?.stopLocalProxyServer?.();
+        setIsServerRunning(false);
+        setServerStats(null);
+        showToast?.('Đã dừng Máy Chủ Proxy.');
+      } catch (err) {
+        showToast?.(`Lỗi dừng server: ${err.message}`, 'error');
+      } finally {
+        setIsStartingServer(false);
+      }
+    }
+  };
 
   // Generate random password helper
   const handleRandomPassword = () => {
@@ -556,19 +618,19 @@ export default function Ipv6SubnetTab({
           </div>
 
           {/* Primary Action Button */}
-          <div style={{ marginTop: 'auto', paddingTop: '10px' }}>
+          <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button
               type="button"
               onClick={handleGenerate}
               disabled={isGenerating}
               style={{
                 width: '100%',
-                height: '42px',
+                height: '40px',
                 borderRadius: '8px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)',
                 color: '#FFFFFF',
-                fontSize: '13.5px',
+                fontSize: '13px',
                 fontWeight: 600,
                 display: 'flex',
                 alignItems: 'center',
@@ -585,9 +647,92 @@ export default function Ipv6SubnetTab({
                 if (!isGenerating) e.currentTarget.style.opacity = '1';
               }}
             >
-              <Sparkles size={16} />
+              <Sparkles size={15} />
               <span>{isGenerating ? 'Đang tính toán Subnet...' : `⚡ Sinh Ngay ${count} Proxy IPv6`}</span>
             </button>
+
+            {/* Khối Bật / Tắt Máy Chủ Proxy Local & LAN */}
+            <div
+              style={{
+                backgroundColor: isServerRunning ? '#F0FDF4' : '#F8FAFC',
+                borderRadius: '8px',
+                border: `1px solid ${isServerRunning ? '#BBF7D0' : '#E2E8F0'}`,
+                padding: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Wifi size={14} color={isServerRunning ? '#16A34A' : '#64748B'} />
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>
+                    Phát Proxy (Local & LAN)
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    padding: '2px 7px',
+                    borderRadius: '12px',
+                    backgroundColor: isServerRunning ? '#DCFCE7' : '#F1F5F9',
+                    color: isServerRunning ? '#15803D' : '#64748B'
+                  }}
+                >
+                  {isServerRunning ? '● ĐANG PHÁT' : '○ ĐÃ DỪNG'}
+                </span>
+              </div>
+
+              {isServerRunning && serverStats && (
+                <div style={{ fontSize: '11px', color: '#166534', lineHeight: 1.4, backgroundColor: '#FFFFFF', padding: '6px 8px', borderRadius: '5px', border: '1px solid #DCFCE7' }}>
+                  <div><strong>Host:</strong> {serverStats.bindAddress || bindAddress}</div>
+                  <div><strong>Dải Cổng:</strong> {serverStats.openedPorts?.[0] || startPort} → {serverStats.openedPorts?.[serverStats.openedPorts?.length - 1] || (Number(startPort) + Number(count) - 1)} ({serverStats.count || count} cổng)</div>
+                  {serverStats.lanIps && serverStats.lanIps.length > 0 && (
+                    <div style={{ marginTop: '2px', color: '#15803D' }}>
+                      <strong>IP mạng LAN:</strong> {serverStats.lanIps.join(', ')}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleToggleServer}
+                disabled={isStartingServer}
+                style={{
+                  width: '100%',
+                  height: '34px',
+                  borderRadius: '6px',
+                  border: isServerRunning ? '1px solid #FECACA' : 'none',
+                  backgroundColor: isServerRunning ? '#FEF2F2' : '#0F172A',
+                  color: isServerRunning ? '#DC2626' : '#FFFFFF',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: isStartingServer ? 'wait' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {isStartingServer ? (
+                  <span>Đang xử lý socket...</span>
+                ) : isServerRunning ? (
+                  <>
+                    <Square size={12} style={{ fill: '#DC2626' }} />
+                    <span>Dừng Máy Chủ Proxy</span>
+                  </>
+                ) : (
+                  <>
+                    <Play size={12} style={{ fill: '#FFFFFF' }} />
+                    <span>Bật Máy Chủ Proxy ({bindAddress === '0.0.0.0' ? 'Toàn mạng LAN' : 'Local 127.0.0.1'})</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

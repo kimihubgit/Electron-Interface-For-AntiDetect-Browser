@@ -63,5 +63,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('profile-size-updated', handler);
     return () => ipcRenderer.removeListener('profile-size-updated', handler);
-  }
+  },
+  startLocalProxyServer: (config) => ipcRenderer.invoke('start-local-proxy-server', config),
+  stopLocalProxyServer: () => ipcRenderer.invoke('stop-local-proxy-server'),
+  getLocalProxyStatus: () => ipcRenderer.invoke('get-local-proxy-status')
 });

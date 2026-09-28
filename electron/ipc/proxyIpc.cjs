@@ -210,6 +210,21 @@ function registerProxyIpc() {
     }
     return false;
   });
+
+  // Local & LAN Proxy Server Management
+  const { startLocalProxyServer, stopLocalProxyServer, getLocalProxyStatus } = require('../services/localIpv6ProxyServer.cjs');
+
+  ipcMain.handle('start-local-proxy-server', async (event, config) => {
+    return await startLocalProxyServer(config);
+  });
+
+  ipcMain.handle('stop-local-proxy-server', async () => {
+    return await stopLocalProxyServer();
+  });
+
+  ipcMain.handle('get-local-proxy-status', async () => {
+    return getLocalProxyStatus();
+  });
 }
 
 module.exports = {
