@@ -33,11 +33,11 @@ export default function DeleteGroupConfirmModal({
       padding: '16px'
     }}>
       <div style={{
-        width: '440px',
+        width: '480px',
         maxWidth: '100%',
         backgroundColor: '#FFFFFF',
-        borderRadius: '14px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+        borderRadius: '16px',
+        boxShadow: '0 24px 48px -12px rgba(0,0,0,0.25)',
         border: '1px solid #E5E7EB',
         overflow: 'hidden',
         animation: 'fadeIn 0.15s ease'

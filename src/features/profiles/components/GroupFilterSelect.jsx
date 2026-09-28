@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Folder, ChevronDown, Plus, Pencil, Trash2, Check } from 'lucide-react';
+import { Folder, ChevronDown, Plus, Pencil, Trash2, Check, Search, X } from 'lucide-react';
 import { useBrowser } from '../../../store/BrowserContext';
 import { useTranslation } from '../../../i18n/I18nContext';
 
@@ -16,7 +16,9 @@ export default function GroupFilterSelect() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredGroupId, setHoveredGroupId] = useState(null);
+  const [filterSearch, setFilterSearch] = useState('');
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   // Close on outside click
   useEffect(() => {
@@ -31,6 +33,16 @@ export default function GroupFilterSelect() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, [isOpen]);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+    if (!isOpen) {
+      setFilterSearch('');
+    }
   }, [isOpen]);
 
   const safeProfiles = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
@@ -56,6 +68,11 @@ export default function GroupFilterSelect() {
       ? ungroupedCount
       : safeProfiles.filter(p => p.group === selectedGroup).length;
 
+  // Filter custom groups by search
+  const filteredCustomGroups = customGroups.filter(g => 
+    !filterSearch.trim() || g.name.toLowerCase().includes(filterSearch.toLowerCase().trim())
+  );
+
   return (
     <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
       {/* Trigger Button */}
@@ -65,31 +82,36 @@ export default function GroupFilterSelect() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '7px',
+          gap: '8px',
           height: '32px',
-          padding: '0 10px',
+          padding: '0 12px',
           borderRadius: '6px',
-          border: '1px solid #CBD5E1',
+          border: isOpen ? '1px solid #7C3AED' : '1px solid #CBD5E1',
           backgroundColor: '#FFFFFF',
-          fontSize: '12px',
+          fontSize: '12.5px',
           color: '#334155',
           cursor: 'pointer',
           outline: 'none',
+          boxShadow: isOpen ? '0 0 0 2px rgba(124, 58, 237, 0.12)' : 'none',
           transition: 'all 0.15s ease',
           userSelect: 'none'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = '#94A3B8';
-          e.currentTarget.style.backgroundColor = '#F8FAFC';
+          if (!isOpen) {
+            e.currentTarget.style.borderColor = '#94A3B8';
+            e.currentTarget.style.backgroundColor = '#F8FAFC';
+          }
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#CBD5E1';
-          e.currentTarget.style.backgroundColor = '#FFFFFF';
+          if (!isOpen) {
+            e.currentTarget.style.borderColor = '#CBD5E1';
+            e.currentTarget.style.backgroundColor = '#FFFFFF';
+          }
         }}
       >
-        <Folder size={14} style={{ color: currentColor, flexShrink: 0 }} />
+        <Folder size={15} style={{ color: currentColor, flexShrink: 0 }} />
         <span style={{
-          maxWidth: '120px',
+          maxWidth: '150px',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -101,7 +123,7 @@ export default function GroupFilterSelect() {
           fontSize: '11px',
           color: '#64748B',
           background: '#F1F5F9',
-          padding: '1px 5px',
+          padding: '1.5px 6px',
           borderRadius: '4px',
           fontWeight: 600
         }}>
@@ -118,253 +140,366 @@ export default function GroupFilterSelect() {
         />
       </button>
 
-      {/* Popover Dropdown */}
+      {/* Popover Dropdown - Enhanced, Spacious & Clear */}
       {isOpen && (
         <div style={{
           position: 'absolute',
-          top: 'calc(100% + 4px)',
+          top: 'calc(100% + 6px)',
           left: 0,
           zIndex: 1000,
-          minWidth: '250px',
-          maxHeight: '360px',
-          overflowY: 'auto',
+          width: '360px',
+          maxHeight: '440px',
+          display: 'flex',
+          flexDirection: 'column',
           backgroundColor: '#FFFFFF',
-          borderRadius: '8px',
+          borderRadius: '10px',
           border: '1px solid #E2E8F0',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-          padding: '5px',
-          animation: 'fadeIn 0.12s ease'
+          boxShadow: '0 14px 35px -4px rgba(15, 23, 42, 0.18), 0 6px 14px -3px rgba(0, 0, 0, 0.08)',
+          padding: '8px',
+          animation: 'fadeIn 0.12s ease-out'
         }}>
-          {/* Option: All */}
-          <div
-            onClick={() => {
-              setSelectedGroup('All');
-              setIsOpen(false);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '7px 9px',
-              borderRadius: '5px',
-              backgroundColor: selectedGroup === 'All' ? '#F3E8FF' : 'transparent',
-              color: selectedGroup === 'All' ? '#7C3AED' : '#334155',
-              fontSize: '12px',
-              fontWeight: selectedGroup === 'All' ? 600 : 500,
-              cursor: 'pointer',
-              transition: 'background 0.12s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (selectedGroup !== 'All') e.currentTarget.style.backgroundColor = '#F8FAFC';
-            }}
-            onMouseLeave={(e) => {
-              if (selectedGroup !== 'All') e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Folder size={14} style={{ color: '#7C3AED' }} />
-              <span>{t('profiles.allGroups', 'Tất cả nhóm')}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '11px', color: '#94A3B8' }}>{safeProfiles.length}</span>
-              {selectedGroup === 'All' && <Check size={13} style={{ color: '#7C3AED' }} />}
-            </div>
-          </div>
-
-          {/* Option: Ungrouped */}
-          <div
-            onClick={() => {
-              setSelectedGroup('Ungrouped');
-              setIsOpen(false);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '7px 9px',
-              borderRadius: '5px',
-              backgroundColor: selectedGroup === 'Ungrouped' ? '#F3E8FF' : 'transparent',
-              color: selectedGroup === 'Ungrouped' ? '#7C3AED' : '#334155',
-              fontSize: '12px',
-              fontWeight: selectedGroup === 'Ungrouped' ? 600 : 500,
-              cursor: 'pointer',
-              transition: 'background 0.12s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (selectedGroup !== 'Ungrouped') e.currentTarget.style.backgroundColor = '#F8FAFC';
-            }}
-            onMouseLeave={(e) => {
-              if (selectedGroup !== 'Ungrouped') e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Folder size={14} style={{ color: '#94A3B8' }} />
-              <span>{t('profiles.ungrouped', 'Chưa phân nhóm')}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '11px', color: '#94A3B8' }}>{ungroupedCount}</span>
-              {selectedGroup === 'Ungrouped' && <Check size={13} style={{ color: '#7C3AED' }} />}
-            </div>
-          </div>
-
-          {/* Divider & Header */}
-          <div style={{
-            height: '1px',
-            backgroundColor: '#F1F5F9',
-            margin: '4px 0'
-          }} />
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '4px 8px 2px 8px',
-            fontSize: '10.5px',
-            fontWeight: 700,
-            color: '#94A3B8',
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em'
-          }}>
-            <span>{t('groups.customGroups', 'Nhóm tùy chỉnh')}</span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (setActiveGroupModal) setActiveGroupModal({ mode: 'create' });
-                setIsOpen(false);
-              }}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                color: '#7C3AED',
-                fontSize: '11px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2px',
-                padding: '2px 4px',
-                borderRadius: '3px'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#EDE9FE'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-            >
-              <Plus size={12} /> {t('common.add', 'Thêm')}
-            </button>
-          </div>
-
-          {/* Custom Groups List */}
-          {customGroups.length === 0 ? (
+          {/* Quick Search inside Groups if there are multiple groups */}
+          {customGroups.length >= 3 && (
             <div style={{
-              padding: '8px 10px',
-              fontSize: '11.5px',
-              color: '#94A3B8',
-              textAlign: 'center'
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#F8FAFC',
+              borderRadius: '6px',
+              border: '1px solid #E2E8F0',
+              padding: '0 10px',
+              height: '32px',
+              marginBottom: '6px',
+              flexShrink: 0
             }}>
-              {t('groups.empty', 'Chưa có nhóm tùy chỉnh nào')}
-            </div>
-          ) : (
-            customGroups.map(g => {
-              const isSelected = selectedGroup === g.name;
-              const isHovered = hoveredGroupId === g.name;
-              const count = safeProfiles.filter(p => p.group === g.name).length;
-
-              return (
-                <div
-                  key={g.id || g.name}
-                  onClick={() => {
-                    setSelectedGroup(g.name);
-                    setIsOpen(false);
-                  }}
-                  onMouseEnter={() => setHoveredGroupId(g.name)}
-                  onMouseLeave={() => setHoveredGroupId(null)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '6px 9px',
-                    borderRadius: '5px',
-                    backgroundColor: isSelected ? '#F3E8FF' : (isHovered ? '#F8FAFC' : 'transparent'),
-                    color: isSelected ? '#7C3AED' : '#334155',
-                    fontSize: '12px',
-                    fontWeight: isSelected ? 600 : 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.12s ease'
-                  }}
+              <Search size={13} style={{ color: '#94A3B8', marginRight: '6px', flexShrink: 0 }} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder={t('groups.searchPlaceholder', 'Tìm kiếm nhóm...')}
+                value={filterSearch}
+                onChange={(e) => setFilterSearch(e.target.value)}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '12px',
+                  width: '100%',
+                  backgroundColor: 'transparent',
+                  color: '#334155'
+                }}
+              />
+              {filterSearch && (
+                <button
+                  type="button"
+                  onClick={() => setFilterSearch('')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1, marginRight: '6px' }}>
-                    <Folder size={14} style={{ color: g.color || '#7C3AED', flexShrink: 0 }} />
-                    <span style={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      minWidth: 0
-                    }}>
-                      {g.name}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                    {isHovered && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (setActiveGroupModal) setActiveGroupModal({ mode: 'edit', group: g });
-                            setIsOpen(false);
-                          }}
-                          title={t('common.edit', 'Sửa nhóm')}
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            color: '#64748B',
-                            cursor: 'pointer',
-                            padding: '2px',
-                            borderRadius: '3px',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = '#7C3AED'; e.currentTarget.style.backgroundColor = '#EDE9FE'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.backgroundColor = 'transparent'; }}
-                        >
-                          <Pencil size={11} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (setDeleteConfirmGroup) setDeleteConfirmGroup(g);
-                            setIsOpen(false);
-                          }}
-                          title={t('common.delete', 'Xóa nhóm')}
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            color: '#64748B',
-                            cursor: 'pointer',
-                            padding: '2px',
-                            borderRadius: '3px',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = '#DC2626'; e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.backgroundColor = 'transparent'; }}
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                    )}
-                    <span style={{ fontSize: '11px', color: '#94A3B8' }}>{count}</span>
-                    {isSelected && <Check size={13} style={{ color: '#7C3AED' }} />}
-                  </div>
-                </div>
-              );
-            })
+                  <X size={12} />
+                </button>
+              )}
+            </div>
           )}
 
-          {/* Bottom Action: Create Group */}
-          <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid #F1F5F9' }}>
+          {/* Scrollable Items Container */}
+          <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {/* Option: All */}
+            {(!filterSearch || 'tất cả nhóm'.includes(filterSearch.toLowerCase()) || 'all'.includes(filterSearch.toLowerCase())) && (
+              <div
+                onClick={() => {
+                  setSelectedGroup('All');
+                  setIsOpen(false);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '9px 12px',
+                  borderRadius: '6px',
+                  backgroundColor: selectedGroup === 'All' ? '#F3E8FF' : 'transparent',
+                  color: selectedGroup === 'All' ? '#7C3AED' : '#1E293B',
+                  fontSize: '13px',
+                  fontWeight: selectedGroup === 'All' ? 600 : 500,
+                  cursor: 'pointer',
+                  transition: 'background 0.12s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedGroup !== 'All') e.currentTarget.style.backgroundColor = '#F8FAFC';
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedGroup !== 'All') e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '6px',
+                    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Folder size={14} style={{ color: '#7C3AED' }} />
+                  </div>
+                  <span>{t('profiles.allGroups', 'Tất cả nhóm')}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    fontSize: '11.5px',
+                    color: selectedGroup === 'All' ? '#7C3AED' : '#64748B',
+                    fontWeight: 600,
+                    backgroundColor: selectedGroup === 'All' ? '#EDE9FE' : '#F1F5F9',
+                    padding: '2px 7px',
+                    borderRadius: '5px'
+                  }}>
+                    {safeProfiles.length}
+                  </span>
+                  {selectedGroup === 'All' && <Check size={14} style={{ color: '#7C3AED' }} />}
+                </div>
+              </div>
+            )}
+
+            {/* Option: Ungrouped */}
+            {(!filterSearch || 'chưa phân nhóm'.includes(filterSearch.toLowerCase()) || 'ungrouped'.includes(filterSearch.toLowerCase())) && (
+              <div
+                onClick={() => {
+                  setSelectedGroup('Ungrouped');
+                  setIsOpen(false);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '9px 12px',
+                  borderRadius: '6px',
+                  backgroundColor: selectedGroup === 'Ungrouped' ? '#F3E8FF' : 'transparent',
+                  color: selectedGroup === 'Ungrouped' ? '#7C3AED' : '#1E293B',
+                  fontSize: '13px',
+                  fontWeight: selectedGroup === 'Ungrouped' ? 600 : 500,
+                  cursor: 'pointer',
+                  transition: 'background 0.12s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedGroup !== 'Ungrouped') e.currentTarget.style.backgroundColor = '#F8FAFC';
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedGroup !== 'Ungrouped') e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '6px',
+                    backgroundColor: '#F1F5F9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Folder size={14} style={{ color: '#64748B' }} />
+                  </div>
+                  <span>{t('profiles.ungrouped', 'Chưa phân nhóm')}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    fontSize: '11.5px',
+                    color: selectedGroup === 'Ungrouped' ? '#7C3AED' : '#64748B',
+                    fontWeight: 600,
+                    backgroundColor: selectedGroup === 'Ungrouped' ? '#EDE9FE' : '#F1F5F9',
+                    padding: '2px 7px',
+                    borderRadius: '5px'
+                  }}>
+                    {ungroupedCount}
+                  </span>
+                  {selectedGroup === 'Ungrouped' && <Check size={14} style={{ color: '#7C3AED' }} />}
+                </div>
+              </div>
+            )}
+
+            {/* Divider & Header */}
+            <div style={{
+              height: '1px',
+              backgroundColor: '#F1F5F9',
+              margin: '6px 4px'
+            }} />
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '4px 8px 4px 8px',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: '#94A3B8',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em'
+            }}>
+              <span>{t('groups.customGroups', 'Nhóm tùy chỉnh')} ({customGroups.length})</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (setActiveGroupModal) setActiveGroupModal({ mode: 'create' });
+                  setIsOpen(false);
+                }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#7C3AED',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  transition: 'background 0.12s ease'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#EDE9FE'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+              >
+                <Plus size={13} /> {t('common.add', 'Thêm')}
+              </button>
+            </div>
+
+            {/* Custom Groups List */}
+            {filteredCustomGroups.length === 0 ? (
+              <div style={{
+                padding: '12px 10px',
+                fontSize: '12px',
+                color: '#94A3B8',
+                textAlign: 'center'
+              }}>
+                {filterSearch ? 'Không tìm thấy nhóm phù hợp' : t('groups.empty', 'Chưa có nhóm tùy chỉnh nào')}
+              </div>
+            ) : (
+              filteredCustomGroups.map(g => {
+                const isSelected = selectedGroup === g.name;
+                const isHovered = hoveredGroupId === g.name;
+                const count = safeProfiles.filter(p => p.group === g.name).length;
+                const groupColor = g.color || '#7C3AED';
+
+                return (
+                  <div
+                    key={g.id || g.name}
+                    onClick={() => {
+                      setSelectedGroup(g.name);
+                      setIsOpen(false);
+                    }}
+                    onMouseEnter={() => setHoveredGroupId(g.name)}
+                    onMouseLeave={() => setHoveredGroupId(null)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: isSelected ? '#F3E8FF' : (isHovered ? '#F8FAFC' : 'transparent'),
+                      color: isSelected ? '#7C3AED' : '#1E293B',
+                      fontSize: '13px',
+                      fontWeight: isSelected ? 600 : 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.12s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1, marginRight: '8px' }}>
+                      <div style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '6px',
+                        backgroundColor: `${groupColor}1A`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Folder size={14} style={{ color: groupColor }} />
+                      </div>
+                      <span style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        minWidth: 0
+                      }}>
+                        {g.name}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      {/* Action buttons on hover */}
+                      {isHovered && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (setActiveGroupModal) setActiveGroupModal({ mode: 'edit', group: g });
+                              setIsOpen(false);
+                            }}
+                            title={t('common.edit', 'Sửa nhóm')}
+                            style={{
+                              border: 'none',
+                              background: 'transparent',
+                              color: '#64748B',
+                              cursor: 'pointer',
+                              padding: '3px',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#7C3AED'; e.currentTarget.style.backgroundColor = '#EDE9FE'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (setDeleteConfirmGroup) setDeleteConfirmGroup(g);
+                              setIsOpen(false);
+                            }}
+                            title={t('common.delete', 'Xóa nhóm')}
+                            style={{
+                              border: 'none',
+                              background: 'transparent',
+                              color: '#64748B',
+                              cursor: 'pointer',
+                              padding: '3px',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#DC2626'; e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
+
+                      <span style={{
+                        fontSize: '11.5px',
+                        color: isSelected ? '#7C3AED' : '#64748B',
+                        fontWeight: 600,
+                        backgroundColor: isSelected ? '#EDE9FE' : '#F1F5F9',
+                        padding: '2px 7px',
+                        borderRadius: '5px'
+                      }}>
+                        {count}
+                      </span>
+                      {isSelected && <Check size={14} style={{ color: '#7C3AED' }} />}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Bottom Action: Create New Group */}
+          <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #F1F5F9', flexShrink: 0 }}>
             <button
               type="button"
               onClick={() => {
@@ -375,14 +510,14 @@ export default function GroupFilterSelect() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '5px',
+                gap: '6px',
                 width: '100%',
-                padding: '6px',
-                borderRadius: '5px',
+                padding: '8px 12px',
+                borderRadius: '6px',
                 border: '1px dashed #CBD5E1',
                 background: 'transparent',
                 color: '#7C3AED',
-                fontSize: '11.5px',
+                fontSize: '12.5px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.12s ease'
@@ -396,7 +531,7 @@ export default function GroupFilterSelect() {
                 e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >
-              <Plus size={12} /> {t('groups.newGroup', 'Tạo nhóm mới')}
+              <Plus size={14} /> {t('groups.newGroup', 'Tạo nhóm mới')}
             </button>
           </div>
         </div>
