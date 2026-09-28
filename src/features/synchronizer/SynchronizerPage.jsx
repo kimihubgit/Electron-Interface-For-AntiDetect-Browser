@@ -4,11 +4,13 @@ import {
   Crown,
   MoreVertical,
   Square,
+  Play,
   Globe,
   Monitor,
   ArrowRight,
   Layers,
-  Check
+  Check,
+  Radio
 } from 'lucide-react';
 import { getCountryFlag } from '../profiles/utils/profileUtils';
 
@@ -17,6 +19,9 @@ export default function SynchronizerPage() {
 
   // Bắt danh sách Chrome đang chạy thực tế từ Electron IPC
   const [electronRunningList, setElectronRunningList] = useState([]);
+
+  // Trạng thái đồng bộ hóa
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (window.electronAPI?.getRunningProfilesList) {
@@ -74,9 +79,45 @@ export default function SynchronizerPage() {
     }
   }, [runningProfiles, masterId]);
 
+  // Tự động dừng đồng bộ khi không còn profile nào chạy
+  useEffect(() => {
+    if (runningProfiles.length === 0 && isSyncing) {
+      setIsSyncing(false);
+    }
+  }, [runningProfiles.length, isSyncing]);
+
   const masterProfile = useMemo(() => {
     return runningProfiles.find((p) => String(p.id) === String(masterId)) || runningProfiles[0] || null;
   }, [runningProfiles, masterId]);
+
+  // Bật / Tắt đồng bộ hóa
+  const handleToggleSync = () => {
+    if (runningProfiles.length === 0) {
+      showToast?.('Không có profile nào đang chạy để đồng bộ!', 'warning');
+      return;
+    }
+
+    if (!isSyncing) {
+      if (runningProfiles.length === 1) {
+        showToast?.('Cần ít nhất 2 profile (1 Master, 1 Profile phụ) để thực hiện đồng bộ!', 'warning');
+        return;
+      }
+      setIsSyncing(true);
+      showToast?.(`Đã bắt đầu đồng bộ thao tác từ Master "${masterProfile?.name}"!`, 'success');
+      if (window.electronAPI?.startSync) {
+        window.electronAPI.startSync({
+          masterId: masterProfile?.id,
+          followerIds: runningProfiles.filter((p) => String(p.id) !== String(masterProfile?.id)).map((p) => p.id)
+        });
+      }
+    } else {
+      setIsSyncing(false);
+      showToast?.('Đã dừng đồng bộ thao tác.');
+      if (window.electronAPI?.stopSync) {
+        window.electronAPI.stopSync();
+      }
+    }
+  };
 
   // Menu 3 chấm (Dropdown)
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -119,7 +160,9 @@ export default function SynchronizerPage() {
           padding: '12px 24px',
           backgroundColor: 'var(--apidog-card-bg, #FFFFFF)',
           borderBottom: '1px solid var(--apidog-border, #E2E8F0)',
-          flexShrink: 0
+          flexShrink: 0,
+          gap: '12px',
+          flexWrap: 'wrap'
         }}
       >
         {/* Tiêu đề & Đếm số Chrome đang mở */}
@@ -157,27 +200,113 @@ export default function SynchronizerPage() {
           </div>
         </div>
 
-        {/* Master Profile Info Pill */}
-        {masterProfile && (
-          <div
+        {/* Khối bên phải: Master Info Badge + Nút Bắt đầu đồng bộ */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Master Profile Info Pill */}
+          {masterProfile && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '20px',
+                backgroundColor: isSyncing ? '#FAF5FF' : '#F5F3FF',
+                border: `1px solid ${isSyncing ? 'var(--apidog-purple, #7C3AED)' : '#DDD6FE'}`,
+                fontSize: '12px',
+                color: 'var(--apidog-purple, #7C3AED)',
+                fontWeight: 600,
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Crown size={14} fill="#7C3AED" color="#7C3AED" />
+              <span>Profile chính:</span>
+              <strong style={{ color: 'var(--apidog-text-main, #0F172A)' }}>{masterProfile.name}</strong>
+              {isSyncing && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    marginLeft: '4px',
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    backgroundColor: '#10B981',
+                    color: '#FFFFFF',
+                    fontSize: '10px',
+                    fontWeight: 700
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '5px',
+                      height: '5px',
+                      borderRadius: '50%',
+                      backgroundColor: '#FFFFFF',
+                      display: 'inline-block'
+                    }}
+                  />
+                  Đang phát
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Nút Bắt đầu / Dừng đồng bộ */}
+          <button
+            type="button"
+            onClick={handleToggleSync}
+            disabled={runningProfiles.length === 0}
+            title={
+              runningProfiles.length === 0
+                ? 'Cần có ít nhất 1 profile đang chạy'
+                : isSyncing
+                ? 'Nhấn để dừng đồng bộ thao tác'
+                : 'Nhấn để bắt đầu đồng bộ thao tác từ Profile chính sang các profile phụ'
+            }
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '4px 12px',
-              borderRadius: '20px',
-              backgroundColor: '#F5F3FF',
-              border: '1px solid #DDD6FE',
-              fontSize: '12px',
-              color: 'var(--apidog-purple, #7C3AED)',
-              fontWeight: 600
+              gap: '7px',
+              height: '34px',
+              padding: '0 16px',
+              borderRadius: '6px',
+              border: 'none',
+              backgroundColor: isSyncing
+                ? '#DC2626'
+                : runningProfiles.length === 0
+                ? '#94A3B8'
+                : 'var(--apidog-purple, #7C3AED)',
+              color: '#FFFFFF',
+              fontSize: '12.5px',
+              fontWeight: 600,
+              cursor: runningProfiles.length === 0 ? 'not-allowed' : 'pointer',
+              boxShadow: isSyncing
+                ? '0 2px 8px rgba(220, 38, 38, 0.3)'
+                : '0 2px 8px rgba(124, 58, 237, 0.25)',
+              transition: 'all 0.15s ease',
+              opacity: runningProfiles.length === 0 ? 0.6 : 1
+            }}
+            onMouseEnter={(e) => {
+              if (runningProfiles.length > 0) e.currentTarget.style.opacity = '0.9';
+            }}
+            onMouseLeave={(e) => {
+              if (runningProfiles.length > 0) e.currentTarget.style.opacity = '1';
             }}
           >
-            <Crown size={14} fill="#7C3AED" color="#7C3AED" />
-            <span>Profile chính (Master):</span>
-            <strong style={{ color: 'var(--apidog-text-main, #0F172A)' }}>{masterProfile.name}</strong>
-          </div>
-        )}
+            {isSyncing ? (
+              <>
+                <Square size={12} style={{ fill: '#FFFFFF' }} />
+                <span>Dừng đồng bộ</span>
+              </>
+            ) : (
+              <>
+                <Play size={12} style={{ fill: '#FFFFFF' }} />
+                <span>Bắt đầu đồng bộ</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── BẢNG DANH SÁCH PROFILES ĐANG CHẠY CHUẨN PROFILETABLE ── */}
@@ -369,15 +498,44 @@ export default function SynchronizerPage() {
                             gap: '5px',
                             padding: '3px 10px',
                             borderRadius: '12px',
-                            backgroundColor: 'var(--apidog-purple, #7C3AED)',
+                            backgroundColor: isSyncing ? '#DC2626' : 'var(--apidog-purple, #7C3AED)',
                             color: '#FFFFFF',
                             fontSize: '11px',
                             fontWeight: 700,
-                            boxShadow: '0 1px 3px rgba(124, 58, 237, 0.25)'
+                            boxShadow: isSyncing
+                              ? '0 1px 4px rgba(220, 38, 38, 0.35)'
+                              : '0 1px 3px rgba(124, 58, 237, 0.25)',
+                            transition: 'all 0.15s ease'
                           }}
                         >
                           <Crown size={12} fill="#FFFFFF" />
-                          <span>MASTER (CHÍNH)</span>
+                          <span>{isSyncing ? 'MASTER (ĐANG PHÁT)' : 'MASTER (CHÍNH)'}</span>
+                        </span>
+                      ) : isSyncing ? (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '3px 9px',
+                            borderRadius: '12px',
+                            backgroundColor: '#DCFCE7',
+                            border: '1px solid #BBF7D0',
+                            color: '#15803D',
+                            fontSize: '11px',
+                            fontWeight: 600
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '5px',
+                              height: '5px',
+                              borderRadius: '50%',
+                              backgroundColor: '#16A34A',
+                              display: 'inline-block'
+                            }}
+                          />
+                          <span>Đang nhận tín hiệu</span>
                         </span>
                       ) : (
                         <span
