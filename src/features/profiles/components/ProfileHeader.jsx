@@ -13,6 +13,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useTranslation } from '../../../i18n/I18nContext';
+import GroupFilterSelect from './GroupFilterSelect';
 
 /**
  * Search, filtering, view mode switcher, and new profile action toolbar
@@ -105,6 +106,9 @@ export default function ProfileHeader({
               </button>
             )}
           </div>
+
+          {/* Group Filter Selection */}
+          <GroupFilterSelect />
 
           {/* OS Filter Dropdown */}
           <select

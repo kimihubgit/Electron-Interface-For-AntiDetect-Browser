@@ -27,7 +27,10 @@ export function useProfileFilters(profiles = [], selectedGroup = 'All', customGr
         (p.tags && p.tags.some(t => t.toLowerCase().includes(q))) ||
         (p.group && p.group.toLowerCase().includes(q));
 
-      const matchGroup = selectedGroup === 'All' || p.group === selectedGroup;
+      const matchGroup = selectedGroup === 'All' ||
+        (selectedGroup === 'Ungrouped'
+          ? (!p.group || p.group === 'Ungrouped' || p.group === 'Chưa phân nhóm')
+          : p.group === selectedGroup);
       const matchStatus = statusFilter === 'all' ||
         (statusFilter === 'running' && p.status === 'running') ||
         (statusFilter === 'idle' && p.status !== 'running');
