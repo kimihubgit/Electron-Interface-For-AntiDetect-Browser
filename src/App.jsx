@@ -12,6 +12,7 @@ import ReferralModal from './components/modals/ReferralModal';
 import TrashModal from './components/modals/TrashModal';
 import AppUpdateModal from './components/modals/AppUpdateModal';
 import HelpSupportModal from './components/modals/HelpSupportModal';
+import KeyboardShortcutsModal from './components/modals/KeyboardShortcutsModal';
 import HomePage from './pages/HomePage';
 import BackupPage from './pages/BackupPage';
 import ProfilesPage from './pages/ProfilesPage';
@@ -215,13 +216,18 @@ function AppContent() {
       {activeProxyRequestModal && <ProxyRequestModal />}
       {activeReferralModal && <ReferralModal />}
       {activeTrashModal && <TrashModal />}
-      {activeHelpModal && (
+      {activeHelpModal === 'shortcuts' ? (
+        <KeyboardShortcutsModal
+          isOpen={true}
+          onClose={() => setActiveHelpModal(null)}
+        />
+      ) : activeHelpModal ? (
         <HelpSupportModal
           isOpen={Boolean(activeHelpModal)}
           initialTab={typeof activeHelpModal === 'string' ? activeHelpModal : 'shortcuts'}
           onClose={() => setActiveHelpModal(null)}
         />
-      )}
+      ) : null}
       {activeGroupModal && (
         <GroupFormModal
           activeGroupModal={activeGroupModal}
