@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Layers, Pin, ExternalLink } from 'lucide-react';
+import { X, Pin } from 'lucide-react';
 import { useTranslation } from '../../i18n/I18nContext';
 
 export default function KeyboardShortcutsModal({
@@ -37,7 +37,7 @@ export default function KeyboardShortcutsModal({
 
   if (!isOpen) return null;
 
-  // 5 Columns configuration inspired by Facebook Keyboard Shortcuts Modal
+  // 5 Columns configuration inspired by Facebook Keyboard Shortcuts Modal layout
   const columnsData = [
     {
       title: 'Chung (Global)',
@@ -116,7 +116,7 @@ export default function KeyboardShortcutsModal({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        backgroundColor: 'rgba(15, 23, 42, 0.5)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
@@ -127,21 +127,21 @@ export default function KeyboardShortcutsModal({
       }}
       onClick={onClose}
     >
-      {/* ── FACEBOOK-STYLE DIALOG CONTAINER ── */}
+      {/* ── CLEAN LIGHT THEME CONTAINER ── */}
       <div
         style={{
           width: '1180px',
           maxWidth: '96vw',
           maxHeight: '90vh',
-          backgroundColor: '#242526', // Facebook dark mode card surface
-          borderRadius: '12px',
-          border: '1px solid #393A3B',
-          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35)',
+          backgroundColor: '#FFFFFF',
+          borderRadius: '16px',
+          border: '1px solid #E2E8F0',
+          boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.04)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           animation: 'fadeIn 0.15s ease-out',
-          color: '#E4E6EB',
+          color: '#1E293B',
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
         }}
         onClick={(e) => e.stopPropagation()}
@@ -152,17 +152,18 @@ export default function KeyboardShortcutsModal({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '16px 20px',
-          borderBottom: '1px solid #393A3B',
+          padding: '18px 24px',
+          borderBottom: '1px solid #F1F5F9',
+          backgroundColor: '#FFFFFF',
           flexShrink: 0
         }}>
           <h2 style={{
-            fontSize: '17px',
+            fontSize: '17.5px',
             fontWeight: 700,
-            color: '#E4E6EB',
+            color: '#0F172A',
             margin: 0,
             textAlign: 'center',
-            letterSpacing: '0.01em'
+            letterSpacing: '-0.01em'
           }}>
             Tất cả phím tắt Antidetect Browser
           </h2>
@@ -172,15 +173,15 @@ export default function KeyboardShortcutsModal({
             title="Đóng (Esc)"
             style={{
               position: 'absolute',
-              right: '16px',
+              right: '18px',
               top: '50%',
               transform: 'translateY(-50%)',
-              width: '34px',
-              height: '34px',
+              width: '32px',
+              height: '32px',
               borderRadius: '50%',
               border: 'none',
-              backgroundColor: '#3A3B3C',
-              color: '#B0B3B8',
+              backgroundColor: '#F1F5F9',
+              color: '#64748B',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -188,15 +189,15 @@ export default function KeyboardShortcutsModal({
               transition: 'all 0.12s ease'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#4E4F50';
-              e.currentTarget.style.color = '#FFFFFF';
+              e.currentTarget.style.backgroundColor = '#E2E8F0';
+              e.currentTarget.style.color = '#0F172A';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#3A3B3C';
-              e.currentTarget.style.color = '#B0B3B8';
+              e.currentTarget.style.backgroundColor = '#F1F5F9';
+              e.currentTarget.style.color = '#64748B';
             }}
           >
-            <X size={18} />
+            <X size={17} />
           </button>
         </div>
 
@@ -208,7 +209,8 @@ export default function KeyboardShortcutsModal({
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',
           gap: '24px',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          backgroundColor: '#FFFFFF'
         }}>
           {columnsData.map((col, idx) => (
             <div key={idx} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -216,15 +218,25 @@ export default function KeyboardShortcutsModal({
               <div style={{
                 fontSize: '13.5px',
                 fontWeight: 700,
-                color: '#FFFFFF',
+                color: '#0F172A',
                 marginBottom: '14px',
-                letterSpacing: '0.02em'
+                letterSpacing: '-0.01em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
               }}>
-                {col.title}
+                <span style={{
+                  width: '3px',
+                  height: '13px',
+                  backgroundColor: '#7C3AED',
+                  borderRadius: '2px',
+                  display: 'inline-block'
+                }} />
+                <span>{col.title}</span>
               </div>
 
               {/* Items List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
                 {col.items.map((item, itemIdx) => (
                   <div
                     key={itemIdx}
@@ -237,14 +249,14 @@ export default function KeyboardShortcutsModal({
                   >
                     <span style={{
                       fontSize: '12.5px',
-                      color: '#E4E6EB',
+                      color: '#334155',
                       lineHeight: '1.35',
-                      fontWeight: 400
+                      fontWeight: 500
                     }}>
                       {item.label}
                     </span>
 
-                    {/* Pill Key Badges */}
+                    {/* Pill Key Badges (Clean Light Theme) */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
                       {item.keys.map((key, kIdx) => (
                         <React.Fragment key={kIdx}>
@@ -256,9 +268,10 @@ export default function KeyboardShortcutsModal({
                             height: '22px',
                             padding: '0 6px',
                             borderRadius: '11px',
-                            backgroundColor: '#3A3B3C',
-                            border: '1px solid #4E4F50',
-                            color: '#E4E6EB',
+                            backgroundColor: '#F8FAFC',
+                            border: '1px solid #CBD5E1',
+                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
+                            color: '#1E293B',
                             fontSize: '11px',
                             fontWeight: 600,
                             fontFamily: 'inherit',
@@ -268,7 +281,7 @@ export default function KeyboardShortcutsModal({
                             {key}
                           </span>
                           {kIdx < item.keys.length - 1 && (
-                            <span style={{ color: '#8A8D91', fontSize: '11px', fontWeight: 600 }}>+</span>
+                            <span style={{ color: '#94A3B8', fontSize: '11px', fontWeight: 600 }}>+</span>
                           )}
                         </React.Fragment>
                       ))}
@@ -279,18 +292,18 @@ export default function KeyboardShortcutsModal({
 
               {/* Disabled / Single Key Section (if exists) */}
               {col.disabledItems && col.disabledItems.length > 0 && (
-                <div style={{ marginTop: '20px' }}>
+                <div style={{ marginTop: '20px', paddingTop: '12px', borderTop: '1px dashed #E2E8F0' }}>
                   <div style={{
                     fontSize: '11.5px',
                     fontWeight: 600,
-                    color: '#8A8D91',
+                    color: '#94A3B8',
                     marginBottom: '8px',
                     textTransform: 'capitalize'
                   }}>
                     {col.disabledTitle || 'Khác'}
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
                     {col.disabledItems.map((dItem, dIdx) => (
                       <div
                         key={dIdx}
@@ -305,7 +318,7 @@ export default function KeyboardShortcutsModal({
                       >
                         <span style={{
                           fontSize: '12px',
-                          color: '#B0B3B8',
+                          color: '#64748B',
                           lineHeight: '1.3'
                         }}>
                           {dItem.label}
@@ -323,9 +336,9 @@ export default function KeyboardShortcutsModal({
                                 height: '22px',
                                 padding: '0 6px',
                                 borderRadius: '11px',
-                                backgroundColor: '#2E2F30',
-                                border: '1px solid #424446',
-                                color: '#9A9DA2',
+                                backgroundColor: '#F1F5F9',
+                                border: '1px solid #E2E8F0',
+                                color: '#64748B',
                                 fontSize: '11px',
                                 fontWeight: 600,
                                 textTransform: 'lowercase'
@@ -347,8 +360,8 @@ export default function KeyboardShortcutsModal({
         {/* ── 3. FOOTER (Single-character shortcuts toggle + Pin info) ── */}
         <div style={{
           padding: '14px 28px',
-          borderTop: '1px solid #393A3B',
-          backgroundColor: '#1E1F20',
+          borderTop: '1px solid #F1F5F9',
+          backgroundColor: '#F8FAFC',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -363,7 +376,7 @@ export default function KeyboardShortcutsModal({
                 width: '40px',
                 height: '22px',
                 borderRadius: '12px',
-                backgroundColor: singleCharEnabled ? '#2374E1' : '#3A3B3C',
+                backgroundColor: singleCharEnabled ? '#7C3AED' : '#CBD5E1',
                 position: 'relative',
                 cursor: 'pointer',
                 transition: 'background-color 0.2s ease',
@@ -378,16 +391,16 @@ export default function KeyboardShortcutsModal({
                 height: '18px',
                 borderRadius: '50%',
                 backgroundColor: '#FFFFFF',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.4)',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)',
                 transition: 'left 0.2s ease'
               }} />
             </div>
 
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#E4E6EB' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>
                 Phím tắt một ký tự (Single-character shortcuts)
               </div>
-              <div style={{ fontSize: '11.5px', color: '#9A9DA2', marginTop: '1px' }}>
+              <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '1px' }}>
                 Sử dụng các phím bấm nhanh đơn lẻ (như /, j, k, space) để thực hiện thao tác tức thì.
               </div>
             </div>
@@ -396,11 +409,11 @@ export default function KeyboardShortcutsModal({
           {/* Right: Pin shortcut help info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#E4E6EB' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>
                 Ghim trợ giúp phím tắt
               </div>
-              <div style={{ fontSize: '11.5px', color: '#9A9DA2', marginTop: '1px' }}>
-                Nhấn <code style={{ backgroundColor: '#3A3B3C', padding: '1px 5px', borderRadius: '4px', color: '#E4E6EB' }}>F1</code> hoặc <code style={{ backgroundColor: '#3A3B3C', padding: '1px 5px', borderRadius: '4px', color: '#E4E6EB' }}>Ctrl + /</code> bất cứ lúc nào để mở bảng này.
+              <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '1px' }}>
+                Nhấn <code style={{ backgroundColor: '#EDE9FE', color: '#7C3AED', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>F1</code> hoặc <code style={{ backgroundColor: '#EDE9FE', color: '#7C3AED', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Ctrl + /</code> bất cứ lúc nào để mở bảng này.
               </div>
             </div>
 
@@ -408,8 +421,8 @@ export default function KeyboardShortcutsModal({
               width: '32px',
               height: '32px',
               borderRadius: '8px',
-              backgroundColor: '#3A3B3C',
-              color: '#B0B3B8',
+              backgroundColor: '#EDE9FE',
+              color: '#7C3AED',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
