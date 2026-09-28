@@ -142,8 +142,43 @@ async function startLocalProxyServer(config = {}) {
   const user = config.user || '';
   const pass = config.pass || '';
   const proxiesList = config.proxiesList || [];
-
   const lanIps = getLocalLanIps();
+
+  // 1. ƯU TIÊN: Kiểm tra nếu Rust Local Daemon đang chạy thì ủy quyền cho Rust
+  try {
+    const healthCheck = await fetch('http://127.0.0.1:50325/api/v1/health', { signal: AbortSignal.timeout(500) }).then(r => r.json());
+    if (healthCheck?.data?.engine?.includes('Rust')) {
+      console.log('[Local Proxy Server] Delegating to Rust Native Engine at 127.0.0.1:50325...');
+      const rustRes = await fetch('http://127.0.0.1:50325/api/v1/ipv6/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bind_address: bindAddress,
+          start_port: startPort,
+          count: count,
+          user: user,
+          pass: pass,
+          target_ipv6_list: proxiesList.map(p => p.host).filter(Boolean)
+        })
+      }).then(r => r.json());
+
+      if (rustRes?.success) {
+        isRunning = true;
+        currentConfig = {
+          ...rustRes.data,
+          lanIps,
+          engine: 'Rust Native Core'
+        };
+        return {
+          success: true,
+          message: `Đã mở thành công ${rustRes.data.opened_ports?.length || count} cổng proxy (Rust Engine)!`,
+          config: currentConfig
+        };
+      }
+    }
+  } catch {}
+
+  // 2. FALLBACK: Chạy qua Node.js Socket tích hợp nếu chưa chạy Rust
   const openedPorts = [];
 
   for (let i = 0; i < count; i++) {
@@ -172,6 +207,7 @@ async function startLocalProxyServer(config = {}) {
     user,
     pass,
     lanIps,
+    engine: 'Built-in Socket Engine',
     startTime: Date.now()
   };
 
