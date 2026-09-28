@@ -5,7 +5,6 @@ import {
   Crown,
   Play,
   Pause,
-  Grid,
   Monitor,
   Globe,
   Send,
@@ -129,10 +128,6 @@ export default function SynchronizerPage() {
     showToast?.(`Đã gửi lệnh mở "${url}" trên tất cả Chrome đang chạy`, 'success');
   };
 
-  // Sắp xếp cửa sổ desktop
-  const handleTileWindows = (type) => {
-    showToast?.(`Đã sắp xếp các cửa sổ Chrome (${type === '2x2' ? 'Lưới 2x2' : 'Lên trên cùng'})`, 'info');
-  };
 
   return (
     <div style={{
@@ -142,86 +137,53 @@ export default function SynchronizerPage() {
       backgroundColor: '#FFFFFF',
       overflow: 'hidden'
     }}>
-      {/* ── 1. HEADER CHÍNH (Đồng bộ, đơn giản giống các trang khác) ── */}
+      {/* ── THANH CÔNG CỤ ĐỒNG BỘ (Toolbar tinh gọn) ── */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '16px 24px',
-        borderBottom: '1px solid #E2E8F0',
+        padding: '10px 20px',
         backgroundColor: '#FFFFFF',
+        borderBottom: '1px solid #E2E8F0',
+        flexWrap: 'wrap',
+        gap: '12px',
         flexShrink: 0
       }}>
-        {/* Tiêu đề trang */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
-            backgroundColor: '#F5F3FF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#7C3AED'
-          }}>
-            <Layers size={20} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
-              Đồng bộ hóa (Synchronizer)
-            </h1>
-            <p style={{ fontSize: '12px', margin: '2px 0 0 0', color: '#64748B' }}>
-              Thao tác trên 1 profile chính (Master) và các profile phụ khác sẽ tự động làm theo
-            </p>
-          </div>
-        </div>
-
-        {/* Nút hành động */}
+        {/* Chọn Profile chính & Nút Bắt đầu / Tạm dừng */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Nút sắp xếp cửa sổ */}
-          <button
-            onClick={() => handleTileWindows('2x2')}
-            title="Tự động xếp các cửa sổ Chrome gọn gàng trên màn hình máy tính"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              height: '34px',
-              padding: '0 12px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              backgroundColor: '#FFFFFF',
-              color: '#334155',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            <Grid size={13} />
-            <span>Xếp lưới 2x2</span>
-          </button>
-
-          <button
-            onClick={() => handleTileWindows('front')}
-            title="Đưa các cửa sổ Chrome lên trên cùng"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              height: '34px',
-              padding: '0 12px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              backgroundColor: '#FFFFFF',
-              color: '#334155',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            <Monitor size={13} />
-            <span>Lên đầu</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#6D28D9', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Crown size={14} />
+              Profile chính (Master):
+            </span>
+            <select
+              value={masterId || ''}
+              onChange={(e) => setMasterId(e.target.value)}
+              disabled={runningProfiles.length === 0}
+              style={{
+                height: '32px',
+                padding: '0 10px',
+                borderRadius: '6px',
+                border: '1px solid #CBD5E1',
+                backgroundColor: '#FFFFFF',
+                color: '#0F172A',
+                fontSize: '12px',
+                fontWeight: 600,
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              {runningProfiles.length === 0 ? (
+                <option value="">(Chưa có profile nào đang chạy)</option>
+              ) : (
+                runningProfiles.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
 
           {/* Nút Bắt đầu / Tạm dừng đồng bộ */}
           {isSyncing ? (
@@ -230,20 +192,20 @@ export default function SynchronizerPage() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                height: '34px',
-                padding: '0 16px',
+                gap: '5px',
+                height: '32px',
+                padding: '0 12px',
                 borderRadius: '6px',
                 border: 'none',
                 backgroundColor: '#F59E0B',
                 color: '#FFFFFF',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 boxShadow: '0 1px 3px rgba(245, 158, 11, 0.3)'
               }}
             >
-              <Pause size={14} />
+              <Pause size={13} />
               <span>Tạm dừng</span>
             </button>
           ) : (
@@ -253,70 +215,23 @@ export default function SynchronizerPage() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                height: '34px',
-                padding: '0 18px',
+                gap: '5px',
+                height: '32px',
+                padding: '0 14px',
                 borderRadius: '6px',
                 border: 'none',
                 backgroundColor: runningProfiles.length < 2 ? '#94A3B8' : '#7C3AED',
                 color: '#FFFFFF',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 fontWeight: 600,
                 cursor: runningProfiles.length < 2 ? 'not-allowed' : 'pointer',
                 boxShadow: runningProfiles.length < 2 ? 'none' : '0 2px 6px rgba(124, 58, 237, 0.3)'
               }}
             >
-              <Play size={14} fill="#FFFFFF" />
+              <Play size={13} fill="#FFFFFF" />
               <span>Bắt đầu đồng bộ</span>
             </button>
           )}
-        </div>
-      </div>
-
-      {/* ── 2. THANH CÔNG CỤ NHANH (Toolbar đơn giản 1 hàng) ── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '10px 24px',
-        backgroundColor: '#F8FAFC',
-        borderBottom: '1px solid #E2E8F0',
-        flexWrap: 'wrap',
-        gap: '12px',
-        flexShrink: 0
-      }}>
-        {/* Chọn Cửa Sổ Chính */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#6D28D9', display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Crown size={14} />
-            Profile chính (Master):
-          </span>
-          <select
-            value={masterId || ''}
-            onChange={(e) => setMasterId(e.target.value)}
-            disabled={runningProfiles.length === 0}
-            style={{
-              padding: '5px 12px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              backgroundColor: '#FFFFFF',
-              color: '#0F172A',
-              fontSize: '12.5px',
-              fontWeight: 600,
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            {runningProfiles.length === 0 ? (
-              <option value="">(Chưa có profile nào đang chạy)</option>
-            ) : (
-              runningProfiles.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))
-            )}
-          </select>
         </div>
 
         {/* Mở URL đồng loạt */}
