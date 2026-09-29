@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Terminal,
   ChevronUp,
@@ -8,8 +8,13 @@ import {
   AlertCircle,
   Trash2,
   Maximize2,
-  Minimize2
+  Minimize2,
+  GripHorizontal
 } from 'lucide-react';
+
+const MIN_TERMINAL_HEIGHT = 70;
+const MAX_TERMINAL_HEIGHT = 560;
+const DEFAULT_TERMINAL_HEIGHT = 170;
 
 export default function BackupTerminalFooter({
   backupStatus = 'idle',
@@ -18,27 +23,103 @@ export default function BackupTerminalFooter({
   currentRunningProvider,
   onResetStatus
 }) {
-  // Auto-expand when backup begins running
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [terminalHeight, setTerminalHeight] = useState(() => {
+    try {
+      const saved = localStorage.getItem('backup_terminal_height');
+      return saved ? parseInt(saved, 10) : DEFAULT_TERMINAL_HEIGHT;
+    } catch (e) {
+      return DEFAULT_TERMINAL_HEIGHT;
+    }
+  });
+  const [isDragging, setIsDragging] = useState(false);
+
+  const dragStartYRef = useRef(0);
+  const dragStartHeightRef = useRef(DEFAULT_TERMINAL_HEIGHT);
   const logContainerRef = useRef(null);
 
+  // Auto-expand when backup starts running
   useEffect(() => {
     if (backupStatus === 'running') {
       setIsExpanded(true);
     }
   }, [backupStatus]);
 
-  // Auto-scroll to bottom of logs
+  // Auto-scroll to bottom on new log lines
   useEffect(() => {
     if (logContainerRef.current) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
   }, [backupLogs]);
 
+  // Handle Drag-to-resize up and down
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    dragStartYRef.current = e.clientY;
+    dragStartHeightRef.current = isExpanded ? terminalHeight : 0;
+
+    if (!isExpanded) {
+      setIsExpanded(true);
+    }
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  }, [isExpanded, terminalHeight]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e) => {
+      // Dragging up increases height (smaller clientY)
+      const deltaY = dragStartYRef.current - e.clientY;
+      const maxHeight = Math.min(window.innerHeight * 0.7, MAX_TERMINAL_HEIGHT);
+      const calculatedHeight = dragStartHeightRef.current + deltaY;
+
+      if (calculatedHeight < 40) {
+        // If dragged almost all the way down, collapse it
+        setIsExpanded(false);
+      } else {
+        setIsExpanded(true);
+        const newHeight = Math.min(Math.max(calculatedHeight, MIN_TERMINAL_HEIGHT), maxHeight);
+        setTerminalHeight(newHeight);
+        try {
+          localStorage.setItem('backup_terminal_height', newHeight.toString());
+        } catch (err) {}
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging]);
+
+  const toggleMaximize = () => {
+    if (!isExpanded) {
+      setIsExpanded(true);
+      setTerminalHeight(340);
+    } else if (terminalHeight >= 320) {
+      setTerminalHeight(DEFAULT_TERMINAL_HEIGHT);
+    } else {
+      setTerminalHeight(340);
+    }
+  };
+
   const isRunning = backupStatus === 'running';
   const isSuccess = backupStatus === 'success';
   const isError = backupStatus === 'error';
-
   const latestLog = backupLogs.length > 0 ? backupLogs[backupLogs.length - 1] : null;
 
   return (
@@ -50,24 +131,61 @@ export default function BackupTerminalFooter({
       flexDirection: 'column',
       flexShrink: 0,
       zIndex: 20,
-      boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.15)'
+      boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.18)',
+      position: 'relative',
+      userSelect: isDragging ? 'none' : 'auto'
     }}>
-      {/* ── FOOTER BAR HEADER ── */}
+      {/* ── DRAGGABLE RESIZER HANDLE BAR (TOP EDGE) ── */}
       <div
-        onClick={() => setIsExpanded(!isExpanded)}
+        onMouseDown={handleMouseDown}
+        title="Kéo lên hoặc kéo xuống để chỉnh kích thước Terminal (Drag to resize)"
+        style={{
+          width: '100%',
+          height: '7px',
+          cursor: 'ns-resize',
+          backgroundColor: isDragging ? '#7C3AED' : 'transparent',
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'background-color 0.15s ease',
+          zIndex: 30
+        }}
+        onMouseEnter={(e) => {
+          if (!isDragging) e.currentTarget.style.backgroundColor = 'rgba(124, 58, 237, 0.35)';
+        }}
+        onMouseLeave={(e) => {
+          if (!isDragging) e.currentTarget.style.backgroundColor = 'transparent';
+        }}
+      >
+        {/* Visual grip handle pills */}
+        <div style={{
+          width: '42px',
+          height: '3px',
+          borderRadius: '2px',
+          backgroundColor: isDragging ? '#C084FC' : '#475569',
+          pointerEvents: 'none',
+          transition: 'all 0.15s ease'
+        }} />
+      </div>
+
+      {/* ── HEADER BAR ── */}
+      <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 20px',
+          padding: '6px 18px',
           backgroundColor: '#1E293B',
-          cursor: 'pointer',
           userSelect: 'none',
           borderBottom: isExpanded ? '1px solid #334155' : 'none'
         }}
       >
         {/* Left: Terminal Icon + Title + Status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div
+          onClick={() => setIsExpanded(!isExpanded)}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flex: 1 }}
+        >
           {/* macOS 3 dots */}
           <div style={{ display: 'flex', gap: '5px' }}>
             <div style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#EF4444' }} />
@@ -158,10 +276,11 @@ export default function BackupTerminalFooter({
           )}
         </div>
 
-        {/* Right: Actions (Clear / Toggle Expand) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Right: Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {backupLogs.length > 0 && (
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onResetStatus?.();
@@ -176,40 +295,100 @@ export default function BackupTerminalFooter({
                 color: '#94A3B8',
                 fontSize: '11px',
                 cursor: 'pointer',
-                padding: '2px 6px',
-                borderRadius: '4px'
+                padding: '3px 7px',
+                borderRadius: '4px',
+                transition: 'all 0.15s ease'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#F8FAFC'}
-              onMouseLeave={(e) => e.currentTarget.style.color = '#94A3B8'}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#F8FAFC';
+                e.currentTarget.style.backgroundColor = '#334155';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#94A3B8';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
               <Trash2 size={12} />
               <span>Clear</span>
             </button>
           )}
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            color: '#CBD5E1',
-            fontSize: '11.5px',
-            fontWeight: 600
-          }}>
-            <span>{isExpanded ? 'Thu nhỏ' : 'Mở rộng Console'}</span>
+          {/* Maximize / Restore Toggle */}
+          <button
+            type="button"
+            onClick={toggleMaximize}
+            title={terminalHeight >= 320 ? "Kích thước mặc định" : "Phóng to Terminal"}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '24px',
+              height: '24px',
+              background: 'none',
+              border: 'none',
+              color: '#94A3B8',
+              cursor: 'pointer',
+              borderRadius: '4px',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#F8FAFC';
+              e.currentTarget.style.backgroundColor = '#334155';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#94A3B8';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            {terminalHeight >= 320 ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          </button>
+
+          {/* Expand / Collapse Button */}
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            title={isExpanded ? "Thu gọn Terminal" : "Mở rộng Terminal"}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'none',
+              border: 'none',
+              color: '#CBD5E1',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              padding: '3px 8px',
+              borderRadius: '4px',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#FFFFFF';
+              e.currentTarget.style.backgroundColor = '#334155';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#CBD5E1';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <span>{isExpanded ? 'Thu nhỏ' : 'Mở rộng'}</span>
             {isExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-          </div>
+          </button>
         </div>
       </div>
 
-      {/* ── EXPANDED TERMINAL BODY ── */}
+      {/* ── RESIZABLE TERMINAL BODY ── */}
       {isExpanded && (
         <div style={{
-          height: '160px',
+          height: `${terminalHeight}px`,
+          minHeight: `${MIN_TERMINAL_HEIGHT}px`,
+          maxHeight: `${MAX_TERMINAL_HEIGHT}px`,
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#0F172A',
           padding: '12px 20px',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          overflow: 'hidden'
         }}>
           {/* Progress bar when running */}
           {isRunning && (
@@ -248,7 +427,7 @@ export default function BackupTerminalFooter({
             {backupLogs.length === 0 ? (
               <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '8px', height: '100%', justifyContent: 'center' }}>
                 <Terminal size={16} />
-                <span>Console sẵn sàng. Nhấn "Bắt đầu Sao lưu ngay" để xuất dữ liệu lên Cloud/Telegram.</span>
+                <span>Console sẵn sàng. Nhấn "Sao lưu ngay" để xuất dữ liệu lên Cloud/Telegram.</span>
               </div>
             ) : (
               backupLogs.map((log, index) => {
