@@ -92,23 +92,23 @@ export async function getOrFetchServerPublicKey(serverUrl) {
   }
 
   // Attempt to fetch from server endpoint: GET /api/v1/auth/public-key
-  if (serverUrl) {
-    try {
-      const url = `${serverUrl.replace(/\/$/, '')}/api/v1/auth/public-key`;
-      const res = await fetch(url, {
-        headers: { Accept: 'application/json' }
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const pem = json?.data?.public_key || json?.public_key || json?.data;
-        if (typeof pem === 'string' && pem.includes('PUBLIC KEY')) {
-          await setServerPublicKey(pem);
-          return cachedRsaPublicKey;
-        }
+  try {
+    const url = serverUrl
+      ? `${serverUrl.replace(/\/$/, '')}/api/v1/auth/public-key`
+      : '/api/v1/auth/public-key';
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json' }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const pem = json?.data?.public_key || json?.public_key || json?.data;
+      if (typeof pem === 'string' && pem.includes('PUBLIC KEY')) {
+        await setServerPublicKey(pem);
+        return cachedRsaPublicKey;
       }
-    } catch (err) {
-      console.warn('[HybridCrypto] Could not fetch public key from server:', err.message);
     }
+  } catch (err) {
+    console.warn('[HybridCrypto] Could not fetch public key from server:', err.message);
   }
 
   return null;
