@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    http::{HeaderValue, Method},
+    http::Method,
     response::Json,
     routing::get,
     Router,

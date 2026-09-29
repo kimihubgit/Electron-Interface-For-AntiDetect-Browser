@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -201,7 +200,7 @@ async fn handle_proxy_client(
         }
 
         // Kết nối siêu tốc ra server đích bằng Tokio TCP
-        let mut target_stream = match TcpStream::connect(target_authority).await {
+        let target_stream = match TcpStream::connect(target_authority).await {
             Ok(s) => s,
             Err(_) => {
                 client.write_all(b"HTTP/1.1 502 Bad Gateway\r\n\r\n").await?;

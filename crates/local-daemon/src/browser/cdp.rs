@@ -38,7 +38,7 @@ impl CdpController {
     }
 
     /// Điều hướng Tab đến một URL mới
-    pub async fn navigate_page(port: u16, target_id: &str, url: &str) -> Result<bool, String> {
+    pub async fn navigate_page(port: u16, target_id: &str, _url: &str) -> Result<bool, String> {
         let endpoint = format!("http://127.0.0.1:{}/json/activate/{}", port, target_id);
         let client = reqwest::Client::new();
         let _ = client.get(&endpoint).send().await;

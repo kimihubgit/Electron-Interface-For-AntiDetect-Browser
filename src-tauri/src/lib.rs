@@ -1,5 +1,3 @@
-use tauri::Manager;
-
 // 1. Hardware Fingerprint Command (Direct Windows Registry read)
 #[tauri::command]
 fn get_hardware_fingerprint() -> serde_json::Value {
