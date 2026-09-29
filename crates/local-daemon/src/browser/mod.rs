@@ -12,5 +12,5 @@ pub mod cdp;
 
 pub use process::BrowserProcessManager;
 pub use launch_flags::ChromeLaunchBuilder;
-pub use fingerprint::FingerprintSpoofer;
+pub use fingerprint::{NativeFingerprintEngine, FingerprintConfig, FingerprintSpoofer};
 pub use cdp::CdpController;

@@ -48,9 +48,9 @@ impl ChromeLaunchBuilder {
         self
     }
 
-    /// Cấu hình ngôn ngữ hiển thị
-    pub fn with_language(mut self, lang: &str) -> Self {
-        self.args.push(format!("--lang={}", lang));
+    /// Tích hợp trực tiếp danh sách Native Flags từ NativeFingerprintEngine (Không tiêm JS)
+    pub fn with_fingerprint_flags(mut self, flags: &[String]) -> Self {
+        self.args.extend_from_slice(flags);
         self
     }
 
