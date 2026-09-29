@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, CloudUpload, History, Clock } from 'lucide-react';
+import { Database, History, Clock } from 'lucide-react';
 import { BACKUP_PROVIDERS } from '../backupConstants';
 
 export default function BackupSubNav({
@@ -9,7 +9,6 @@ export default function BackupSubNav({
 }) {
   const tabs = [
     { id: 'providers', label: 'Nền tảng lưu trữ', icon: Database, count: BACKUP_PROVIDERS.length },
-    { id: 'create', label: 'Tiến hành sao lưu', icon: CloudUpload },
     { id: 'history', label: 'Lịch sử & Phục hồi', icon: History, count: historyCount },
     { id: 'schedule', label: 'Lên lịch tự động', icon: Clock }
   ];

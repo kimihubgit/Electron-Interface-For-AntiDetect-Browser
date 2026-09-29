@@ -7,15 +7,17 @@ import BackupHeader from './components/BackupHeader';
 import BackupSubNav from './components/BackupSubNav';
 import ProviderCard from './components/ProviderCard';
 import ProviderConfigModal from './components/ProviderConfigModal';
-import BackupExecutionPanel from './components/BackupExecutionPanel';
+import BackupModal from './components/BackupModal';
 import BackupHistoryTable from './components/BackupHistoryTable';
 import BackupScheduleTab from './components/BackupScheduleTab';
 import BackupTerminalFooter from './components/BackupTerminalFooter';
 
 export default function BackupPage() {
   const { profiles = [], proxies = [] } = useBrowser();
-  const [activeSubTab, setActiveSubTab] = useState('providers'); // 'providers' | 'create' | 'history' | 'schedule'
+  const [activeSubTab, setActiveSubTab] = useState('providers'); // 'providers' | 'history' | 'schedule'
   const [editingProvider, setEditingProvider] = useState(null);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [selectedBackupProvider, setSelectedBackupProvider] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
 
   const {
@@ -46,9 +48,13 @@ export default function BackupPage() {
     return res;
   };
 
+  const handleOpenBackupModal = (providerId = null) => {
+    setSelectedBackupProvider(providerId);
+    setIsBackupModalOpen(true);
+  };
+
   const handleQuickBackup = (providerId) => {
-    setActiveSubTab('create');
-    executeBackup(providerId, { encryptWithPassword: false }, profiles);
+    handleOpenBackupModal(providerId);
   };
 
   const configuredCount = BACKUP_PROVIDERS.filter((p) => configs[p.id]?.isConfigured).length;
@@ -67,7 +73,7 @@ export default function BackupPage() {
       <BackupHeader
         configuredCount={configuredCount}
         totalCount={BACKUP_PROVIDERS.length}
-        onStartBackup={() => setActiveSubTab('create')}
+        onStartBackup={() => handleOpenBackupModal(null)}
       />
 
       {/* ── Sub Navigation Tabs ── */}
@@ -130,18 +136,7 @@ export default function BackupPage() {
           </div>
         )}
 
-        {/* Tab 2: Create Backup */}
-        {activeSubTab === 'create' && (
-          <BackupExecutionPanel
-            configs={configs}
-            profiles={profiles}
-            proxies={proxies}
-            onExecuteBackup={executeBackup}
-            backupStatus={backupStatus}
-            backupProgress={backupProgress}
-            currentRunningProvider={currentRunningProvider}
-          />
-        )}
+
 
         {/* Tab 3: History & Restore */}
         {activeSubTab === 'history' && (
@@ -179,6 +174,34 @@ export default function BackupPage() {
           onSave={saveProviderConfig}
           onClose={() => setEditingProvider(null)}
           onTestConnection={handleTestConnection}
+        />
+      )}
+
+      {/* ── Modal for Backup Execution ── */}
+      {isBackupModalOpen && (
+        <BackupModal
+          isOpen={isBackupModalOpen}
+          initialProviderId={selectedBackupProvider}
+          configs={configs}
+          profiles={profiles}
+          proxies={proxies}
+          onExecuteBackup={executeBackup}
+          backupStatus={backupStatus}
+          backupProgress={backupProgress}
+          currentRunningProvider={currentRunningProvider}
+          onClose={() => {
+            setIsBackupModalOpen(false);
+            if (backupStatus === 'success') {
+              resetBackupStatus();
+            }
+          }}
+          onViewHistory={() => {
+            setIsBackupModalOpen(false);
+            if (backupStatus === 'success') {
+              resetBackupStatus();
+            }
+            setActiveSubTab('history');
+          }}
         />
       )}
     </div>
