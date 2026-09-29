@@ -9,7 +9,8 @@ export default function WorkspaceMenuPopover({
   onCreateWorkspace: propOnCreateWorkspace,
   onOpenUpgrade: propOnOpenUpgrade,
   onClose = () => {},
-  align = 'left'
+  align = 'left',
+  initialCreate = false
 }) {
   const browser = useBrowser() || {};
   const rawWorkspaces = propWorkspaces || browser.workspaces || [];
@@ -24,8 +25,11 @@ export default function WorkspaceMenuPopover({
   const setActiveUpgradeModal = browser.setActiveUpgradeModal;
   const currentUser = browser.currentUser;
 
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] = useState(initialCreate);
   const [newWsName, setNewWsName] = useState('');
+  const [selectedColor, setSelectedColor] = useState('#3B82F6');
+
+  const WS_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EC4899', '#06B6D4'];
 
   const handleSelectWorkspace = (ws) => {
     if (propOnSelectWorkspace) {
@@ -45,12 +49,12 @@ export default function WorkspaceMenuPopover({
   const handleCreateSubmit = (e) => {
     e.preventDefault();
     if (!newWsName.trim()) return;
+    const payload = { name: newWsName.trim(), color: selectedColor };
     if (propOnCreateWorkspace) {
-      propOnCreateWorkspace({ name: newWsName.trim() });
+      propOnCreateWorkspace(payload);
     } else if (createWorkspace) {
-      createWorkspace({ name: newWsName.trim() });
+      createWorkspace(payload);
     }
-    // Switch immediately to the workspace/profiles tab!
     if (setActiveTab) {
       setActiveTab('profiles');
     }
@@ -134,17 +138,46 @@ export default function WorkspaceMenuPopover({
             type="text"
             value={newWsName}
             onChange={(e) => setNewWsName(e.target.value)}
-            placeholder="Tên workspace (VD: FB Ads Agency)"
+            placeholder="Tên workspace (VD: FB Ads Agency, Crypto...)"
             autoFocus
             style={{
-              height: '32px',
-              padding: '0 8px',
+              height: '34px',
+              padding: '0 10px',
               borderRadius: '6px',
               border: '1px solid #CBD5E1',
               fontSize: '12.5px',
-              outline: 'none'
+              outline: 'none',
+              transition: 'border-color 0.15s ease'
             }}
+            onFocus={(e) => e.target.style.borderColor = '#0284C7'}
+            onBlur={(e) => e.target.style.borderColor = '#CBD5E1'}
           />
+
+          {/* Color Picker */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
+            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 500 }}>Màu đại diện:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {WS_COLORS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setSelectedColor(c)}
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    backgroundColor: c,
+                    border: selectedColor === c ? '2px solid #0F172A' : '2px solid transparent',
+                    cursor: 'pointer',
+                    padding: 0,
+                    outline: 'none',
+                    transform: selectedColor === c ? 'scale(1.15)' : 'none',
+                    transition: 'all 0.12s ease'
+                  }}
+                />
+              ))}
+            </div>
+          </div>
 
           <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
             <button

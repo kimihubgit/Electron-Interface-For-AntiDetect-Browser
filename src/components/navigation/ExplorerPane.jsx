@@ -257,84 +257,156 @@ export default function ExplorerPane() {
           )}
         </div>
 
-        {activeTab === 'profiles' ? (
-          <div ref={workspaceMenuRef} style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {header.onAdd && (
             <button
-              onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '3px 8px',
-                borderRadius: '6px',
-                backgroundColor: showWorkspaceMenu ? 'var(--apidog-bg-hover, #F1F5F9)' : 'transparent',
-                border: '1px solid',
-                borderColor: showWorkspaceMenu ? 'var(--apidog-border, #CBD5E1)' : 'transparent',
-                color: 'var(--apidog-text-primary, #334155)',
-                cursor: 'pointer',
-                fontSize: '11.5px',
-                fontWeight: 600,
-                transition: 'all 0.12s ease',
-                maxWidth: '130px'
-              }}
-              onMouseEnter={(e) => {
-                if (!showWorkspaceMenu) {
-                  e.currentTarget.style.backgroundColor = 'var(--apidog-bg-hover, #F1F5F9)';
-                  e.currentTarget.style.borderColor = 'var(--apidog-border, #E2E8F0)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!showWorkspaceMenu) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }
-              }}
-              title={`Không gian làm việc: ${currentWorkspace?.name || 'Mặc định'}`}
+              onClick={header.onAdd}
+              className="btn-icon-subtle"
+              title={header.addTitle}
             >
-              <div style={{
-                width: '7px',
-                height: '7px',
-                borderRadius: '2px',
-                backgroundColor: currentWorkspace?.color || '#3B82F6',
-                flexShrink: 0
-              }} />
-              <span style={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                fontSize: '11px',
-                fontWeight: 600
-              }}>
-                {currentWorkspace?.name || 'Workspace'}
-              </span>
-              <ChevronDown size={11} style={{ color: 'var(--apidog-text-muted, #94A3B8)', flexShrink: 0 }} />
+              <Plus size={15} />
             </button>
+          )}
+          <button className="btn-icon-subtle" title="Tùy chọn">
+            <MoreHorizontal size={15} />
+          </button>
+        </div>
+      </div>
 
-            {/* Clean Workspace Popover Switcher */}
+      {/* ── DEDICATED WORKSPACE SELECTOR BAR ── */}
+      {(activeTab === 'profiles' || activeTab === 'workspace' || activeTab === 'groups' || activeTab === 'trash' || activeTab === 'logs') && (
+        <div style={{
+          padding: '8px 12px',
+          borderBottom: '1px solid var(--apidog-border-light, #E2E8F0)',
+          backgroundColor: '#F8FAFC',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          flexShrink: 0
+        }}>
+          {/* Main Workspace Button */}
+          <div
+            ref={workspaceMenuRef}
+            onClick={() => setShowWorkspaceMenu(prev => !prev)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flex: 1,
+              minWidth: 0,
+              cursor: 'pointer',
+              padding: '6px 8px',
+              borderRadius: '6px',
+              backgroundColor: showWorkspaceMenu ? '#FFFFFF' : 'transparent',
+              border: '1px solid',
+              borderColor: showWorkspaceMenu ? '#BAE6FD' : 'transparent',
+              boxShadow: showWorkspaceMenu ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+              transition: 'all 0.12s ease',
+              position: 'relative'
+            }}
+            onMouseEnter={(e) => {
+              if (!showWorkspaceMenu) {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.borderColor = '#E2E8F0';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!showWorkspaceMenu) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'transparent';
+              }
+            }}
+            title={`Không gian làm việc: ${currentWorkspace?.name || 'Mặc định'} (Nhấn để chuyển đổi)`}
+          >
+            {/* Workspace Initial Avatar */}
+            <div style={{
+              width: '22px',
+              height: '22px',
+              borderRadius: '5px',
+              backgroundColor: currentWorkspace?.color || '#3B82F6',
+              color: '#FFFFFF',
+              fontSize: '11px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              {(currentWorkspace?.name || 'W')[0]?.toUpperCase()}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+              <span style={{
+                fontSize: '12px',
+                fontWeight: 700,
+                color: '#0F172A',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {currentWorkspace?.name || 'Cá nhân (Personal Workspace)'}
+              </span>
+              <span style={{ fontSize: '10px', color: '#64748B', lineHeight: '1.2' }}>
+                {currentWorkspace?.role === 'owner' || !currentWorkspace?.role ? 'Chủ sở hữu' : (currentWorkspace?.role_name || 'Thành viên')}
+              </span>
+            </div>
+
+            <ChevronDown size={12} style={{ color: '#94A3B8', flexShrink: 0 }} />
+
+            {/* Popover danh sách & tạo workspace */}
             {showWorkspaceMenu && (
               <WorkspaceMenuPopover
+                workspaces={workspaces}
+                currentWorkspace={currentWorkspace}
+                onSelectWorkspace={(ws) => {
+                  switchWorkspace(ws);
+                  setShowWorkspaceMenu(false);
+                }}
+                onCreateWorkspace={(data) => {
+                  createWorkspace(data);
+                  setShowWorkspaceMenu(false);
+                }}
                 onClose={() => setShowWorkspaceMenu(false)}
                 align="left"
               />
             )}
           </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-            {header.onAdd && (
-              <button
-                onClick={header.onAdd}
-                className="btn-icon-subtle"
-                title={header.addTitle}
-              >
-                <Plus size={15} />
-              </button>
-            )}
-            <button className="btn-icon-subtle" title="Tùy chọn">
-              <MoreHorizontal size={15} />
-            </button>
-          </div>
-        )}
-      </div>
+
+          {/* Quick '+' Create Workspace Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowWorkspaceMenu(true);
+            }}
+            title="Tạo Không gian làm việc mới"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '28px',
+              height: '28px',
+              borderRadius: '6px',
+              border: '1px dashed #CBD5E1',
+              backgroundColor: '#FFFFFF',
+              color: '#0284C7',
+              cursor: 'pointer',
+              flexShrink: 0,
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#F0F9FF';
+              e.currentTarget.style.borderColor = '#0284C7';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+              e.currentTarget.style.borderColor = '#CBD5E1';
+            }}
+          >
+            <Plus size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
 
       {/* Explorer Tree Content - Switches based on activeTab */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 8px' }}>

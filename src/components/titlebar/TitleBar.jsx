@@ -109,6 +109,7 @@ export default function TitleBar({ isLoginScreen = false }) {
   // Multi-tab Workspace states
   const [showWorkspacePopover, setShowWorkspacePopover] = useState(false);
   const [activePopoverWsId, setActivePopoverWsId] = useState(null);
+  const [showAddWorkspacePopover, setShowAddWorkspacePopover] = useState(false);
   const [showTabsOverview, setShowTabsOverview] = useState(false);
   const workspaceTabsContainerRef = useRef(null);
   const tabsOverviewRef = useRef(null);
@@ -120,16 +121,17 @@ export default function TitleBar({ isLoginScreen = false }) {
       if (workspaceTabsContainerRef.current && !workspaceTabsContainerRef.current.contains(e.target)) {
         setShowWorkspacePopover(false);
         setActivePopoverWsId(null);
+        setShowAddWorkspacePopover(false);
       }
       if (tabsOverviewRef.current && !tabsOverviewRef.current.contains(e.target)) {
         setShowTabsOverview(false);
       }
     };
-    if (showWorkspacePopover || showTabsOverview) {
+    if (showWorkspacePopover || showAddWorkspacePopover || showTabsOverview) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showWorkspacePopover, showTabsOverview]);
+  }, [showWorkspacePopover, showAddWorkspacePopover, showTabsOverview]);
 
   // Handle horizontal mouse wheel scroll on workspace tabs container
   const handleTabsWheel = useCallback((e) => {
@@ -669,6 +671,71 @@ export default function TitleBar({ isLoginScreen = false }) {
               </div>
             );
           })}
+
+          {/* Nút '+' Tạo hoặc Mở Không Gian Làm Việc Mới */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddWorkspacePopover(prev => !prev);
+                setShowWorkspacePopover(false);
+                setActivePopoverWsId(null);
+              }}
+              title="Thêm Không gian làm việc mới hoặc chuyển đổi Workspace"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '24px',
+                height: '24px',
+                borderRadius: '6px',
+                border: showAddWorkspacePopover ? '1px solid #0284C7' : '1px dashed #CBD5E1',
+                backgroundColor: showAddWorkspacePopover ? '#E0F2FE' : 'transparent',
+                color: showAddWorkspacePopover ? '#0284C7' : '#64748B',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                flexShrink: 0,
+                marginLeft: '2px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#E0F2FE';
+                e.currentTarget.style.borderColor = '#0284C7';
+                e.currentTarget.style.color = '#0284C7';
+              }}
+              onMouseLeave={(e) => {
+                if (!showAddWorkspacePopover) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = '#CBD5E1';
+                  e.currentTarget.style.color = '#64748B';
+                }
+              }}
+            >
+              <Plus size={13} strokeWidth={2.5} />
+            </button>
+
+            {/* Popover khi bấm nút '+' */}
+            {showAddWorkspacePopover && (
+              <WorkspaceMenuPopover
+                workspaces={workspaces}
+                currentWorkspace={currentWorkspace}
+                initialCreate={false}
+                onSelectWorkspace={(targetWs) => {
+                  openWorkspaceTab(targetWs);
+                  setActiveTab('profiles');
+                  setShowAddWorkspacePopover(false);
+                }}
+                onCreateWorkspace={(data) => {
+                  createWorkspace(data);
+                  setShowAddWorkspacePopover(false);
+                }}
+                onOpenUpgrade={() => {
+                  setActiveUpgradeModal(true);
+                  setShowAddWorkspacePopover(false);
+                }}
+                onClose={() => setShowAddWorkspacePopover(false)}
+              />
+            )}
+          </div>
         </div>
 
 
