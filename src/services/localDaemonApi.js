@@ -1,6 +1,6 @@
-import { getApiServerUrl } from '../config/apiConfig';
+import { getLocalDaemonUrl } from '../config/apiConfig';
 
-const LOCAL_DAEMON_BASE = getApiServerUrl();
+const LOCAL_DAEMON_BASE = getLocalDaemonUrl();
 
 /**
  * Local Core Daemon REST Client

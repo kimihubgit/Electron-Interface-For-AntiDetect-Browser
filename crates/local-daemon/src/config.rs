@@ -16,7 +16,7 @@ impl AppConfig {
             .and_then(|p| p.parse().ok())
             .unwrap_or(50325);
         let cloud_api_url = env::var("CLOUD_API_URL")
-            .unwrap_or_else(|_| "http://127.0.0.1:8080".to_string());
+            .unwrap_or_else(|_| "http://127.0.0.1:8000".to_string());
         let secret_token = env::var("DAEMON_SECRET_KEY")
             .unwrap_or_else(|_| "nexus_antidetect_secret_signature_key_2026".to_string());
 
