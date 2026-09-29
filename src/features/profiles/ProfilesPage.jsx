@@ -199,6 +199,47 @@ export default function ProfilesPage() {
     setSelectedProfiles([]);
   }, [selectedProfiles, batchDeleteProfiles, addLog, showToast]);
 
+  const handleImportProfiles = useCallback((data) => {
+    let list = [];
+    if (Array.isArray(data)) {
+      list = data;
+    } else if (data && typeof data === 'object') {
+      if (Array.isArray(data.profiles)) {
+        list = data.profiles;
+      } else {
+        list = [data];
+      }
+    }
+
+    if (list.length === 0) {
+      showToast?.('Tệp không chứa dữ liệu hồ sơ hợp lệ', 'warning');
+      return;
+    }
+
+    let importedCount = 0;
+    list.forEach((item, index) => {
+      if (item && (item.name || item.domain || item.cookies)) {
+        const name = item.name || `Profile Imported #${index + 1}`;
+        const newProf = {
+          ...item,
+          name,
+          id: `prof-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          status: 'idle',
+          createdAt: new Date().toISOString()
+        };
+        saveProfile(newProf);
+        importedCount++;
+      }
+    });
+
+    if (importedCount > 0) {
+      addLog?.(`Đã nhập thành công ${importedCount} hồ sơ từ tệp!`, 'success');
+      showToast?.(`Đã nhập thành công ${importedCount} hồ sơ!`, 'success');
+    } else {
+      showToast?.('Không tìm thấy thông tin hồ sơ hợp lệ trong tệp', 'warning');
+    }
+  }, [saveProfile, addLog, showToast]);
+
   return (
     <div
       style={{
@@ -230,6 +271,7 @@ export default function ProfilesPage() {
         onLaunchAll={() => batchLaunchProfiles(profiles.map(p => p.id))}
         onOpenNewProfile={() => setActiveProfileModal('new')}
         onOpenBatchProfile={() => setActiveProfileModal('batch')}
+        onImportProfiles={handleImportProfiles}
       />
 
       {/* ── MAIN CONTENT: TABLE VIEW OR GRID VIEW ── */}

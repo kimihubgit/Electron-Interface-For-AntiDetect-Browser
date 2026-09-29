@@ -33,11 +33,33 @@ export default function ProfileHeader({
   onStopAll,
   onLaunchAll,
   onOpenNewProfile,
-  onOpenBatchProfile
+  onOpenBatchProfile,
+  onImportProfiles
 }) {
   const { t } = useTranslation();
   const [isAddDropdownOpen, setIsAddDropdownOpen] = useState(false);
   const addDropdownRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        if (onImportProfiles) {
+          onImportProfiles(parsed);
+        } else {
+          alert('Đã đọc dữ liệu hồ sơ từ tệp thành công!');
+        }
+      } catch (err) {
+        alert('Tệp JSON không đúng định dạng: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -398,11 +420,11 @@ export default function ProfileHeader({
 
                 <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '3px 0' }} />
 
-                {/* Option 3: Nhập từ file Cookie */}
+                {/* Option 3: Import profile */}
                 <div
                   onClick={() => {
                     setIsAddDropdownOpen(false);
-                    alert('📥 Nhập hồ sơ từ file JSON / Cookie:\nChọn tệp sao lưu dữ liệu (.json) để nhập vào trình duyệt.');
+                    fileInputRef.current?.click();
                   }}
                   style={{
                     display: 'flex',
@@ -430,12 +452,19 @@ export default function ProfileHeader({
                     <Upload size={14} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>Nhập Cookie / File</span>
-                    <span style={{ fontSize: '11px', color: '#64748B' }}>Khôi phục từ tệp sao lưu JSON</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0F172A' }}>Import profile</span>
+                    <span style={{ fontSize: '11px', color: '#64748B' }}>Nhập hồ sơ từ tệp JSON / sao lưu</span>
                   </div>
                 </div>
               </div>
             )}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
           </div>
         </div>
       </div>
