@@ -10,6 +10,9 @@ use std::time::Instant;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+pub mod browser;
+pub mod network;
+pub mod app;
 mod config;
 mod models;
 mod routes;
@@ -18,6 +21,7 @@ mod services;
 use config::AppConfig;
 use models::{ApiResponse, DaemonHealth};
 use services::{BrowserManager, ProxyService, SynchronizerEngine, Ipv6ProxyServer, BackupService};
+use app::SystemMonitor;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -27,6 +31,7 @@ pub struct AppState {
     pub proxy_service: ProxyService,
     pub ipv6_proxy_server: Ipv6ProxyServer,
     pub backup_service: BackupService,
+    pub system_monitor: SystemMonitor,
     pub start_time: Instant,
 }
 
@@ -47,6 +52,7 @@ async fn main() {
         proxy_service: ProxyService::new(),
         ipv6_proxy_server: Ipv6ProxyServer::new(),
         backup_service: BackupService::new(),
+        system_monitor: SystemMonitor::new(),
         start_time: Instant::now(),
     };
 
