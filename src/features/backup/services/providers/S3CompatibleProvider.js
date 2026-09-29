@@ -2,20 +2,11 @@ import { BaseStorageProvider } from '../core/BaseStorageProvider';
 import { signS3Request } from '../core/S3SignatureV4';
 
 /**
- * S3CompatibleProvider
- * Connects to S3-compatible cloud storage:
- * - Cloudflare R2
- * - AWS S3
- * - BizflyCloud VN
- * - Cloudfly VN
- * - DigitalOcean Spaces
- * - Wasabi Storage
- * - MinIO Self-Hosted
+ * S3CompatibleProvider - Real S3 REST API Integration
+ * Works with Cloudflare R2, AWS S3, BizflyCloud, Cloudfly, DigitalOcean Spaces, Wasabi, and MinIO.
+ * Performs authentic AWS SigV4 signed HTTP requests.
  */
 export class S3CompatibleProvider extends BaseStorageProvider {
-  /**
-   * Determine the root endpoint URL and region for this provider
-   */
   getEndpointDetails() {
     const { id } = this;
     const cfg = this.config;
@@ -143,11 +134,10 @@ export class S3CompatibleProvider extends BaseStorageProvider {
 
     const { endpoint, region, bucketName, accessKeyId, secretAccessKey } = this.getEndpointDetails();
     const testUrl = `${endpoint}/${bucketName}?max-keys=1`;
-
     const start = performance.now();
 
     try {
-      // 1. If Electron IPC native test is available, use it to avoid CORS/firewall issues
+      // 1. In Electron desktop app: use native IPC test to avoid browser CORS limitations
       if (typeof window !== 'undefined' && window.electronAPI?.testCloudConnection) {
         const res = await window.electronAPI.testCloudConnection({
           providerId: this.id,
@@ -160,7 +150,7 @@ export class S3CompatibleProvider extends BaseStorageProvider {
         return res;
       }
 
-      // 2. Standard Web Crypto SigV4 signed request
+      // 2. Real Web Crypto SigV4 signed request
       const signedHeaders = await signS3Request({
         method: 'GET',
         url: testUrl,
@@ -187,6 +177,8 @@ export class S3CompatibleProvider extends BaseStorageProvider {
         };
       }
 
+      const bodyText = await response.text();
+
       if (response.status === 403) {
         return {
           success: false,
@@ -211,32 +203,17 @@ export class S3CompatibleProvider extends BaseStorageProvider {
         };
       }
 
-      const bodyText = await response.text();
       return {
         success: false,
         pingMs,
-        message: `Máy chủ trả về mã HTTP ${response.status}: ${bodyText.slice(0, 100) || 'Lỗi kết nối'}`
+        message: `Máy chủ ${this.name} trả về lỗi HTTP ${response.status}: ${bodyText.slice(0, 150) || response.statusText}`
       };
     } catch (err) {
       const pingMs = Math.round(performance.now() - start);
-
-      // In browser dev environments without CORS on S3, or DNS unreachable:
-      // Provide clear diagnostic explanation while allowing local simulation test
-      const isCorsOrNetwork = err.name === 'TypeError' || err.message?.includes('fetch') || err.message?.includes('NetworkError');
-
-      if (isCorsOrNetwork) {
-        return {
-          success: true,
-          pingMs: Math.max(pingMs, 42),
-          message: `Đã kết nối tới Endpoint ${endpoint}! (Bucket "${bucketName}", Auth OK)`,
-          details: { endpoint, simulated: true }
-        };
-      }
-
       return {
         success: false,
         pingMs,
-        message: `Lỗi kết nối tới ${this.name}: ${err.message}`
+        message: `Lỗi kết nối tới máy chủ ${this.name}: ${err.message}`
       };
     }
   }
@@ -247,21 +224,79 @@ export class S3CompatibleProvider extends BaseStorageProvider {
     const uploadUrl = `${endpoint}/${bucketName}/${objectKey}`;
 
     onProgress(15, `Đang kết nối tới ${this.name} (${endpoint})...`);
-    await new Promise(r => setTimeout(r, 300));
 
-    onProgress(45, `Đang ký xác thực AWS SigV4...`);
-    await new Promise(r => setTimeout(r, 300));
+    const payloadContent = typeof data === 'string'
+      ? data
+      : (data instanceof Blob)
+      ? await data.text()
+      : JSON.stringify(data || { backup: true, timestamp: Date.now() });
 
-    onProgress(75, `Đang truyền tải dữ liệu lên bucket "${bucketName}"...`);
-    await new Promise(r => setTimeout(r, 400));
+    const payloadBytes = new TextEncoder().encode(payloadContent);
 
-    onProgress(100, `Hoàn tất lưu trữ: ${objectKey}`);
+    onProgress(35, `Đang tạo chữ ký bảo mật AWS SigV4...`);
+
+    // 1. If Electron IPC native upload is available, use it for zero-CORS S3 upload
+    if (typeof window !== 'undefined' && window.electronAPI?.uploadCloudBackup) {
+      onProgress(60, `Đang tải file lên bucket "${bucketName}"...`);
+      const ipcRes = await window.electronAPI.uploadCloudBackup({
+        providerId: this.id,
+        endpoint,
+        region,
+        bucketName,
+        objectKey,
+        accessKeyId,
+        secretAccessKey,
+        payload: payloadContent
+      });
+
+      if (!ipcRes.success) {
+        throw new Error(ipcRes.message || 'Lỗi tải lên máy chủ S3');
+      }
+
+      onProgress(100, `Hoàn tất lưu trữ: ${objectKey}`);
+      return {
+        success: true,
+        fileId: objectKey,
+        fileUrl: uploadUrl,
+        sizeBytes: payloadBytes.byteLength
+      };
+    }
+
+    // 2. Real standard signed HTTP PUT request
+    const signedHeaders = await signS3Request({
+      method: 'PUT',
+      url: uploadUrl,
+      region,
+      service: 's3',
+      accessKeyId,
+      secretAccessKey,
+      headers: {
+        'content-type': 'application/octet-stream',
+        'x-amz-acl': 'private'
+      },
+      payload: payloadContent
+    });
+
+    onProgress(65, `Đang truyền ${payloadBytes.byteLength} bytes tới bucket "${bucketName}"...`);
+
+    const putRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: signedHeaders,
+      body: payloadBytes
+    });
+
+    if (!putRes.ok && putRes.status !== 204) {
+      const errText = await putRes.text();
+      throw new Error(`Tải lên S3 thất bại (${putRes.status}): ${errText.slice(0, 150) || putRes.statusText}`);
+    }
+
+    onProgress(100, `Hoàn tất lưu trữ trên ${this.name}: ${objectKey}`);
 
     return {
       success: true,
       fileId: objectKey,
       fileUrl: uploadUrl,
-      sizeBytes: typeof data === 'string' ? data.length : 14500000
+      sizeBytes: payloadBytes.byteLength
     };
   }
 }

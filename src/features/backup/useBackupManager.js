@@ -147,35 +147,53 @@ export function useBackupManager() {
       ]);
 
       // Connect to remote host and upload through ProviderFactory
+      const backupPayload = JSON.stringify({
+        app: 'AntidetectBrowser',
+        version: '1.1.0',
+        createdAt: now.toISOString(),
+        isEncrypted,
+        profileCount: profileList.length || 24,
+        profiles: profileList,
+        options
+      }, null, 2);
+
+      // Connect to remote host and upload through ProviderFactory
       const currentConfig = configs[providerId] || {};
+      let uploadResult = null;
       try {
-        await ProviderFactory.uploadBackup(
+        uploadResult = await ProviderFactory.uploadBackup(
           providerId,
           currentConfig,
           fileName,
-          null,
+          backupPayload,
           (prog, msg) => {
             setBackupProgress(Math.max(50, prog));
             if (msg) setBackupLogs((logs) => [...logs, `[4/5] ${msg}`]);
           }
         );
       } catch (err) {
-        setBackupLogs((logs) => [...logs, `[Cảnh báo] Tiếp tục lưu cục bộ do: ${err.message}`]);
+        setBackupLogs((logs) => [...logs, `[Lỗi máy chủ] ${err.message}`]);
+        setBackupStatus('error');
+        return;
       }
 
       setBackupProgress(100);
+
+      const payloadSizeBytes = uploadResult?.sizeBytes || new Blob([backupPayload]).size;
+      const sizeMb = (payloadSizeBytes / (1024 * 1024)).toFixed(2);
 
       const newBackupItem = {
         id: `bk-${Date.now()}`,
         fileName,
         providerId,
         providerName: provider.name,
-        size: `${(Math.random() * 6 + 10).toFixed(1)} MB`,
+        size: `${Math.max(Number(sizeMb), 0.1)} MB`,
         profileCount: profileList.length || 24,
         proxyCount: 12,
         createdAt: now.toLocaleString('vi-VN'),
         status: 'success',
-        encrypted: isEncrypted
+        encrypted: isEncrypted,
+        fileUrl: uploadResult?.fileUrl || null
       };
 
       setBackupLogs((logs) => [

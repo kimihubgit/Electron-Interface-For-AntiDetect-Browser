@@ -11,7 +11,8 @@ import {
   Layers,
   Shield,
   ArrowRight,
-  Database
+  Database,
+  AlertCircle
 } from 'lucide-react';
 import { BACKUP_PROVIDERS } from '../backupConstants';
 
@@ -474,6 +475,23 @@ export default function BackupModal({
                       transition: 'width 0.3s ease'
                     }} />
                   </div>
+                </div>
+              )}
+
+              {backupStatus === 'error' && (
+                <div style={{
+                  padding: '12px 14px',
+                  borderRadius: '8px',
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FECACA',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  color: '#B91C1C',
+                  fontSize: '12.5px'
+                }}>
+                  <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  <span>Sao lưu thất bại. Vui lòng kiểm tra lại kết nối và cấu hình tài khoản host.</span>
                 </div>
               )}
             </>
