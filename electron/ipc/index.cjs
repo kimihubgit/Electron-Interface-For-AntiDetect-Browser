@@ -6,6 +6,7 @@ const { registerBrowserIpc } = require('./browserIpc.cjs');
 const { registerSystemIpc } = require('./systemIpc.cjs');
 const { registerExtensionIpc } = require('./extensionIpc.cjs');
 const { registerMiniDockIpc } = require('../miniDock.cjs');
+const { registerBackupIpc } = require('./backupIpc.cjs');
 
 function registerAllIpcHandlers() {
   registerWindowIpc();
@@ -16,6 +17,7 @@ function registerAllIpcHandlers() {
   registerSystemIpc();
   registerExtensionIpc();
   registerMiniDockIpc();
+  registerBackupIpc();
 }
 
 module.exports = {

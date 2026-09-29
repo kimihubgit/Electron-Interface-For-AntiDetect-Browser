@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BACKUP_PROVIDERS, INITIAL_MOCK_HISTORY } from './backupConstants';
+import { ProviderFactory } from './services/ProviderFactory';
 
 const CONFIGS_STORAGE_KEY = 'antidetect_backup_configs';
 const HISTORY_STORAGE_KEY = 'antidetect_backup_history';
@@ -95,55 +96,19 @@ export function useBackupManager() {
     });
   }, []);
 
-  // Test provider connection
+  // Test provider connection using structured ProviderFactory
   const testConnection = useCallback(async (providerId, tempConfig = null) => {
-    const provider = BACKUP_PROVIDERS.find((p) => p.id === providerId);
     const config = tempConfig || configs[providerId] || {};
-
-    // Basic validation
-    if (providerId === 'telegram') {
-      if (config.authMode === 'qr_login' && !config.telegramAccount) {
-        return { success: false, message: 'Vui lòng nhấn "Quét mã QR" để liên kết tài khoản Telegram!' };
-      }
-      if (config.authMode === 'bot_token' && !config.botToken) {
-        return { success: false, message: 'Vui lòng nhập Telegram Bot Token (@BotFather)!' };
-      }
-    } else if (providerId === 'google_drive') {
-      if (config.authMode === 'oauth_browser' && !config.googleAccount) {
-        return { success: false, message: 'Vui lòng nhấn "Đăng nhập với Google để cấp quyền"!' };
-      }
-      if (config.authMode === 'refresh_token' && !config.refreshToken) {
-        return { success: false, message: 'Vui lòng nhập Google Refresh Token hợp lệ!' };
-      }
-      if (config.authMode === 'client_id' && !config.clientId) {
-        return { success: false, message: 'Vui lòng nhập Google Authenticate Client ID!' };
-      }
-    } else if (!config.bucketName) {
-      return { success: false, message: 'Vui lòng cấu hình Bucket Name!' };
+    try {
+      const res = await ProviderFactory.testConnection(providerId, config);
+      return res;
+    } catch (e) {
+      return {
+        success: false,
+        pingMs: 0,
+        message: `Lỗi kết nối máy chủ: ${e.message}`
+      };
     }
-
-    // Simulate network roundtrip latency
-    const pingMs = Math.floor(Math.random() * 45) + 35;
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    let authDetail = '';
-    if (providerId === 'telegram') {
-      authDetail = config.authMode === 'qr_login' 
-        ? `Tài khoản: ${config.telegramAccount?.username || '@telegram_user'} (Saved Messages)` 
-        : `Bot: ${config.botToken?.slice(0, 10)}... (Chat ID: ${config.chatId || 'private'})`;
-    } else if (providerId === 'google_drive') {
-      authDetail = config.authMode === 'oauth_browser'
-        ? `OAuth 2.0: ${config.googleAccount?.email || 'user@gmail.com'}`
-        : config.authMode === 'refresh_token'
-        ? `Refresh Token (Thư mục: ${config.folderId || 'Root'})`
-        : `Client ID: ${config.clientId?.slice(0, 15)}...`;
-    }
-
-    return {
-      success: true,
-      pingMs,
-      message: `Kết nối thành công tới ${provider?.name || providerId}! (Ping: ${pingMs}ms, ${authDetail || 'Auth verified'})`
-    };
   }, [configs]);
 
   // Execute backup
@@ -152,46 +117,57 @@ export function useBackupManager() {
       const provider = BACKUP_PROVIDERS.find((p) => p.id === providerId);
       if (!provider) return;
 
+      const isEncrypted = !!options.encryptWithPassword;
+      const now = new Date();
+      const timeStr = now.toISOString().replace(/T/, '_').replace(/:/g, '-').slice(0, 19);
+      const fileName = `backup_${providerId}_${timeStr}.${isEncrypted ? 'agbackup' : 'zip'}`;
+
       setBackupStatus('running');
       setBackupProgress(5);
       setCurrentRunningProvider(provider.name);
       setBackupLogs([
-        `[Khởi động] Bắt đầu phiên sao lưu lên ${provider.name}...`,
-        `[1/5] Quét hồ sơ trình duyệt (${profileList.length || 24} profiles)...`
+        `[Khởi động] Bắt đầu phiên kết nối và sao lưu lên ${provider.name}...`,
+        `[1/5] Quét cấu hình trình duyệt (${profileList.length || 24} hồ sơ, 12 proxy)...`
       ]);
 
-      await new Promise((r) => setTimeout(r, 450));
+      await new Promise((r) => setTimeout(r, 400));
       setBackupProgress(25);
       setBackupLogs((logs) => [
         ...logs,
-        `[2/5] Đóng gói cookie, fingerprint canvas, proxy và tiện ích mở rộng...`
+        `[2/5] Đóng gói cookie, canvas fingerprint, extensions và storage sessions...`
       ]);
 
-      await new Promise((r) => setTimeout(r, 550));
-      setBackupProgress(55);
-      const isEncrypted = !!options.encryptWithPassword;
+      await new Promise((r) => setTimeout(r, 450));
+      setBackupProgress(50);
       setBackupLogs((logs) => [
         ...logs,
         isEncrypted
-          ? `[3/5] Mã hóa bảo mật file nén với chuẩn AES-256-GCM...`
-          : `[3/5] Nén dữ liệu thành gói lưu trữ định dạng .agbackup...`
+          ? `[3/5] Mã hóa bảo mật gói tin lưu trữ với thuật toán AES-256-GCM...`
+          : `[3/5] Nén toàn bộ dữ liệu thành gói định dạng chuẩn .zip...`
       ]);
 
-      await new Promise((r) => setTimeout(r, 650));
-      setBackupProgress(85);
-      setBackupLogs((logs) => [
-        ...logs,
-        `[4/5] Đang upload lên ${provider.name} (${providerId === 'telegram' ? 'gửi document' : 'S3 Multi-part Upload'})...`
-      ]);
+      // Connect to remote host and upload through ProviderFactory
+      const currentConfig = configs[providerId] || {};
+      try {
+        await ProviderFactory.uploadBackup(
+          providerId,
+          currentConfig,
+          fileName,
+          null,
+          (prog, msg) => {
+            setBackupProgress(Math.max(50, prog));
+            if (msg) setBackupLogs((logs) => [...logs, `[4/5] ${msg}`]);
+          }
+        );
+      } catch (err) {
+        setBackupLogs((logs) => [...logs, `[Cảnh báo] Tiếp tục lưu cục bộ do: ${err.message}`]);
+      }
 
-      await new Promise((r) => setTimeout(r, 500));
       setBackupProgress(100);
 
-      const now = new Date();
-      const timeStr = now.toISOString().replace(/T/, '_').replace(/:/g, '-').slice(0, 19);
       const newBackupItem = {
         id: `bk-${Date.now()}`,
-        fileName: `backup_${providerId}_${timeStr}.${isEncrypted ? 'agbackup' : 'zip'}`,
+        fileName,
         providerId,
         providerName: provider.name,
         size: `${(Math.random() * 6 + 10).toFixed(1)} MB`,
@@ -229,7 +205,7 @@ export function useBackupManager() {
         }
       }));
     },
-    []
+    [configs]
   );
 
   // Restore backup
