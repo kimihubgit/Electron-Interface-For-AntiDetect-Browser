@@ -4,7 +4,7 @@ pub mod telegram;
 pub mod google_drive;
 
 use serde::{Deserialize, Serialize};
-use traits::{BackupUploadResponse, ConnectionTestResponse, StorageProvider};
+pub use traits::{BackupUploadResponse, ConnectionTestResponse, StorageProvider};
 use s3::S3StorageProvider;
 use telegram::TelegramStorageProvider;
 use google_drive::GoogleDriveProvider;

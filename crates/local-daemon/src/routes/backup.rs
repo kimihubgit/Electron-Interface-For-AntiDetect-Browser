@@ -20,7 +20,7 @@ async fn test_connection_handler(
 ) -> Json<ApiResponse<ConnectionTestResponse>> {
     match state.backup_service.test_connection(payload).await {
         Ok(res) => Json(ApiResponse::success(res, Some("Kiểm tra kết nối thành công"))),
-        Err(err) => Json(ApiResponse::error(400, &err)),
+        Err(err) => Json(ApiResponse::error(&err)),
     }
 }
 
@@ -30,6 +30,6 @@ async fn upload_backup_handler(
 ) -> Json<ApiResponse<BackupUploadResponse>> {
     match state.backup_service.upload_backup(payload).await {
         Ok(res) => Json(ApiResponse::success(res, Some("Tải lên bản sao lưu thành công"))),
-        Err(err) => Json(ApiResponse::error(500, &err)),
+        Err(err) => Json(ApiResponse::error(&err)),
     }
 }

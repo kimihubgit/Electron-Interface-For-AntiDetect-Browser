@@ -11,9 +11,14 @@
     "app": "electron electron/main.cjs",
     "build:daemon": "cargo build --release --manifest-path crates/local-daemon/Cargo.toml",
     "copy:daemon": "powershell -Command \"if (Test-Path crates/local-daemon/target/release/local-daemon.exe) { Copy-Item crates/local-daemon/target/release/local-daemon.exe electron/bin/ -Force }\"",
-    "build:exe": "vite build && electron-builder --win nsis --x64"
+    "build:exe": "vite build && electron-builder --win nsis --x64",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.12.0",
+    "@tauri-apps/cli": "^2.12.0",
     "crypto-js": "^4.2.0",
     "lucide-react": "^1.41.0",
     "react": "^19.2.8",

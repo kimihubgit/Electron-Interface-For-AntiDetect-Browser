@@ -1,3 +1,4 @@
+import './bridge/tauriBridge.js';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles/variables.css';

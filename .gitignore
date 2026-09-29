@@ -27,3 +27,6 @@ release
 node_modules
 .env
 *.env*
+target/
+src-tauri/target/
+**/target/
