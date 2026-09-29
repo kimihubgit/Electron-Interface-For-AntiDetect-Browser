@@ -7,6 +7,7 @@
  */
 
 import { ENABLE_API_ENCRYPTION, DEFAULT_SERVER_PUBLIC_KEY } from '../../config/apiConfig';
+import { getDeobfuscatedCryptoKey } from '../../utils/keyVault';
 
 let cachedRsaPublicKey = null;
 let cachedRawPublicKeyPem = DEFAULT_SERVER_PUBLIC_KEY || '';
@@ -85,13 +86,24 @@ export async function getOrFetchServerPublicKey(serverUrl) {
     return cachedRsaPublicKey;
   }
 
-  // Check if we have a default hardcoded/env public key
+  // 1. Check if we have an explicit override in environment variable
   if (cachedRawPublicKeyPem) {
     cachedRsaPublicKey = await importRsaPublicKey(cachedRawPublicKeyPem);
     if (cachedRsaPublicKey) return cachedRsaPublicKey;
   }
 
-  // Attempt to fetch from server endpoint: GET /api/v1/auth/public-key
+  // 2. Load from In-Memory Obfuscated KeyVault (Zero-String Protection)
+  try {
+    const vaultKey = await getDeobfuscatedCryptoKey();
+    if (vaultKey) {
+      cachedRsaPublicKey = vaultKey;
+      return cachedRsaPublicKey;
+    }
+  } catch (err) {
+    console.warn('[HybridCrypto] KeyVault load skipped:', err?.message);
+  }
+
+  // 3. Fallback: fetch from server endpoint: GET /api/v1/auth/public-key
   try {
     const url = serverUrl
       ? `${serverUrl.replace(/\/$/, '')}/api/v1/auth/public-key`

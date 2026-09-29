@@ -25,12 +25,4 @@ export function getLocalDaemonUrl() {
 
 // Cấu hình mã hóa tầng ứng dụng (RSA-OAEP + AES-256-GCM)
 export const ENABLE_API_ENCRYPTION = import.meta.env.VITE_ENABLE_API_ENCRYPTION !== 'false';
-export const DEFAULT_SERVER_PUBLIC_KEY = import.meta.env.VITE_SERVER_PUBLIC_KEY || `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAw/V2pW3eNS66qDcx53LS
-Q70gyg1vtXH7MCr3FItEdbdBnSJDp5BjuR0pke/Y7Gn5tw6vL2mJfrJHm7HqfEaL
-KB5o+w5T4fhTJ+D7e0cy5JwNjISeSgHQ9zUTnbqoN/t9TSf3mQAOMghyfzbhoiDE
-nFg5eowITGEDP4GJVg3kAYt9rWq7LZJRaIg05rXTOp/lJAbra+sogix8LoV5maIR
-H1TdgP9AZ1pI3Vjxiwu4DqoBCAt1iNSWPojy8g48sLJOE12SOh84gh9ImxJ/v/5t
-7iUtvhEmKnVxWyGflLI0ijqBunEhkikZsNlFtSI4lKrzuNVd+zOioHCG0wLWWt53
-EwIDAQAB
------END PUBLIC KEY-----`;
+export const DEFAULT_SERVER_PUBLIC_KEY = import.meta.env.VITE_SERVER_PUBLIC_KEY || '';
