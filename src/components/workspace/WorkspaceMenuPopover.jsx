@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, Plus, Sparkles, Layers, ChevronRight, X } from 'lucide-react';
 import { useBrowser } from '../../store/BrowserContext';
 
@@ -10,7 +11,8 @@ export default function WorkspaceMenuPopover({
   onOpenUpgrade: propOnOpenUpgrade,
   onClose = () => {},
   align = 'left',
-  initialCreate = false
+  initialCreate = false,
+  coords = null
 }) {
   const browser = useBrowser() || {};
   const rawWorkspaces = propWorkspaces || browser.workspaces || [];
@@ -72,27 +74,71 @@ export default function WorkspaceMenuPopover({
     onClose();
   };
 
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 'calc(100% + 6px)',
-        [align === 'right' ? 'right' : 'left']: 0,
-        width: '320px',
-        backgroundColor: '#FFFFFF',
-        borderRadius: '10px',
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 16px 36px -6px rgba(15, 23, 42, 0.16), 0 6px 16px -4px rgba(0, 0, 0, 0.08)',
-        padding: '10px',
-        zIndex: 99999,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '4px',
-        userSelect: 'none',
-        animation: 'fadeIn 0.12s ease-out'
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
+  const popoverStyle = coords ? {
+    position: 'fixed',
+    top: `${Math.max(10, Math.min(coords.top, window.innerHeight - 440))}px`,
+    left: `${Math.max(10, Math.min(coords.left, window.innerWidth - 340))}px`,
+    width: '320px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '10px',
+    border: '1px solid #CBD5E1',
+    boxShadow: '0 24px 48px -8px rgba(15, 23, 42, 0.28), 0 12px 24px -4px rgba(0, 0, 0, 0.14)',
+    padding: '10px',
+    zIndex: 999999,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    userSelect: 'none',
+    WebkitAppRegion: 'no-drag',
+    animation: 'fadeIn 0.12s ease-out'
+  } : {
+    position: 'absolute',
+    top: 'calc(100% + 6px)',
+    [align === 'right' ? 'right' : 'left']: 0,
+    width: '320px',
+    backgroundColor: '#FFFFFF',
+    borderRadius: '10px',
+    border: '1px solid #CBD5E1',
+    boxShadow: '0 24px 48px -8px rgba(15, 23, 42, 0.28), 0 12px 24px -4px rgba(0, 0, 0, 0.14)',
+    padding: '10px',
+    zIndex: 999999,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    userSelect: 'none',
+    WebkitAppRegion: 'no-drag',
+    animation: 'fadeIn 0.12s ease-out'
+  };
+
+  const popoverContent = (
+    <>
+      {/* Invisible Fullscreen Backdrop to safely catch clicks outside and close reliably */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 999998,
+          background: 'transparent',
+          WebkitAppRegion: 'no-drag'
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose();
+        }}
+      />
+      <div
+        style={popoverStyle}
+        onClick={(e) => e.stopPropagation()}
+        onContextMenu={(e) => e.stopPropagation()}
+      >
       {/* ── HEADER ── */}
       <div style={{
         display: 'flex',
@@ -388,5 +434,12 @@ export default function WorkspaceMenuPopover({
         </button>
       </div>
     </div>
+  </>
   );
+
+  if (coords && typeof document !== 'undefined') {
+    return createPortal(popoverContent, document.body);
+  }
+
+  return popoverContent;
 }

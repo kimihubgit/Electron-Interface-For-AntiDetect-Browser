@@ -109,7 +109,9 @@ export default function TitleBar({ isLoginScreen = false }) {
   // Multi-tab Workspace states
   const [showWorkspacePopover, setShowWorkspacePopover] = useState(false);
   const [activePopoverWsId, setActivePopoverWsId] = useState(null);
+  const [tabPopoverCoords, setTabPopoverCoords] = useState(null);
   const [showAddWorkspacePopover, setShowAddWorkspacePopover] = useState(false);
+  const [addPopoverCoords, setAddPopoverCoords] = useState(null);
   const [showTabsOverview, setShowTabsOverview] = useState(false);
   const workspaceTabsContainerRef = useRef(null);
   const tabsOverviewRef = useRef(null);
@@ -497,11 +499,17 @@ export default function TitleBar({ isLoginScreen = false }) {
               >
                 <div
                   className={`ws-tab-item ${isTabActive ? 'active' : ''}`}
-                  onClick={() => {
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setTabPopoverCoords({
+                      top: rect.bottom + 4,
+                      left: Math.max(10, Math.min(rect.left, window.innerWidth - 340))
+                    });
                     if (isTabActive) {
                       // Click on the currently active tab -> toggle dropdown
                       setShowWorkspacePopover(prev => (activePopoverWsId === ws.id ? !prev : true));
                       setActivePopoverWsId(ws.id);
+                      setShowAddWorkspacePopover(false);
                     } else {
                       // Click on an inactive tab -> switch directly to that space
                       setShowWorkspacePopover(false);
@@ -509,6 +517,19 @@ export default function TitleBar({ isLoginScreen = false }) {
                       switchWorkspace(ws);
                       setActiveTab('profiles');
                     }
+                  }}
+                  onContextMenu={(e) => {
+                    // Chuột phải vào Workspace tab -> Sổ ngay danh sách Workspace & Tùy chọn
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setTabPopoverCoords({
+                      top: rect.bottom + 4,
+                      left: Math.max(10, Math.min(e.clientX, window.innerWidth - 340))
+                    });
+                    setActivePopoverWsId(ws.id);
+                    setShowWorkspacePopover(true);
+                    setShowAddWorkspacePopover(false);
                   }}
                   style={{
                     display: 'flex',
@@ -588,8 +609,14 @@ export default function TitleBar({ isLoginScreen = false }) {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setTabPopoverCoords({
+                          top: rect.bottom + 6,
+                          left: Math.max(10, Math.min(rect.left - 120, window.innerWidth - 340))
+                        });
                         setShowWorkspacePopover(prev => (activePopoverWsId === ws.id ? !prev : true));
                         setActivePopoverWsId(ws.id);
+                        setShowAddWorkspacePopover(false);
                       }}
                       title="Sổ danh sách Không gian làm việc"
                       style={{
@@ -650,6 +677,7 @@ export default function TitleBar({ isLoginScreen = false }) {
                   <WorkspaceMenuPopover
                     workspaces={workspaces}
                     currentWorkspace={currentWorkspace}
+                    coords={tabPopoverCoords}
                     onSelectWorkspace={(targetWs) => {
                       openWorkspaceTab(targetWs);
                       setActiveTab('profiles');
@@ -676,7 +704,13 @@ export default function TitleBar({ isLoginScreen = false }) {
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                setAddPopoverCoords({
+                  top: rect.bottom + 6,
+                  left: Math.max(10, Math.min(rect.left, window.innerWidth - 340))
+                });
                 setShowAddWorkspacePopover(prev => !prev);
                 setShowWorkspacePopover(false);
                 setActivePopoverWsId(null);
@@ -718,6 +752,7 @@ export default function TitleBar({ isLoginScreen = false }) {
               <WorkspaceMenuPopover
                 workspaces={workspaces}
                 currentWorkspace={currentWorkspace}
+                coords={addPopoverCoords}
                 initialCreate={false}
                 onSelectWorkspace={(targetWs) => {
                   openWorkspaceTab(targetWs);

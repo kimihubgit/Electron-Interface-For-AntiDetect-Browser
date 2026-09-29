@@ -88,6 +88,7 @@ export default function ExplorerPane() {
 
   // Workspace Popover state
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
+  const [sidebarPopoverCoords, setSidebarPopoverCoords] = useState(null);
   const workspaceMenuRef = useRef(null);
 
   useEffect(() => {
@@ -287,7 +288,24 @@ export default function ExplorerPane() {
           {/* Main Workspace Button */}
           <div
             ref={workspaceMenuRef}
-            onClick={() => setShowWorkspaceMenu(prev => !prev)}
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setSidebarPopoverCoords({
+                top: rect.bottom + 4,
+                left: Math.max(10, rect.left)
+              });
+              setShowWorkspaceMenu(prev => !prev);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+              setSidebarPopoverCoords({
+                top: rect.bottom + 4,
+                left: Math.max(10, rect.left)
+              });
+              setShowWorkspaceMenu(true);
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -316,7 +334,7 @@ export default function ExplorerPane() {
                 e.currentTarget.style.borderColor = 'transparent';
               }
             }}
-            title={`Không gian làm việc: ${currentWorkspace?.name || 'Mặc định'} (Nhấn để chuyển đổi)`}
+            title={`Không gian làm việc: ${currentWorkspace?.name || 'Mặc định'} (Nhấn hoặc chuột phải để chuyển đổi)`}
           >
             {/* Workspace Initial Avatar */}
             <div style={{
@@ -358,6 +376,7 @@ export default function ExplorerPane() {
               <WorkspaceMenuPopover
                 workspaces={workspaces}
                 currentWorkspace={currentWorkspace}
+                coords={sidebarPopoverCoords}
                 onSelectWorkspace={(ws) => {
                   switchWorkspace(ws);
                   setShowWorkspaceMenu(false);
@@ -377,6 +396,11 @@ export default function ExplorerPane() {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+              setSidebarPopoverCoords({
+                top: rect.bottom + 4,
+                left: Math.max(10, rect.left - 200)
+              });
               setShowWorkspaceMenu(true);
             }}
             title="Tạo Không gian làm việc mới"
