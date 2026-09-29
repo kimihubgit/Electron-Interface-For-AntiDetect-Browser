@@ -17,7 +17,7 @@ mod services;
 
 use config::AppConfig;
 use models::{ApiResponse, DaemonHealth};
-use services::{BrowserManager, ProxyService, SynchronizerEngine, Ipv6ProxyServer};
+use services::{BrowserManager, ProxyService, SynchronizerEngine, Ipv6ProxyServer, BackupService};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -26,6 +26,7 @@ pub struct AppState {
     pub sync_engine: SynchronizerEngine,
     pub proxy_service: ProxyService,
     pub ipv6_proxy_server: Ipv6ProxyServer,
+    pub backup_service: BackupService,
     pub start_time: Instant,
 }
 
@@ -45,6 +46,7 @@ async fn main() {
         sync_engine: SynchronizerEngine::new(),
         proxy_service: ProxyService::new(),
         ipv6_proxy_server: Ipv6ProxyServer::new(),
+        backup_service: BackupService::new(),
         start_time: Instant::now(),
     };
 
@@ -60,6 +62,7 @@ async fn main() {
         .nest("/api/v1/proxy", routes::proxy::router())
         .nest("/api/v1/cloud", routes::cloud::router())
         .nest("/api/v1/ipv6", routes::ipv6::router())
+        .nest("/api/v1/backup", routes::backup::router())
         .layer(cors)
         .with_state(state);
 
