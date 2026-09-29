@@ -3,6 +3,7 @@
  * Allows switching between accounts, saving account sessions, and cleaning obsolete entries.
  */
 import { getStoredUser, getStoredWorkspace, getAuthToken, setAuthSession } from './authStorage';
+import { secureGet, secureSet, secureRemove } from '../../utils/secureStorage';
 
 export const SAVED_ACCOUNTS_KEY = 'antidetect_saved_accounts_v2';
 
@@ -25,13 +26,13 @@ function sanitizeAccountList(list) {
 
 export function getSavedAccounts() {
   try {
-    const raw = localStorage.getItem(SAVED_ACCOUNTS_KEY);
+    const raw = secureGet(SAVED_ACCOUNTS_KEY, null);
     if (raw) {
-      const parsed = JSON.parse(raw);
+      const parsed = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : []);
       const sanitized = sanitizeAccountList(parsed);
       if (sanitized.length > 0) {
         if (sanitized.length !== parsed.length) {
-          localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(sanitized));
+          secureSet(SAVED_ACCOUNTS_KEY, sanitized);
         }
         return sanitized;
       }
@@ -47,7 +48,7 @@ export function getSavedAccounts() {
       const sanitizedLegacy = sanitizeAccountList(JSON.parse(legacyRaw));
       localStorage.removeItem('antidetect_saved_accounts_v1');
       if (sanitizedLegacy.length > 0) {
-        localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(sanitizedLegacy));
+        secureSet(SAVED_ACCOUNTS_KEY, sanitizedLegacy);
         return sanitizedLegacy;
       }
     }
@@ -71,7 +72,7 @@ export function getSavedAccounts() {
       expires_at: localStorage.getItem('auth_expires_at') || '',
       last_active: new Date().toISOString()
     };
-    localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify([defaultAcc]));
+    secureSet(SAVED_ACCOUNTS_KEY, [defaultAcc]);
     return [defaultAcc];
   }
   return [];
@@ -119,7 +120,7 @@ export function saveAccountSession({ user, token, workspace, expires_at }) {
   }
 
   const cleanList = sanitizeAccountList(updatedList);
-  localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(cleanList));
+  secureSet(SAVED_ACCOUNTS_KEY, cleanList);
   return cleanList;
 }
 
@@ -127,7 +128,7 @@ export function removeSavedAccount(accountIdOrEmail) {
   const accounts = getSavedAccounts();
   const target = String(accountIdOrEmail).toLowerCase();
   const updated = accounts.filter(a => a.id !== accountIdOrEmail && a.email?.toLowerCase() !== target && a.username?.toLowerCase() !== target);
-  localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated));
+  secureSet(SAVED_ACCOUNTS_KEY, updated);
   return updated;
 }
 

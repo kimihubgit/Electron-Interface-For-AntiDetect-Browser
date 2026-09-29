@@ -72,5 +72,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startLocalProxyServer: (config) => ipcRenderer.invoke('start-local-proxy-server', config),
   stopLocalProxyServer: () => ipcRenderer.invoke('stop-local-proxy-server'),
   getLocalProxyStatus: () => ipcRenderer.invoke('get-local-proxy-status'),
-  exportProfileCookies: (profile) => ipcRenderer.invoke('export-profile-cookies', profile)
+  exportProfileCookies: (profile) => ipcRenderer.invoke('export-profile-cookies', profile),
+  isSafeStorageAvailable: () => ipcRenderer.invoke('is-safe-storage-available'),
+  safeStorageEncrypt: (text) => ipcRenderer.invoke('safe-storage-encrypt', text),
+  safeStorageDecrypt: (cipher) => ipcRenderer.invoke('safe-storage-decrypt', cipher),
+  getHardwareFingerprint: () => ipcRenderer.invoke('get-hardware-fingerprint')
 });

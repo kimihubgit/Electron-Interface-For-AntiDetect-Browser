@@ -1,94 +1,84 @@
 /**
- * Auth Token and Active Session LocalStorage Manager
+ * Auth Token and Active Session Secure Storage Manager
+ * Mã hóa AES-256 + Ký số HMAC phần cứng máy tính chống can thiệp file LevelDB trên Windows.
  */
 
+import { secureGet, secureSet, secureRemove } from '../../utils/secureStorage';
+
 export function getAuthToken() {
-  return localStorage.getItem('auth_token') || '';
+  return secureGet('auth_token', '') || '';
 }
 
 export function getRefreshToken() {
-  return localStorage.getItem('auth_refresh_token') || '';
+  return secureGet('auth_refresh_token', '') || '';
 }
 
 export function getStoredUser() {
-  try {
-    const raw = localStorage.getItem('auth_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return secureGet('auth_user', null);
 }
 
 export function getStoredWorkspace() {
-  try {
-    const raw = localStorage.getItem('auth_workspace');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return secureGet('auth_workspace', null);
 }
 
 export function setAuthSession({ token, access_token, refresh_token, user, workspace, expires_at, refresh_expires_at }) {
   const tokenVal = access_token || token;
   if (tokenVal) {
-    localStorage.setItem('auth_token', tokenVal);
+    secureSet('auth_token', tokenVal);
   } else {
-    localStorage.removeItem('auth_token');
+    secureRemove('auth_token');
   }
 
   if (refresh_token) {
-    localStorage.setItem('auth_refresh_token', refresh_token);
+    secureSet('auth_refresh_token', refresh_token);
   } else if (refresh_token === null) {
-    localStorage.removeItem('auth_refresh_token');
+    secureRemove('auth_refresh_token');
   }
 
   if (user) {
-    localStorage.setItem('auth_user', JSON.stringify(user));
+    secureSet('auth_user', user);
   } else {
-    localStorage.removeItem('auth_user');
+    secureRemove('auth_user');
   }
 
   if (workspace) {
-    localStorage.setItem('auth_workspace', JSON.stringify(workspace));
+    secureSet('auth_workspace', workspace);
   } else {
-    localStorage.removeItem('auth_workspace');
+    secureRemove('auth_workspace');
   }
 
   if (expires_at) {
-    localStorage.setItem('auth_expires_at', expires_at);
+    secureSet('auth_expires_at', expires_at);
   } else {
-    localStorage.removeItem('auth_expires_at');
+    secureRemove('auth_expires_at');
   }
 
   if (refresh_expires_at) {
-    localStorage.setItem('auth_refresh_expires_at', refresh_expires_at);
+    secureSet('auth_refresh_expires_at', refresh_expires_at);
   } else if (refresh_expires_at === null) {
-    localStorage.removeItem('auth_refresh_expires_at');
+    secureRemove('auth_refresh_expires_at');
   }
 }
 
 export function clearAuthSession() {
   // 1. Remove active session tokens and user state
-  localStorage.removeItem('auth_token');
-  localStorage.removeItem('auth_refresh_token');
-  localStorage.removeItem('auth_refresh_expires_at');
-  localStorage.removeItem('auth_user');
-  localStorage.removeItem('auth_workspace');
-  localStorage.removeItem('auth_expires_at');
-  localStorage.removeItem('conn_github');
-  localStorage.removeItem('conn_google');
+  secureRemove('auth_token');
+  secureRemove('auth_refresh_token');
+  secureRemove('auth_refresh_expires_at');
+  secureRemove('auth_user');
+  secureRemove('auth_workspace');
+  secureRemove('auth_expires_at');
+  secureRemove('conn_github');
+  secureRemove('conn_google');
 
-  // 2. We preserve user profiles, proxies and workspace cache so user data is NEVER lost when re-authenticating.
-  // Profiles are keyed by userScopeKey (user ID + workspace ID), so they stay safely isolated per account.
-
-  // 3. Clear session storage completely
+  // 2. Clear session storage completely
   try {
     sessionStorage.clear();
   } catch (e) {
     console.warn('Error clearing sessionStorage:', e);
   }
 
-  // 4. Clear all browser session cookies
+  // 3. Clear all browser session cookies
   try {
     if (typeof document !== 'undefined' && document.cookie) {
       const cookies = document.cookie.split(';');

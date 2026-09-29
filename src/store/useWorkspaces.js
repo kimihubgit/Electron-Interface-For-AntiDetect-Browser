@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { switchWorkspaceApi, getUserInfoApi, getWorkspacesApi, createWorkspaceApi } from '../services/api/authApi';
+import { secureGet, secureSet } from '../utils/secureStorage';
 
 const DEFAULT_WORKSPACES = [
   {
@@ -15,9 +16,9 @@ const DEFAULT_WORKSPACES = [
 function readUserWorkspaces(scopeKey, user) {
   const sKey = `antidetect_workspaces_${scopeKey}`;
   try {
-    const raw = localStorage.getItem(sKey);
+    const raw = secureGet(sKey, null);
     if (raw) {
-      const parsed = JSON.parse(raw);
+      const parsed = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : null);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch {}
@@ -86,7 +87,7 @@ export function useWorkspaces(currentUser, setCurrentUser, addLog, showToast, se
   useEffect(() => {
     if (activeScopeRef.current === userScopeKey) {
       try {
-        localStorage.setItem(storageKey, JSON.stringify(workspaces));
+        secureSet(storageKey, workspaces);
       } catch {}
     }
   }, [storageKey, workspaces, userScopeKey]);
