@@ -10,6 +10,7 @@ import {
   clearAuthSession
 } from '../storage/authStorage';
 import { saveAccountSession } from '../storage/accountStorage';
+import { encryptRequestPayload, decryptResponsePayload } from './hybridCrypto';
 
 let activeRequests = 0;
 const apiLoadingListeners = new Set();
@@ -183,8 +184,27 @@ export async function apiRequest(path, {
     headers: reqHeaders
   };
 
+  let sessionAesKey = null;
+  const isExcludedFromEncryption = path.includes('/auth/public-key') || path.includes('/health');
+
   if (body !== null && body !== undefined && method !== 'GET' && method !== 'HEAD') {
-    options.body = typeof body === 'string' ? body : JSON.stringify(body);
+    if (!isExcludedFromEncryption) {
+      try {
+        const encResult = await encryptRequestPayload(body, serverUrl);
+        if (encResult) {
+          options.body = JSON.stringify(encResult.encryptedPayload);
+          options.headers['X-Encrypted-Payload'] = 'true';
+          sessionAesKey = encResult.sessionAesKey;
+        } else {
+          options.body = typeof body === 'string' ? body : JSON.stringify(body);
+        }
+      } catch (encErr) {
+        console.warn('[apiClient] Hybrid encryption skipped:', encErr?.message);
+        options.body = typeof body === 'string' ? body : JSON.stringify(body);
+      }
+    } else {
+      options.body = typeof body === 'string' ? body : JSON.stringify(body);
+    }
   }
 
   activeRequests++;
@@ -197,6 +217,23 @@ export async function apiRequest(path, {
       data = await res.json();
     } catch {
       data = { status: res.ok ? 'success' : 'error', message: res.statusText };
+    }
+
+    // Auto-decrypt response if encrypted by Go Backend Middleware
+    const isEncryptedHeader = res.headers && typeof res.headers.get === 'function' && res.headers.get('x-encrypted-payload') === 'true';
+    if ((isEncryptedHeader || (data && data.ciphertext && data.iv)) && sessionAesKey) {
+      try {
+        data = await decryptResponsePayload(data, sessionAesKey);
+      } catch (decErr) {
+        console.error('[apiClient] Failed to decrypt server response:', decErr);
+        return {
+          ok: false,
+          status: res.status,
+          code: 'DECRYPT_ERROR',
+          message: 'Không thể giải mã dữ liệu an toàn từ máy chủ (Decryption Error)',
+          error: decErr
+        };
+      }
     }
 
     // 401 Unauthorized: Attempt silent refresh with Token Rotation and retry original request

@@ -15,3 +15,7 @@ export function getApiServerUrl() {
 export function getCloudApiUrl() {
   return CLOUD_API_URL;
 }
+
+// Cấu hình mã hóa tầng ứng dụng (RSA-OAEP + AES-256-GCM)
+export const ENABLE_API_ENCRYPTION = import.meta.env.VITE_ENABLE_API_ENCRYPTION !== 'false';
+export const DEFAULT_SERVER_PUBLIC_KEY = import.meta.env.VITE_SERVER_PUBLIC_KEY || '';
